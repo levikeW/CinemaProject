@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="Cinema.css"/>
+    <title>Document</title>
+</head>
+<body>
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand" href="#">Logó</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCinema" aria-controls="navbarCinema" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      
+      <div class="collapse navbar-collapse" id="navbarCinema">
+         <form class="d-flex ms-3">
+          <input class="form-control me-2" type="search" placeholder="Keresés" aria-label="Keresés">
+          <button class="btn btn-outline-success" type="submit">Keresés</button>
+        </form>
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="Cinema.html">Főoldal</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Arak.html">Árak</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="Kategoriak.html">Kategóriák</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Rólunk</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Bejelentkezés/Regisztráció</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+    
+      <section class="filters">
+        <label>
+          Helyszín:
+          <select>
+            <option>Budapest-Aréna Mall</option>
+            <option>Budapest-Duna Plaza</option>
+          </select>
+        </label>
+        <label>
+          Kategóriára szűrés:
+          <select>
+            <option>Akció</option>
+            <option>Vígjáték</option>
+            <option>Családi</option>
+          </select>
+        </label>
+        <label>
+          Film kiválasztása:
+          <select>
+            <option>Film 1</option>
+            <option>Film 2</option>
+            <option>Film 3</option>
+          </select>
+        </label>
+        <label>
+          Dátum kiválasztás:
+          <input type="date">
+        </label>
+      </section>
+    <div class="row Fooldalall">
+      <section class="movie-list">
+        <div class="row movie-card my-3">
+			<div class="col">
+				<img alt="Film kép">
+			</div>
+			<div class="col">
+			  <h3>Cím: Film 1</h3>
+			  <button>Adás 1</button>
+			  <button>Adás 2</button>
+			  <p>Kor besorolás: 16+</p>
+			</div>
+        </div>
+        <div class="row movie-card my-3">
+			<div class="col">
+			<img alt="Film kép">
+			</div>
+			<div class="col">
+			  <h3>Cím: Film 2</h3>
+			  <button>Adás 1</button>
+			  <button>Adás 2</button>
+			  <p>Kor besorolás: 12+</p>
+			</div>
+        </div>
+        <div class="row movie-card my-3">
+			<div class="col">
+			<img alt="Film kép">
+			</div>
+			<div class="col">
+			  <h3>Cím: Film 3</h3>
+			  <button>Adás 1</button>
+			  <button>Adás 2</button>
+			  <p>Kor besorolás: 18+</p>
+			</div>
+        </div>
+      </section>
+    </div>
+      <footer>
+        &copy; 2025 Filmes oldal
+      </footer>
+</body>
+</html>
