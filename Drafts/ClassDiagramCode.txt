@@ -1,0 +1,205 @@
+@startuml
+
+class UserModel {
+    -CinemaDbContext : CinemaDbContext
+    +UserDto
+    +MovieDto
+    +CartDto
+    
+    +HashPass() : string
+    +Register(email : string, password : string, role : string) : void
+    +IsAdmin() : bool
+    +ViewProfile() : void
+    +SearchMovies(keyword : string) : IEnumerable<MovieDto>
+    +ViewCart() : CartDto
+    +DeleteAccount() : void //Admin
+}
+
+class CinemaModel {
+    -CinemaDbContext : CinemaDbContext
+    +MovieDto
+    +FilmScreeningDto
+    +ImageDto
+    +RoomDto
+    +SeatDto
+
+    +GetMovieDescription() : IEnumerable<MovieDto>
+    +IsActive() : bool
+    +GetUpcomingScreenings() : List<FilmScreeningDto>
+    +UpdateDetails(movietitle : string, genre : string, director : string, duration : int) : void //Admin
+    
+    +GetImage() : byte[]
+    +UploadImage() : void //Admin
+    +DeleteImage() : void //Admin
+    
+    +GetRoomCapacity() : int
+    +GetSeats() : int
+    +IsSeatAvailable(row : int, seat : int) : bool
+    +ReserveSeat(row : int, seat : int) : void
+    
+    +IsUpcoming() : bool
+    +GetScreeningInfo() : string
+    +GetAvailableTickets() : List<Ticket>
+    +HasFreeSeats() : bool
+    
+    +GenerateBarcode() : string
+    +GetSeatInfo() : string
+    +SelectTicketType(screeningId : int, type : string) : Ticket
+    +SetQuantity(ticketId : int, quantity : int) : void
+}
+
+class CartModel {
+    -CinemaDbContext : CinemaDbContext
+
+    +AddToCart() : void
+    +RemoveFromCart() : void
+    +GetTotalAmount() : int
+    +ProcessPayment() : bool
+    +CheckPaymentStatus() : bool
+    +CancelReservation() : void
+    +GenerateReceipt(cartId : int) : Receipt
+    +GetConfirmation(cartId : int) : Confirmation
+}
+
+class UserController {
+    -userModel : UserModel
+    
+    +Register() : ActionResult
+    +Login() : Task<ActionResult>
+    +LogOut() : Task<ActionResult>
+}
+
+class CinemaController {
+    -cinemaModel : CinemaModel
+    
+    +GetMovieDescription() : ActionResult<IEnumerable<MovieDto>>
+    +GetUpcomingScreenings() : ActionResult<IEnumerable<FilmScreeningDto>>
+    +UpdateDetails(movietitle : string, genre : string, director : string, duration : int) : void //Admin
+    
+    +UploadImage() : void //Admin
+    +DeleteImage() : void //Admin
+    
+    +GetRoomCapacity() : ActionResult<int>
+    +GetSeats() : ActionResult<IEnumerable<SeatDto>>
+    +ReserveSeat(row : int, seat : int) : void
+    
+    +GetScreeningInfo() : ActionResult<string>
+    +GetAvailableTickets() : ActionResult<IEnumerable<Ticket>>
+    
+    +GenerateBarcode() : string
+    +GetSeatInfo() : ActionResult<string>
+    +SelectTicketType(screeningId : int, type : string) : Ticket
+    +SetQuantity(ticketId : int, quantity : int) : void
+}
+
+class CartController {
+    -cartModel : CartModel
+    
+    +AddToCart() : void
+    +RemoveFromCart() : void
+    +GetTotalAmount() : ActionResult<int>
+    +ProcessPayment() : bool
+    +CheckPaymentStatus() : bool
+    +CancelReservation() : void
+    +GenerateReceipt(cartId : int) : Receipt
+    +GetConfirmation(cartId : int) : Confirmation
+}
++class "User" {
+  +int UserId
+  +string FullName
+  +string Email
+  +string Password
+  +string BillingAddress
+  +string Status
+}
+
++class "Movie" {
+  +int MovieId
+  +int RoomId
+  +string Title
+  +int Duration
+  +string Genre
+  +string Director
+  +string Description
+  +int ImageId
+  +string Status
+}
+
++class "Image" {
+  +int ImageId
+  +string ImageContent
+}
+
++class "Room" {
+  +int RoomId
+  +string RoomName
+  +int SeatId
+}
+
++class "Seat" {
+  +int SeatId
+  +int RowCount
+  +int SeatCount
+}
+
++class "FilmScreening" {
+  +int FilmScreeningId
+  +int MovieId
+  +int RoomId
+  +DateTime Date
+}
+
++class "Ticket" {
+  +int TicketId
+  +int Price
+  +int MovieId
+  +int RoomId
+}
+
++class "Cart" {
+  +int CartId
+  +int UserId
+  +int FilmScreeningId
+  +int SeatId
+  +int Amount
+}
+
++class "PaymentReservation" {
+  +int Id
+  +int CartId
+  +DateTime Date
+  +bool IsPaid
+}
+
++class "CinemaDbContext"{
+    +DbSet<PaymentReservation> paymentReservations
+    +DbSet<Cart> carts
+    +DbSet<User> users
+    +DbSet<Ticket> tickets { get; set; }
+    +DbSet<FilmScreening> filmScreenings
+    +DbSet<Movie> movies
+    +DbSet<Room> rooms
+    +DbSet<Image> images
+    +DbSet<Seat> seats
+}
+
+PaymentReservation --> CinemaDbContext
+User --> CinemaDbContext
+Movie --> CinemaDbContext
+Image --> CinemaDbContext
+Room --> CinemaDbContext
+Seat --> CinemaDbContext
+FilmScreening --> CinemaDbContext
+Cart --> CinemaDbContext
+Ticket --> CinemaDbContext
+
+
+CinemaDbContext --> UserModel
+CinemaDbContext --> CinemaModel
+CinemaDbContext --> CartModel
+
+UserModel --> UserController
+CinemaModel --> CinemaController
+CartModel --> CartController
+
+@enduml

@@ -1,0 +1,43 @@
+@startuml
+skinparam actorStyle awesome
+left to right direction
+:User: --> (Regisztráció)
+(Regisztráció) --> (Bejelentkezés)
+:User: --> (Bejelentkezés) : Ha van fiókja:
+:User: --> (Film)
+(Film) --> (Adat)
+(Adat) --> (Kép)
+(Adat) --> (Leírás)
+(Leírás) --> (Rendezők)
+(Leírás) --> (Főbb színészek)
+(Leírás) --> (Műfaj)
+(Leírás) --> (Film Összefoglaló)
+(Adat) -down-> (Idő)
+(Idő) -right-> (Jegy) : Ha rákattint
+(Jegy) --> (Mennyiség)
+(Mennyiség) -right-> (Szék)
+(Szék) --> (Kosár)
+(Kosár) --> (Fiz)
+(Fiz) -right-> (Visszaigazolás)
+(Fiz) -left-> (Bizonylat) : Fizetés esetén
+:User: --> (Kosár) : Megnézheti a kosarat
+:User: --> (Megtekintheti a profilját)
+:User: --> (Keresés)
+
+:Admin: --> (Törölheti a foglalást)
+:Admin: --> (Módosítás)
+(Módosítás) --> (Töröl)
+(Módosítás) --> (Hozzáad)
+:Admin: --> (Profilokat törölhet)
+:Admin: --> (Keresés)
+
+"Filmeket módosíthat" as (Módosítás)
+"Megadja a mennyiséget" as (Mennyiség)
+"Kiválasztja a jegytípust" as (Jegy)
+"Foglalás/Fizetés" as (Fiz)
+"Kiválasztja a széket" as (Szék)
+"Leírás a filmről" as (Leírás)
+"Mikor van vetítés" as (Idő)
+"Látja az adatokat a filmről" as (Adat)
+"Rákattint egy filmre" as (Film)
+@enduml

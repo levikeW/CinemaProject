@@ -1,0 +1,54 @@
+@startuml
+[*] --> NincsBejelentkezve
+
+NincsBejelentkezve --> Regisztrált : Regisztrál
+NincsBejelentkezve : Regisztrálhat
+Regisztrált --> Bejelentkezett : Bejelentkezik
+Regisztrált : Bejelentkezhet
+
+Bejelentkezett --> FilmKeresés : KeresFilmet
+Bejelentkezett : Filmet Kereshet
+Bejelentkezett : Részleteket Nézhet a Filmről
+Bejelentkezett : Foglalhat/Vásárolhat
+FilmKeresés --> FilmMegtekintve : Rákattint a részletekért
+FilmKeresés : Kihozza a találatokat
+FilmKeresés : Rákattinthat Részletekért
+FilmMegtekintve --> FoglalásIndítva : Foglalás indítása
+FilmMegtekintve : Rendező
+FilmMegtekintve : Színészek
+FilmMegtekintve : Műfaj
+FilmMegtekintve : Összefoglaló
+FilmMegtekintve : Foglalást indíthat
+
+FoglalásIndítva --> KosárbaTéve : KosárbaTeszi
+FoglalásIndítva : JegyTípus
+FoglalásIndítva : Mennyiség
+FoglalásIndítva : Székek
+KosárbaTéve --> FizetésFolyamatban : FizetésIndítása
+KosárbaTéve : Foglalás
+KosárbaTéve : Fizetés
+FizetésFolyamatban --> FoglalásVéglegesítve : Fizetés Sikeres
+FizetésFolyamatban : Sikeres/Sikertelen
+FoglalásVéglegesítve : Visszaigazolást küld
+FizetésFolyamatban --> FoglalásMegszakítva : Fizetés Sikertelen
+FoglalásMegszakítva : Megszakítja/Error
+
+FoglalásVéglegesítve --> [*]
+FoglalásMegszakítva --> [*]
+
+state Admin {
+    [*] --> FilmeketMódosít
+    FilmeketMódosít : Hozzáad
+    FilmeketMódosít : Töröl
+    [*] --> ProfilTörlés
+    ProfilTörlés : Törlés
+    [*] --> FoglalásTörlés
+    FoglalásTörlés : Törlés
+    [*] --> Keresés
+    Keresés : Filmekre
+    FilmeketMódosít --> [*]
+    ProfilTörlés --> [*]
+    FoglalásTörlés --> [*]
+    Keresés --> [*]
+}
+@enduml

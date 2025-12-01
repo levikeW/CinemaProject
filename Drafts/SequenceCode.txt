@@ -1,0 +1,42 @@
+@startuml
+actor Felhasználó
+participant "Bejelentkezés" as Bejelentkezés
+participant "Film" as Filmek
+participant "Foglalás" as Foglalás
+participant "Kosár" as Kosár 
+participant "Fizetés" as Fizetés
+actor Admin
+
+== Felhasználó ==
+
+Felhasználó -> Bejelentkezés : Regisztrál
+Bejelentkezés --> Felhasználó : Sikeres Regisztráció
+
+Felhasználó -> Bejelentkezés : Bejelentkezik(felhasználónév, jelszó)
+Bejelentkezés --> Felhasználó : Sikeres Bejelentkezés
+
+Felhasználó -> Filmek : KeresFilmet("Valami")
+Filmek --> Felhasználó : Filmek listája
+
+Felhasználó -> Filmek : RészletekMegtekintése("Rákattint")
+Filmek --> Felhasználó : Rendező, Műfaj, Színészek, Összefoglaló
+
+Filmek -> Foglalás : Foglalás(Film, Ülés, Mennyiség)
+Foglalás -> Kosár : KosárbaTeszi
+Kosár -> Fizetés : FizetésIndítása
+Fizetés --> Felhasználó : Fizetés Sikeres/Sikertelen
+Foglalás --> Felhasználó : Foglalás Megerősítve/Visszautasítva
+Felhasználó -> Kosár : KosárMegtekintése
+
+== Admin ==
+
+Admin -> Filmek : FilmMódosítás(Hozzáad,Töröl)
+Filmek --> Admin : Módosítás Sikeres
+
+Admin -> Foglalás : FoglalásTörlés
+Foglalás --> Admin : Törlés Sikeres
+
+Admin -> Bejelentkezés : Profilt Törölhet
+Bejelentkezés --> Admin : Törlés Sikeres
+
+@enduml
