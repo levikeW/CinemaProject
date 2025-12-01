@@ -1,0 +1,78 @@
+Table User {
+  UserId int [pk]
+  Email varchar [unique]
+  Jelszo varchar
+  TeljesNev varchar
+  SzamlazasiCim text
+  Status varchar // normal, admin
+}
+
+Table Filmek {
+  FilmId int [pk]
+  TeremId int
+  Nev varchar
+  Perc int
+  Mufaj varchar
+  Rendezo varchar
+  Leiras text
+  ImageId int
+  Status varchar // aktiv, archiv
+}
+
+Table Image {
+  ImageId int [pk]
+  ImageContent text
+}
+
+Table Terem {
+  TeremId int [pk]
+  TeremNev varchar
+  HelyId int
+}
+
+Table Helyek {
+  HelyId int [pk]
+  SorokSzama int
+  SzekekSzama int
+}
+
+Table Vetites {
+  VetitesId int [pk]
+  FilmId int
+  TeremId int
+  Datum datetime
+}
+
+Table Jegy {
+  JegyId int [pk]
+  Price int
+  FilmId int
+  TeremId int
+}
+
+Table Kosar {
+  KosarId int [pk]
+  UserId int
+  VetitesId int
+  HelyId int
+  Amount int
+}
+
+Table FizetesFoglalas {
+  Id int [pk]
+  KosarId int
+  Datum datetime
+  Fizetve boolean
+}
+
+Ref: Filmek.ImageId > Image.ImageId
+Ref: Filmek.TeremId > Terem.TeremId
+Ref: Vetites.FilmId > Filmek.FilmId
+Ref: Vetites.TeremId > Terem.TeremId
+Ref: Jegy.FilmId > Filmek.FilmId
+Ref: Jegy.TeremId > Terem.TeremId
+Ref: Kosar.UserId > User.UserId
+Ref: Kosar.VetitesId > Vetites.VetitesId
+Ref: FizetesFoglalas.KosarId > Kosar.KosarId
+Ref: Terem.HelyId > Helyek.HelyId
+Ref: Kosar.HelyId > Helyek.HelyId
