@@ -1,6 +1,14 @@
+using CinemaProject.Model;
+using CinemaProject.Persistence;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddDbContextPool<CinemaDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("CinemaDb")));
+builder.Services.AddTransient<UserModel>();
+builder.Services.AddTransient<CinemaModel>();
+builder.Services.AddTransient<CartModel>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
