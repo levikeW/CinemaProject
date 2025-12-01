@@ -1,0 +1,179 @@
+/*Base*/
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+  
+header {
+    background-color: #333;
+    color: white;
+    padding: 10px 10px;
+    justify-content: space-between;
+    align-items: right;
+}
+  
+.navbar {
+    background-color: #333 !important; 
+}
+  
+.navbar .navbar-brand {
+    color: white !important;
+    font-weight: bold;
+}
+  
+  .navbar .nav-link {
+    color: white !important; 
+    margin: 0 10px;
+}
+  
+  .navbar .nav-link:hover {
+    color: #ddd !important;
+  }
+  
+  .navbar .form-control {
+    border-radius: 4px;
+  }
+  
+  .navbar .btn {
+    margin-left: 5px;
+    color: whitesmoke;
+    border: 2px solid whitesmoke;
+  }
+
+.filters {
+    background-color: whitesmoke;
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+  
+.filters select {
+    padding: 5px;
+}
+
+.kartya{
+    background-color: rgba(255, 255, 255, 0.25  );
+    padding: 1%;
+    border-radius: 30px;
+}
+
+/*Cinema.html*/
+
+.movie-list {
+    max-width: 1000px;
+	margin: auto;
+	text-align: center;
+    padding: 20px;
+}
+
+.movie-card {
+    background-color: white;
+    width: 70%;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+.movie-card img {
+    width: 100%;
+    height: 350px;
+    background-color: #ccc;
+	float: left;
+    margin-bottom: 10px;
+}
+
+.movie-card h3 {
+    margin: 0 0 10px;
+	text-align: center;
+}
+
+.movie-card button {
+    margin-right: 10px;
+    padding: 5px 10px;
+}
+
+.Fooldalall{
+    background-color: lightblue;
+}
+  
+footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 10px;
+}
+
+/*Arak.html*/
+
+.Arakh1{
+    border: 2px solid black;
+    width: 250px;
+    text-align: center;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 5px;
+}
+
+.Arakkeret{
+    margin: auto;
+    padding: 30px;
+    width: 475px;
+    padding-bottom: 36vh;
+}
+
+.Araknev{
+    margin: auto;
+    text-align: center;
+    margin-right: 50px;
+    padding: 5px;
+}
+
+.Arakar{
+    padding: 15px;
+}
+
+.Arakar h4{
+    margin: 8px;
+}
+
+.Arakall{
+    background-image: url(Arakbckg.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+/*Kateg.html*/
+
+.Kategall{
+    background-image: url(Kategbckg.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.Kategh1{
+    border: 2px solid black;
+    width: 400px;
+    text-align: center;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 5px;
+}
+
+.Kategkeret{
+    margin: auto;
+    padding: 20px;
+}
+
+.Kategnev h4{
+    margin: 10px;
+    padding: 25px;
+}
+
+.Kategbold{
+    font-weight: bold;
+}
