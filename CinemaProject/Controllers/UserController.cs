@@ -23,7 +23,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                string role = IsAdmin ? "Admin" : "User";
+                var role = IsAdmin ? "Admin" : "User";
                 _userModel.Regist(email, password, role);
                 return Ok();
             }

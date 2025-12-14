@@ -2,11 +2,10 @@
 {
     public class UserDto
     {
-        public int Userid { get; set; }
+        public int UserId { get; set; }
         public string Email { get; set; }
-        public string Password { get; set; }
         public string FullName { get; set; }
+        public string Password { get; set; }
         public string BillingAddress { get; set; }
-        public string Status { get; set; }
     }
 }

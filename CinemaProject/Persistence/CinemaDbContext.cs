@@ -38,12 +38,12 @@ namespace CinemaProject.Persistence
         public int CartId { get; set; }
         public int UserId { get; set; }
         public int FilmScreeningId { get; set; }
-        public int SeatId { get; set; }
+        public int TicketId { get; set; }
         public int Amount { get; set; }
-
+        public ICollection<Seat> Seats { get; set; } = new List<Seat>();
         public User User { get; set; }
         public FilmScreening FilmScreening { get; set; }
-        public Seat Seat { get; set; }
+        public Ticket Ticket { get; set; }
     }
 
     [Index(nameof(Email), IsUnique = true)]
@@ -68,10 +68,8 @@ namespace CinemaProject.Persistence
         public int TicketId { get; set; }
         [Required]
         public int TicketPrice { get; set; }
-        public int MovieId { get; set; }
-        public int RoomId { get; set; }
-        public Movie Movie { get; set; }
-        public Room Room { get; set; }
+        public int FilmScreeningId { get; set; }
+        public FilmScreening FilmScreening { get; set; }
     }
 
     public class FilmScreening
@@ -82,6 +80,14 @@ namespace CinemaProject.Persistence
         public int MovieId { get; set; }
         public int RoomId { get; set; }
         public DateTime Date { get; set; }
+        public Movie Movie { get; set; }
+        public Room Room { get; set; }
+    }
+
+    public enum MovieStatus
+    {
+        Inactive,
+        NowRunning
     }
 
     public class Movie
@@ -99,10 +105,11 @@ namespace CinemaProject.Persistence
         public string Director { get; set; }
         [Required]
         public string Description { get; set; }
-        public int RoomId { get; set; }
         public int ImageId { get; set; }
-        public string Status { get; set; }
-        public Room Room { get; set; }
+        public MovieStatus Status { get; set; } = MovieStatus.Inactive;
+
+        public ICollection<FilmScreening> FilmScreenings { get; set; } = new List<FilmScreening>();
+
         public Image Image { get; set; }
     }
 
@@ -113,8 +120,7 @@ namespace CinemaProject.Persistence
         public int RoomId { get; set; }
         [Required]
         public string RoomName { get; set; }
-        public int SeatId { get; set; }
-        public Seat Seat { get; set; }
+        public ICollection<Seat> Seats { get; set; } = new List<Seat>();
     }
     public class Image
     {
@@ -129,7 +135,26 @@ namespace CinemaProject.Persistence
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int SeatId { get; set; }
-        public int RowCount { get; set; }
-        public int SeatCount { get; set; }
+        public int RowNumber { get; set; }
+        public int SeatNumber { get; set; }
+        public int RoomId { get; set; }
+        public Room Room { get; set; }
+    }
+    public class Receipt
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int ReceiptId { get; set; }
+        public int PaymentReservationId { get; set; }
+        public string MovieTitle { get; set; }
+        public DateTime ScreeningDate { get; set; }
+        public string RoomName { get; set; }
+        public int TicketId { get; set; }
+        public int Amount { get; set; }
+        public decimal TotalPrice { get; set; }
+        public DateTime PaymentDate { get; set; }
+        public string UserEmail { get; set; }
+        public ICollection<Seat> Seats { get; set; } = new List<Seat>();
+        public PaymentReservation PaymentReservation { get; set; }
     }
 }

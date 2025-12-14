@@ -3,7 +3,8 @@
     public class SeatDto
     {
         public int SeatId { get; set; }
-        public int RowCount { get; set; }
-        public int SeatCount { get; set; }
+        public int RowNumber { get; set; }
+        public int SeatNumber { get; set; }
+        public int RoomId { get; set; } 
     }
 }
