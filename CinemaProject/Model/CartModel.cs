@@ -12,11 +12,26 @@ namespace CinemaProject.Model
         {
             _context = context;
         }
+        public IEnumerable<CartDto> GetCart(CartDto dto, int userId)
+        {
+            var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
+            var seats = _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToList();
+            return _context.carts.Include(x => x.FilmScreening).Include(x => x.Ticket).Where(x => x.UserId == userId).Select(x => new CartDto
+            {
+                CartId = x.CartId,
+                FilmScreeningId = x.FilmScreeningId,
+                Seats = seats,
+                TicketId = x.TicketId,
+                Amount = x.Amount,
+                TotalPrice = x.Ticket.TicketPrice * x.Amount,
+            }).ToList();
+        }
+
         public void AddToCart(CartDto dto)
         {
             using var trx = _context.Database.BeginTransaction();
             {
-                var seatIds = dto.Seats.Select(s => s.SeatId).ToList();
+                var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
                 var seats = _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToList();
                 _context.carts.Add(new Cart
                 {
@@ -24,7 +39,8 @@ namespace CinemaProject.Model
                     FilmScreeningId = dto.FilmScreeningId,
                     Seats = seats,
                     TicketId = dto.TicketId,
-                    Amount = dto.Amount
+                    Amount = dto.Amount,
+                    TotalPrice = dto.TotalPrice * dto.Amount,
                 });
                 _context.SaveChanges();
                 trx.Commit();
@@ -45,83 +61,85 @@ namespace CinemaProject.Model
             }
         }
 
-        public void CreateReservation(int cartId)
+        public void UpdateCart(CartDto dto, int cartId)
         {
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.paymentReservations.Add(new PaymentReservation
-                {
-                    CartId = cartId,
-                    Date = DateTime.Now,
-                    IsPaid = false
-                });
-                _context.SaveChanges();
-                trx.Commit();
-            }
-        }
-
-        public void CancelReservation(int reservationId)
-        {
-            var reservation = _context.paymentReservations.FirstOrDefault(x => x.PaymentReservationId == reservationId);
-            if (reservation == null)
-            {
-                throw new InvalidOperationException("Reservation not found");
-            }
-            if (reservation.IsPaid)
-            {
-                throw new InvalidOperationException("Cannot cancel a paid reservation");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.paymentReservations.Remove(reservation);
-                _context.SaveChanges();
-                trx.Commit();
-            }
-        }
-
-        public void PayReservation(int reservationId)
-        {
-            var reservation = _context.paymentReservations.Include(x => x.Cart).FirstOrDefault(x => x.PaymentReservationId == reservationId);
-            if (reservation == null)
-            {
-                throw new InvalidOperationException("Reservation not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                reservation.IsPaid = true;
-                reservation.Date = DateTime.Now;
-
-                _context.SaveChanges();
-                trx.Commit();
-            }
-        }
-
-        public ReceiptDto GetReceipt(int reservationId)
-        {
-            return _context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).Select(x => new ReceiptDto
-            {
-                ReceiptId = x.PaymentReservationId,
-                PaymentReservationId = x.PaymentReservationId,
-                MovieTitle = x.Cart.FilmScreening.Movie.MovieTitle,
-                ScreeningDate = x.Cart.FilmScreening.Date,
-                RoomName = x.Cart.FilmScreening.Room.RoomName,
-                Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
-                TicketId = x.Cart.TicketId,
-                Amount = x.Cart.Amount,
-                TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
-                PaymentDate = x.Date,
-                UserEmail = x.Cart.User.Email
-            }).FirstOrDefault();
-        }
-
-        public decimal GetTotalPrice(int cartId)
-        {
-            var cart = _context.carts.Include(x => x.Ticket).FirstOrDefault(x => x.CartId == cartId);
+            var cart = _context.carts.Include(x => x.Seats).FirstOrDefault(x => x.CartId == cartId);
             if (cart == null)
             {
                 throw new InvalidOperationException("Cart not found");
             }
-            return cart.Ticket.TicketPrice * cart.Amount;
+            using var trx = _context.Database.BeginTransaction();
+            {
+                var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
+                var seats = _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToList();
+                cart.FilmScreeningId = dto.FilmScreeningId;
+                cart.TicketId = dto.TicketId;
+                cart.Amount = dto.Amount;
+                cart.TotalPrice = dto.TotalPrice * dto.Amount;
+
+                cart.Seats.Clear();
+                foreach (var seat in seats)
+                {
+                    cart.Seats.Add(seat);
+                }
+                _context.SaveChanges();
+                trx.Commit();
+            }
+        }
+
+        public void ModifyCart(int cartId, int? newAmount = null, List<int>? newSeatIds = null)
+        {
+            var cart = _context.carts.Include(x => x.Seats).FirstOrDefault(x => x.CartId == cartId);
+            if (cart == null)
+            {
+                throw new InvalidOperationException("Cart not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                if (newAmount.HasValue)
+                {
+                    cart.Amount = newAmount.Value;
+                    cart.TotalPrice = cart.Ticket.TicketPrice * newAmount.Value;
+                }
+                if (newSeatIds != null && newSeatIds.Any())
+                {
+                    cart.Seats.Clear();
+                    var seats = _context.seats.Where(x => newSeatIds.Contains(x.SeatId)).ToList();
+                    foreach (var seat in seats)
+                    {
+                        cart.Seats.Add(seat);
+                    }
+                }
+                _context.SaveChanges();
+                trx.Commit();
+            }
+        }
+
+        public void DeleteCart(int cartId)
+        {
+            if (!_context.carts.Any(x => x.CartId == cartId))
+            {
+                throw new InvalidOperationException("Cart not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.carts.Remove(_context.carts.Where(x => x.CartId == cartId).First());
+                _context.SaveChanges();
+                trx.Commit();
+            }
+        }
+
+        public void ClearCart(int userId)
+        {
+            var carts = _context.carts.Where(x => x.UserId == userId).ToList();
+            if (!carts.Any()) return;
+
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.carts.RemoveRange(carts);
+                _context.SaveChanges();
+                trx.Commit();
+            }
         }
     }
 }

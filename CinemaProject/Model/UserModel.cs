@@ -42,60 +42,77 @@ namespace CinemaProject.Model
             return user.Where(x => x.Password == hash).FirstOrDefault();
         }
 
-        public IEnumerable<MovieDto> GetAllMovieInformation()
+        public UserDto? ViewProfile(int userId)
         {
-            return _context.movies.Include(x => x.Image).Include(x => x.FilmScreenings).Select(x => new MovieDto
+            return _context.users.Where(x => x.UserId == userId).Select(x => new UserDto
             {
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                Duration = x.Duration,
-                Genre = x.Genre,
-                Director = x.Director,
-                Description = x.Description,
-                ImageId = x.Image.ImageId,
-                Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
-                {
-                    FilmScreeningId = y.FilmScreeningId,
-                    MovieId = y.MovieId,
-                    RoomId = y.RoomId,
-                    Date = y.Date
-                }).ToList()
-            }).ToList();
-        }
-        public IEnumerable<MovieDto> SearchMovie(string item)
-        {
-            return _context.movies.Include(x => x.Image).Include(x => x.FilmScreenings).Where(x => x.MovieTitle.ToLower().Contains(item.ToLower())).Select(x => new MovieDto
-            {
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                Duration = x.Duration,
-                Genre = x.Genre,
-                Director = x.Director,
-                Description = x.Description,
-                ImageId = x.Image.ImageId,
-                Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
-                {
-                    FilmScreeningId = y.FilmScreeningId,
-                    MovieId = y.MovieId,
-                    RoomId = y.RoomId,
-                    Date = y.Date
-                }).ToList()
-            }).ToList();
+                UserId = x.UserId,
+                Email = x.Email,
+                FullName = x.FullName,
+                BillingAddress = x.BillingAddress
+            }).FirstOrDefault();
         }
 
-        public IEnumerable<CartDto> GetCart(CartDto dto,int userId)
+        public void DeleteProfile(int userId)
         {
-            var seatIds = dto.Seats.Select(s => s.SeatId).ToList();
-            var seats = _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToList();
-            return _context.carts.Include(x => x.FilmScreening).Include(x => x.Ticket).Where(x => x.UserId == userId).Select(x => new CartDto
+            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
+            if (user == null)
             {
-                CartId = x.CartId,
-                FilmScreeningId = x.FilmScreeningId,
-                Seats = seats,
-                TicketId = x.TicketId,
-                Amount = x.Amount
-            }).ToList();
+                throw new InvalidOperationException("User not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.users.Remove(user);
+                _context.SaveChanges();
+                trx.Commit();
+            }
         }
-      
+
+        public void UpdateProfile(int userId, UpdateUserDto dto)
+        {
+            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
+            if (user == null)
+            {
+                throw new InvalidOperationException("User not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                if (!string.IsNullOrEmpty(dto.Email))
+                {
+                    user.Email = dto.Email;
+                }
+                if (!string.IsNullOrEmpty(dto.FullName))
+                {
+                    user.FullName = dto.FullName;
+                }
+                if (!string.IsNullOrEmpty(dto.BillingAddress))
+                {
+                    user.BillingAddress = dto.BillingAddress;
+                }
+                _context.SaveChanges();
+                trx.Commit();
+            }
+        }
+
+        public void ChangePassword(int userId, string oldPass, string newPass)
+        {
+            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
+            if (user == null)
+            {
+                throw new InvalidOperationException("User not found");
+            }
+            var oldHash = HashPass(oldPass);
+            if (user.Password != oldHash)
+            {
+                throw new InvalidOperationException("Old password is incorrect");
+            }
+            var newHash = HashPass(newPass);
+            using var trx = _context.Database.BeginTransaction();
+            {
+                user.Password = newHash;
+                _context.SaveChanges();
+                trx.Commit();
+            }
+        }
     }
 }

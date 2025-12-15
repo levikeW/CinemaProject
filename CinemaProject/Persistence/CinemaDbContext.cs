@@ -27,8 +27,13 @@ namespace CinemaProject.Persistence
         public int PaymentReservationId { get; set; }
         public int CartId { get; set; }
         public DateTime Date { get; set; }
+        public int FilmScreeningId { get; set; }
+        public int Amount { get; set; }
+        public int UserId { get; set; }
         public bool IsPaid { get; set; }
         public Cart Cart { get; set; }
+        public FilmScreening FilmScreening { get; set; }
+        public User User { get; set; }
     }
 
     public class Cart
@@ -40,6 +45,7 @@ namespace CinemaProject.Persistence
         public int FilmScreeningId { get; set; }
         public int TicketId { get; set; }
         public int Amount { get; set; }
+        public int TotalPrice { get; set; }
         public ICollection<Seat> Seats { get; set; } = new List<Seat>();
         public User User { get; set; }
         public FilmScreening FilmScreening { get; set; }
@@ -66,6 +72,8 @@ namespace CinemaProject.Persistence
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int TicketId { get; set; }
+        [Required]
+        public string TicketType { get; set; }
         [Required]
         public int TicketPrice { get; set; }
         public int FilmScreeningId { get; set; }
@@ -138,6 +146,7 @@ namespace CinemaProject.Persistence
         public int RowNumber { get; set; }
         public int SeatNumber { get; set; }
         public int RoomId { get; set; }
+        public bool IsReserved { get; set; } = false;
         public Room Room { get; set; }
     }
     public class Receipt
@@ -151,10 +160,27 @@ namespace CinemaProject.Persistence
         public string RoomName { get; set; }
         public int TicketId { get; set; }
         public int Amount { get; set; }
-        public decimal TotalPrice { get; set; }
+        public int TotalPrice { get; set; }
         public DateTime PaymentDate { get; set; }
         public string UserEmail { get; set; }
         public ICollection<Seat> Seats { get; set; } = new List<Seat>();
+        public PaymentReservation PaymentReservation { get; set; }
+    }
+
+    public class ReservationConfirmation
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int ConfirmationId { get; set; }
+        public int PaymentReservationId { get; set; }
+        public string MovieTitle { get; set; }
+        public DateTime ScreeningDate { get; set; }
+        public string RoomName { get; set; }
+        public ICollection<Seat> Seats { get; set; } = new List<Seat>();
+        public int TicketId { get; set; }
+        public int Amount { get; set; }
+        public int TotalPrice { get; set; }
+        public string UserEmail { get; set; }
         public PaymentReservation PaymentReservation { get; set; }
     }
 }

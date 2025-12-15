@@ -22,26 +22,20 @@ namespace CinemaProject.Model
             }).ToList();
         }
 
-        public IEnumerable<MovieDto> GetAllMovies()
+        public IEnumerable<PaymentReservationDto> GetAllReservations()
         {
-            return _context.movies.Include(x => x.Image).Include(x => x.FilmScreenings).Select(x => new MovieDto
+            return _context.paymentReservations.Select(x => new PaymentReservationDto
             {
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                Duration = x.Duration,
-                Genre = x.Genre,
-                Director = x.Director,
-                Description = x.Description,
-                ImageId = x.Image.ImageId,
-                Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
-                {
-                    FilmScreeningId = y.FilmScreeningId,
-                    MovieId = y.MovieId,
-                    RoomId = y.RoomId,
-                    Date = y.Date
-                }).ToList()
+                PaymentReservationId = x.PaymentReservationId,
+                CartId = x.CartId,
+                Date = x.Date,
+                IsPaid = x.IsPaid,
+                Amount = x.Cart.Amount,
+                Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                Seats = x.Cart.Seats.ToList()
             }).ToList();
         }
+
         public IEnumerable<UserDto> SearchUser(string item)
         {
             return _context.users.Where(x => x.Email.ToLower().Contains(item.ToLower()) ||
@@ -52,27 +46,6 @@ namespace CinemaProject.Model
                     Email = x.Email,
                     FullName = x.FullName,
                 }).ToList();
-        }
-
-        public IEnumerable<MovieDto> SearchMovie(string item)
-        {
-            return _context.movies.Include(x => x.Image).Include(x => x.FilmScreenings).Where(x => x.MovieTitle.ToLower().Contains(item.ToLower())).Select(x => new MovieDto
-            {
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                Duration = x.Duration,
-                Genre = x.Genre,
-                Director = x.Director,
-                Description = x.Description,
-                ImageId = x.Image.ImageId,
-                Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
-                {
-                    FilmScreeningId = y.FilmScreeningId,
-                    MovieId = y.MovieId,
-                    RoomId = y.RoomId,
-                    Date = y.Date
-                }).ToList()
-            }).ToList();
         }
 
         public void NewMovie(NewMovieDto dto)
@@ -92,7 +65,28 @@ namespace CinemaProject.Model
                     Genre = dto.Genre,
                     Director = dto.Director,
                     Description = dto.Description,
-                    ImageId = imageId
+                    ImageId = imageId,
+                    Status = MovieStatus.Inactive
+                });
+                _context.SaveChanges();
+                trx.Commit();
+            }
+        }
+
+        public void NewScreening(FilmScreeningDto dto)
+        {
+            if (_context.filmScreenings.Any(x => x.FilmScreeningId == dto.FilmScreeningId))
+            {
+                throw new InvalidOperationException("Already exists");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.filmScreenings.Add(new Persistence.FilmScreening
+                {
+                    MovieId = dto.MovieId,
+                    RoomId = dto.RoomId,
+                    Date = dto.Date
+
                 });
                 _context.SaveChanges();
                 trx.Commit();
@@ -146,7 +140,7 @@ namespace CinemaProject.Model
             }
             using var trx = _context.Database.BeginTransaction();
             {
-                var seatIds = dto.Seats.Select(s => s.SeatId).ToList();
+                var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
                 var seats = _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToList();
                 reservation.Date = dto.Date;
                 reservation.IsPaid = dto.IsPaid;
@@ -155,6 +149,7 @@ namespace CinemaProject.Model
                     reservation.Cart.Seats = seats;
                     reservation.Cart.FilmScreeningId = dto.FilmScreeningId;
                     reservation.Cart.Amount = dto.Amount;
+                    reservation.Cart.TotalPrice = dto.Price * dto.Amount;
                     reservation.Cart.UserId = dto.UserId;
                 }
                 _context.SaveChanges();
@@ -171,6 +166,7 @@ namespace CinemaProject.Model
             }
             using var trx = _context.Database.BeginTransaction();
             {
+                ticket.TicketType = dto.TicketType;
                 ticket.TicketPrice = dto.TicketPrice;
                 _context.SaveChanges();
                 trx.Commit();
@@ -205,6 +201,21 @@ namespace CinemaProject.Model
             }
         }
 
+        public void DeleteScreening(int screeningId)
+        {
+            if (!_context.filmScreenings.Any(x => x.FilmScreeningId == screeningId))
+            {
+                throw new InvalidOperationException("Screening not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.filmScreenings.Remove(_context.filmScreenings.Where(x => x.FilmScreeningId == screeningId).First());
+                _context.SaveChanges();
+                trx.Commit();
+            }
+
+        }
+
         public void DeleteReservation(int reservationId)
         {
             if (!_context.paymentReservations.Any(x => x.PaymentReservationId == reservationId))
@@ -214,6 +225,40 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.paymentReservations.Remove(_context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).First());
+                _context.SaveChanges();
+                trx.Commit();
+            }
+        }
+
+        public void UploadImage(ImageDto dto)
+        {
+            using var trx = _context.Database.BeginTransaction();
+            {
+                var image = new Image
+                {
+                    ImageContent = dto.ImageContent
+                };
+                _context.images.Add(image);
+                _context.SaveChanges();
+                trx.Commit();
+            }
+        }
+
+        public void DeleteImage(int imageId)
+        {
+            var image = _context.images.FirstOrDefault(x => x.ImageId == imageId);
+            if (image == null)
+            {
+                throw new InvalidOperationException("Image not found");
+            }
+            if (_context.movies.Any(m => m.ImageId == imageId))
+            {
+                throw new InvalidOperationException("Image is still in use by a movie");
+            }
+
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.images.Remove(image);
                 _context.SaveChanges();
                 trx.Commit();
             }
