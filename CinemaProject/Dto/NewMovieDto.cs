@@ -1,4 +1,7 @@
-﻿namespace CinemaProject.Dto
+﻿using Cinema.Dto;
+using CinemaProject.Persistence;
+
+namespace CinemaProject.Dto
 {
     public class NewMovieDto
     {
@@ -10,5 +13,6 @@
         public string Description { get; set; }
         public int RoomId { get; set; }
         public int ImageId { get; set; }
+        public MovieStatus Status { get; set; }
     }
 }

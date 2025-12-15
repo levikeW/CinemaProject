@@ -2,7 +2,7 @@
 {
     public class ImageDto
     {
-        public string ImageId { get; set; }
+        public int ImageId { get; set; }
         public byte[] ImageContent { get; set; }
     }
 }

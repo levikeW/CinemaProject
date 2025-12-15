@@ -6,5 +6,6 @@
         public int RowNumber { get; set; }
         public int SeatNumber { get; set; }
         public int RoomId { get; set; } 
+        public bool IsReserved { get; set; } = false;
     }
 }

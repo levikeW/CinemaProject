@@ -10,6 +10,7 @@ namespace CinemaProject.Dto
         public bool IsPaid { get; set; }
         public int FilmScreeningId { get; set; }
         public int Amount { get; set; }
+        public int Price { get; set; }
         public int UserId { get; set; }
         public List<Seat> Seats { get; set; } = new List<Seat>();
     }
