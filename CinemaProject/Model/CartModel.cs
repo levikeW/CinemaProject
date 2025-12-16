@@ -115,7 +115,7 @@ namespace CinemaProject.Model
             }
         }
 
-        public void DeleteCart(int cartId)
+      /*  public void DeleteCart(int cartId)
         {
             if (!_context.carts.Any(x => x.CartId == cartId))
             {
@@ -128,6 +128,7 @@ namespace CinemaProject.Model
                 trx.Commit();
             }
         }
+      */
 
         public void ClearCart(int userId)
         {

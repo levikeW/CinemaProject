@@ -141,7 +141,7 @@ namespace CinemaProject.Model
 
         public List<FilmScreeningDto> GetUpcomingScreenings()
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             return _context.filmScreenings.Where(x => x.Date >= now && x.Movie.Status == MovieStatus.NowRunning).Select(x => new FilmScreeningDto
             {
                 FilmScreeningId = x.FilmScreeningId,

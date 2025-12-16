@@ -16,6 +16,8 @@ namespace CinemaProject.Persistence
         public DbSet<Room> rooms { get; set; }
         public DbSet<Image> images { get; set; }
         public DbSet<Seat> seats { get; set; }
+        public DbSet<Receipt> receipts { get; set; }
+        public DbSet<ReservationConfirmation> reservationConfirmations { get; set; }
 
         public CinemaDbContext(DbContextOptions<CinemaDbContext> options) : base(options) { }
     }
