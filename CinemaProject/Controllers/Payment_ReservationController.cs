@@ -1,45 +1,27 @@
 ﻿using Cinema.Dto;
+using CinemaProject.Dto;
 using CinemaProject.Model;
-using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace CinemaProject.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CartController : ControllerBase
+    public class Payment_ReservationController : ControllerBase
     {
-        private readonly CartModel _cartModel;
-        public CartController(CartModel cartModel)
+        private readonly Payment_ReservationModel _paymentReservationModel;
+        public Payment_ReservationController(Payment_ReservationModel paymentReservationModel)
         {
-            _cartModel = cartModel;
+            _paymentReservationModel = paymentReservationModel;
         }
 
-        [HttpGet("/getcart")]
-        public ActionResult<IEnumerable<CartDto>> GetCart(CartDto dto, int userId)
+        [HttpPost("/createreservation")]
+        public ActionResult CreateReservation(int cartId)
         {
             try
             {
-                return Ok(_cartModel.GetCart(dto, userId));
-            }
-            catch (InvalidOperationException e)
-            {
-                return BadRequest(e.Message);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpPut("/addtocart")]
-        public ActionResult AddToCart(CartDto dto)
-        {
-            try
-            {
-                _cartModel.AddToCart(dto);
+                _paymentReservationModel.CreateReservation(cartId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -52,12 +34,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPost("/removefromcart")]
-        public ActionResult RemoveFromCart(int cartId)
+        [HttpDelete("/cancelreservation")]
+        public ActionResult CancelReservaton(int reservationId)
         {
             try
             {
-                _cartModel.RemoveFromCart(cartId);
+                _paymentReservationModel.CancelReservation(reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -70,12 +52,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPut("/updatecart")]
-        public ActionResult UpdateCart(CartDto dto, int cartId)
+        [HttpPut("/payreservation")]
+        public ActionResult PayReservation(int reservationId)
         {
             try
             {
-                _cartModel.UpdateCart(dto, cartId);
+                _paymentReservationModel.PayReservation(reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -88,13 +70,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPut("/modifycart")]
-        public ActionResult ModifyCart(int cartId, int? newAmount = null, List<int>? newSeatIds = null)
+        [HttpGet("/getreceipt")]
+        public ActionResult<ReceiptDto> GetReceipt(int reservationId)
         {
             try
             {
-                _cartModel.ModifyCart(cartId, newAmount, newSeatIds);
-                return Ok();
+                return Ok(_paymentReservationModel.GetReceipt(reservationId));
             }
             catch (InvalidOperationException e)
             {
@@ -106,32 +87,46 @@ namespace CinemaProject.Controllers
             }
         }
 
-        /* [HttpDelete("/deletecart")]
-         public ActionResult DeleteCart(int cartId)
-         {
-             try
-             {
-                 _cartModel.DeleteCart(cartId);
-                 return Ok();
-             }
-             catch (InvalidOperationException e)
-             {
-                 return BadRequest(e.Message);
-             }
-             catch (Exception e)
-             {
-                 return BadRequest(e.Message);
-             }
-         }
-        */
-
-        [HttpDelete("/clearcart")]
-        public ActionResult ClearCart(int userId)
+        [HttpGet("/getconfirmation")]
+        public ActionResult<ConfirmationDto> GetConfirmation(int reservationId)
         {
             try
             {
-                _cartModel.ClearCart(userId);
-                return Ok();
+                return Ok(_paymentReservationModel.GetConfirmation(reservationId));
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet("/viewupcomingreservation")]
+        public ActionResult<List<PaymentReservationDto>> ViewUpcomingReservation(int userId)
+        {
+            try
+            {
+                return Ok(_paymentReservationModel.ViewUpcomigReservations(userId));
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet("/viewpastreservation")]
+        public ActionResult<List<PaymentReservationDto>> ViewPastReservations(int userId)
+        {
+            try
+            {
+                return Ok(_paymentReservationModel.ViewPastReservations(userId));
             }
             catch (InvalidOperationException e)
             {

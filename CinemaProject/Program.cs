@@ -8,8 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddDbContextPool<CinemaDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("CinemaDb")));
 builder.Services.AddTransient<UserModel>();
+builder.Services.AddTransient<AdminModel>();
 builder.Services.AddTransient<CinemaModel>();
 builder.Services.AddTransient<CartModel>();
+builder.Services.AddTransient<Payment_ReservationModel>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

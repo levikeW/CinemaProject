@@ -114,5 +114,19 @@ namespace CinemaProject.Model
                 trx.Commit();
             }
         }
+        public void ChangeRole(int userId)
+        {
+            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
+            if (user == null)
+            {
+                throw new InvalidOperationException("User not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                user.Role = "Admin";
+                _context.SaveChanges();
+                trx.Commit();
+            }
+        }
     }
 }

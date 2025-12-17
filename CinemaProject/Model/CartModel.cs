@@ -115,20 +115,20 @@ namespace CinemaProject.Model
             }
         }
 
-      /*  public void DeleteCart(int cartId)
-        {
-            if (!_context.carts.Any(x => x.CartId == cartId))
-            {
-                throw new InvalidOperationException("Cart not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.carts.Remove(_context.carts.Where(x => x.CartId == cartId).First());
-                _context.SaveChanges();
-                trx.Commit();
-            }
-        }
-      */
+        /*  public void DeleteCart(int cartId)
+          {
+              if (!_context.carts.Any(x => x.CartId == cartId))
+              {
+                  throw new InvalidOperationException("Cart not found");
+              }
+              using var trx = _context.Database.BeginTransaction();
+              {
+                  _context.carts.Remove(_context.carts.Where(x => x.CartId == cartId).First());
+                  _context.SaveChanges();
+                  trx.Commit();
+              }
+          }
+        */
 
         public void ClearCart(int userId)
         {

@@ -73,7 +73,7 @@ namespace CinemaProject.Model
             }
         }
 
-        public void NewScreening(FilmScreeningDto dto)
+        public void NewScreening(NewScreeningDto dto)
         {
             if (_context.filmScreenings.Any(x => x.FilmScreeningId == dto.FilmScreeningId))
             {
