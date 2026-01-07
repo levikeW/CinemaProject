@@ -1,0 +1,74 @@
+<Window xmlns="https://github.com/avaloniaui"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:vm="using:CinemaProject_Avalonia.ViewModels"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="500"
+		x:Class="CinemaProject_Avalonia.Views.MainWindow"
+		x:DataType="vm:MainWindowViewModel"
+		Icon="/Assets/avalonia-logo.ico"
+		Title="CinemaProject_Avalonia">
+
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+		to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:MainWindowViewModel/>
+	</Design.DataContext>
+
+	<Grid Background="LightBlue">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+
+		<Grid Grid.Row="0" Height="50" Background="#333">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="100"/>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+
+			<TextBlock Grid.Column="0" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+			<StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Width="500">
+				<TextBox Width="200" Height="26" VerticalContentAlignment="Center" Margin="0 0 10 0" Background="White"/>
+				<Button Content="Keresés" Width="80" Height="30" Background="GhostWhite"/>
+			</StackPanel>
+
+			<Menu Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0 0 10 0">
+				<MenuItem Header="Fõoldal" Foreground="White"/>
+				<MenuItem Header="Árak" Foreground="White"/>
+				<MenuItem Header="Kategóriák" Foreground="White"/>
+				<MenuItem Header="Rólunk" Foreground="White"/>
+				<MenuItem Header="Bejelentkezés/Regisztráció" Foreground="White"/>
+			</Menu>
+		</Grid>
+
+		<StackPanel Background="WhiteSmoke" Grid.Row="1" Orientation="Horizontal" Spacing="10">
+			<StackPanel Margin="8">
+				<TextBlock Text="Helyszín:"/>
+				<ComboBox ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}" Width="150"/>
+			</StackPanel>
+
+			<StackPanel Margin="8">
+				<TextBlock Text="Kategória:"/>
+				<ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" Width="150"/>
+			</StackPanel>
+
+			<StackPanel Margin="8">
+				<TextBlock Text="Film:"/>
+				<ComboBox ItemsSource="{Binding Movies}" SelectedItem="{Binding SelectedMovie}" Width="150"/>
+			</StackPanel>
+			<StackPanel Margin="8">
+				<TextBlock Text="Dátum:"/>
+				<DatePicker SelectedDate="{Binding SelectedDate}" Width="300"/>
+			</StackPanel>
+		</StackPanel>
+
+		<Border Grid.Row="3" Background="#333" Padding="10">
+			<TextBlock Text="© 2025 Filmes oldal" Foreground="White" HorizontalAlignment="Center"/>
+		</Border>
+	</Grid>
+</Window>
