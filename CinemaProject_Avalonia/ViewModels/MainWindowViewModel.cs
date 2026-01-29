@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System;
+using CommunityToolkit.Mvvm.Input;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
@@ -13,6 +14,10 @@ namespace CinemaProject_Avalonia.ViewModels
         private string _selectedCategory;
         private string _selectedMovie;
         private DateTimeOffset _selectedDate = DateTime.Today;
+        
+        private bool _isMenuOpen;
+        public RelayCommand ToggleMenuCommand {  get; set; }
+        public RelayCommand BlockPointerCommand { get; set; }
         public string SelectedLocation
         {
             get => _selectedLocation;
@@ -50,6 +55,16 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
+        public bool IsMenuOpen
+        {
+            get => _isMenuOpen;
+            set
+            {
+                _isMenuOpen = value;
+                OnPropertyChanged();
+            }
+        }
+
         public MainWindowViewModel()
         {
             Locations = new ObservableCollection<string>
@@ -64,6 +79,14 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 "Film 1", "Film 2", "Film 3"
             };
+
+            ToggleMenuCommand = new RelayCommand(ToggleMenu);
+            BlockPointerCommand = new RelayCommand(() => { });
+        }
+
+        public void ToggleMenu()
+        {
+            IsMenuOpen = !IsMenuOpen;
         }
     }
 }

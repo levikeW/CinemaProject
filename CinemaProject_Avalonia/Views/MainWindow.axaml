@@ -1,13 +1,18 @@
-<Window xmlns="https://github.com/avaloniaui"
+ï»¿<Window xmlns="https://github.com/avaloniaui"
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:vm="using:CinemaProject_Avalonia.ViewModels"
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-		mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="500"
+		xmlns:visualbasic="using:Microsoft.VisualBasic"
+		mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="740"
 		x:Class="CinemaProject_Avalonia.Views.MainWindow"
 		x:DataType="vm:MainWindowViewModel"
 		Icon="/Assets/avalonia-logo.ico"
-		Title="CinemaProject_Avalonia">
+		Title="CinemaProject_Avalonia"
+		Width="360"
+		Height="740"
+		MinWidth="360"
+		MinHeight="740">
 
 	<Design.DataContext>
 		<!-- This only sets the DataContext for the previewer in an IDE,
@@ -24,50 +29,91 @@
 
 		<Grid Grid.Row="0" Height="50" Background="#333">
 			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="100"/>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="*"/>
 			</Grid.ColumnDefinitions>
 
-			<TextBlock Grid.Column="0" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+			<!-- ================= HEADER ================= -->
+			<TextBlock Grid.Column="0" Text="LogÃ³" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="5"/>
 
-			<StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Width="500">
-				<TextBox Width="200" Height="26" VerticalContentAlignment="Center" Margin="0 0 10 0" Background="White"/>
-				<Button Content="Keresés" Width="80" Height="30" Background="GhostWhite"/>
+			<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Width="300">
+				<TextBox Width="100" Height="26" VerticalContentAlignment="Center" Margin="0 0 10 0" Background="White"/>
+				<Button Content="KeresÃ©s" Width="80" Height="30" Background="GhostWhite"/>
 			</StackPanel>
 
-			<Menu Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0 0 10 0">
-				<MenuItem Header="Fõoldal" Foreground="White"/>
-				<MenuItem Header="Árak" Foreground="White"/>
-				<MenuItem Header="Kategóriák" Foreground="White"/>
-				<MenuItem Header="Rólunk" Foreground="White"/>
-				<MenuItem Header="Bejelentkezés/Regisztráció" Foreground="White"/>
-			</Menu>
+			<Button Content="â˜°" Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12" Background="GhostWhite" Command="{Binding ToggleMenuCommand}"/>
 		</Grid>
 
-		<StackPanel Background="WhiteSmoke" Grid.Row="1" Orientation="Horizontal" Spacing="10">
-			<StackPanel Margin="8">
-				<TextBlock Text="Helyszín:"/>
-				<ComboBox ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}" Width="150"/>
-			</StackPanel>
+		<!-- ================= FILTERS ================= -->
+		<StackPanel Grid.Row="1" Spacing="8" Margin="10">
 
-			<StackPanel Margin="8">
-				<TextBlock Text="Kategória:"/>
-				<ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" Width="150"/>
-			</StackPanel>
+			<ComboBox ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}" PlaceholderText="HelyszÃ­n" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
 
-			<StackPanel Margin="8">
-				<TextBlock Text="Film:"/>
-				<ComboBox ItemsSource="{Binding Movies}" SelectedItem="{Binding SelectedMovie}" Width="150"/>
-			</StackPanel>
-			<StackPanel Margin="8">
-				<TextBlock Text="Dátum:"/>
-				<DatePicker SelectedDate="{Binding SelectedDate}" Width="300"/>
-			</StackPanel>
+			<ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" PlaceholderText="KategÃ³ria" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
+
+			<ComboBox ItemsSource="{Binding Movies}" SelectedItem="{Binding SelectedMovie}" PlaceholderText="Film" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
+
+			<DatePicker SelectedDate="{Binding SelectedDate}" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
 		</StackPanel>
 
+		<!-- ================= CONTENT ================= -->
+
+		<ScrollViewer Grid.Row="2"
+					  HorizontalScrollBarVisibility="Disabled"
+					  VerticalScrollBarVisibility="Auto">
+			<StackPanel Grid.Row="2"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center">
+
+				<!-- ===== FILM KÃRTYA ===== -->
+				<Grid ColumnDefinitions="Auto,Auto" Margin="10">
+					<Border Grid.Column="0" Background="Black"><Image Grid.Column="0" Width="120" Height="180" Margin="10"/></Border>
+					<StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6" Margin="10">
+						<TextBlock Text="CÃ­m: Film 1" HorizontalAlignment="Center"/>
+						<Button Content="AdÃ¡s 1"/>
+						<Button Content="AdÃ¡s 2"/>
+						<TextBlock Text="Kor besorolÃ¡s: 16+" HorizontalAlignment="Center"/>
+					</StackPanel>
+				</Grid>
+
+				<Grid ColumnDefinitions="Auto,Auto" Margin="10">
+					<Border Grid.Column="0" Background="Black"><Image Grid.Column="0" Width="120" Height="180" Margin="10"/></Border>
+					<StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6" Margin="10">
+						<TextBlock Text="CÃ­m: Film 2" HorizontalAlignment="Center"/>
+						<Button Content="AdÃ¡s 1"/>
+						<Button Content="AdÃ¡s 2"/>
+						<TextBlock Text="Kor besorolÃ¡s: 12+" HorizontalAlignment="Center"/>
+					</StackPanel>
+				</Grid>
+
+			</StackPanel>
+		</ScrollViewer>
+
+		<!-- ================= FOOTER ================= -->
 		<Border Grid.Row="3" Background="#333" Padding="10">
-			<TextBlock Text="© 2025 Filmes oldal" Foreground="White" HorizontalAlignment="Center"/>
+			<TextBlock Text="Â© 2025 Filmes oldal" Foreground="White" HorizontalAlignment="Center"/>
+		</Border>
+
+		<!-- ================= HAMBURGER MENU (OVERLAY) ================= -->
+		<Border Grid.RowSpan="4"
+				Background="#AA000000"
+				IsVisible="{Binding IsMenuOpen}">
+
+			<Border Width="240"
+					Background="White"
+					HorizontalAlignment="Left">
+
+				<StackPanel Margin="16" Spacing="12">
+					<Button Content="FÅ‘oldal"/>
+					<Button Content="Ãrak"/>
+					<Button Content="KategÃ³riÃ¡k"/>
+					<Button Content="RÃ³lunk"/>
+					<Button Content="BejelentkezÃ©s"/>
+				</StackPanel>
+
+			</Border>
 		</Border>
 	</Grid>
 </Window>
