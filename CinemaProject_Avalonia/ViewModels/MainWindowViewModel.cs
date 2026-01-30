@@ -14,10 +14,11 @@ namespace CinemaProject_Avalonia.ViewModels
         private string _selectedCategory;
         private string _selectedMovie;
         private DateTimeOffset _selectedDate = DateTime.Today;
-        
+
         private bool _isMenuOpen;
         public RelayCommand ToggleMenuCommand {  get; set; }
         public RelayCommand BlockPointerCommand { get; set; }
+
         public string SelectedLocation
         {
             get => _selectedLocation;

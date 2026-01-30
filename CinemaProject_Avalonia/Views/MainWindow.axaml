@@ -47,6 +47,8 @@
 		</Grid>
 
 		<!-- ================= FILTERS ================= -->
+
+
 		<StackPanel Grid.Row="1" Spacing="8" Margin="10">
 
 			<ComboBox ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}" PlaceholderText="Helyszín" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
@@ -59,17 +61,19 @@
 		</StackPanel>
 
 		<!-- ================= CONTENT ================= -->
-
 		<ScrollViewer Grid.Row="2"
-					  HorizontalScrollBarVisibility="Disabled"
-					  VerticalScrollBarVisibility="Auto">
+							  HorizontalScrollBarVisibility="Disabled"
+							  VerticalScrollBarVisibility="Auto">
+
 			<StackPanel Grid.Row="2"
 						HorizontalAlignment="Center"
 						VerticalAlignment="Center">
 
 				<!-- ===== FILM KÁRTYA ===== -->
 				<Grid ColumnDefinitions="Auto,Auto" Margin="10">
-					<Border Grid.Column="0" Background="Black"><Image Grid.Column="0" Width="120" Height="180" Margin="10"/></Border>
+					<Border Grid.Column="0" Background="Black">
+						<Image Grid.Column="0" Width="120" Height="180" Margin="10"/>
+					</Border>
 					<StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6" Margin="10">
 						<TextBlock Text="Cím: Film 1" HorizontalAlignment="Center"/>
 						<Button Content="Adás 1"/>
@@ -79,12 +83,26 @@
 				</Grid>
 
 				<Grid ColumnDefinitions="Auto,Auto" Margin="10">
-					<Border Grid.Column="0" Background="Black"><Image Grid.Column="0" Width="120" Height="180" Margin="10"/></Border>
+					<Border Grid.Column="0" Background="Black">
+						<Image Grid.Column="0" Width="120" Height="180" Margin="10" />
+					</Border>
 					<StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6" Margin="10">
 						<TextBlock Text="Cím: Film 2" HorizontalAlignment="Center"/>
 						<Button Content="Adás 1"/>
 						<Button Content="Adás 2"/>
 						<TextBlock Text="Kor besorolás: 12+" HorizontalAlignment="Center"/>
+					</StackPanel>
+				</Grid>
+
+				<Grid ColumnDefinitions="Auto,Auto" Margin="10">
+					<Border Grid.Column="0" Background="Black">
+						<Image Grid.Column="0" Width="120" Height="180" Margin="10"/>
+					</Border>
+					<StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6" Margin="10">
+						<TextBlock Text="Cím: Film 3" HorizontalAlignment="Center"/>
+						<Button Content="Adás 1"/>
+						<Button Content="Adás 2"/>
+						<TextBlock Text="Kor besorolás: 18+" HorizontalAlignment="Center"/>
 					</StackPanel>
 				</Grid>
 
@@ -96,14 +114,16 @@
 			<TextBlock Text="© 2025 Filmes oldal" Foreground="White" HorizontalAlignment="Center"/>
 		</Border>
 
-		<!-- ================= HAMBURGER MENU (OVERLAY) ================= -->
+		<!-- ================= MENU (OVERLAY) ================= -->
 		<Border Grid.RowSpan="4"
-				Background="#AA000000"
-				IsVisible="{Binding IsMenuOpen}">
+        Background="#AA000000"
+        IsVisible="{Binding IsMenuOpen}"
+        PointerPressed="Overlay_PointerPressed">
 
 			<Border Width="240"
 					Background="White"
-					HorizontalAlignment="Left">
+					HorizontalAlignment="Left"
+					PointerPressed="Menu_PointerPressed">
 
 				<StackPanel Margin="16" Spacing="12">
 					<Button Content="Főoldal"/>
