@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using CinemaProject_Avalonia.ViewModels;
 
 namespace CinemaProject_Avalonia.Views
 {
@@ -8,7 +9,6 @@ namespace CinemaProject_Avalonia.Views
         public MainWindow()
         {
             InitializeComponent();
-            this.WindowState = WindowState.Maximized;
         }
         private void Overlay_PointerPressed(object? sender, PointerPressedEventArgs e)
         {

@@ -1,0 +1,43 @@
+﻿<UserControl
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:vm="using:CinemaProject_Avalonia.ViewModels"
+mc:Ignorable="d"
+d:DesignWidth="800"
+d:DesignHeight="450"
+x:DataType="vm:MovieViewModel"
+x:Class="CinemaProject_Avalonia.Views.MovieCard">
+	<Border CornerRadius="8" Padding="10" Margin="6" BoxShadow="0 2 6 #40000000">
+
+		<StackPanel Spacing="6">
+
+			<TextBlock Text="{Binding Title}"
+					   FontSize="16"
+					   FontWeight="Bold"/>
+
+			<TextBlock Text="{Binding Category}"/>
+			<TextBlock Text="{Binding Location}"/>
+			<TextBlock Text="{Binding SelectedDate}" IsVisible="False"/>
+			<ItemsControl ItemsSource="{Binding ShowTimes}">
+				<ItemsControl.ItemTemplate>
+					<DataTemplate>
+						<TextBlock Text="{Binding StringFormat='{}{0:MM.dd}'}" Margin="2"/>
+					</DataTemplate>
+				</ItemsControl.ItemTemplate>
+			</ItemsControl>
+
+			<StackPanel Orientation="Horizontal" Spacing="8">
+
+				<Button Content="✏️ Szerkeszt"
+						Command="{Binding OpenEditPanelCommand}"/>
+
+				<Button Content="🗑 Törlés"
+						Background="#FFDDDD"
+						Command="{Binding DeleteCommand}"/>
+
+			</StackPanel>
+		</StackPanel>
+	</Border>
+</UserControl>
