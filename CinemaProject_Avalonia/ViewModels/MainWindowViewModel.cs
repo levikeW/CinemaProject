@@ -229,8 +229,8 @@ namespace CinemaProject_Avalonia.ViewModels
             AddPriceCommand = new RelayCommand(AddPrice);
             AddCategoryCommand = new RelayCommand(AddCategory);
 
-            var movie1 = new MovieViewModel(this) { Title = "Dűne 2", Category = "Sci-Fi", Location = "Budapest" };
-            movie1.ShowTimes.Add(new DateTimeOffset(2026, 2, 15, 0, 0, 0, TimeSpan.Zero));
+            var movie1 = new MovieViewModel(this) { Title = "Zootropolis 2", Category = "Animációs", Location = "Budapest" };
+            movie1.ShowTimes.Add(new DateTimeOffset(2026, 2, 5, 0, 0, 0, TimeSpan.Zero));
 
             var movie2 = new MovieViewModel(this) { Title = "Batman", Category = "Akció", Location = "Debrecen" };
             movie2.ShowTimes.Add(new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero));
@@ -238,23 +238,28 @@ namespace CinemaProject_Avalonia.ViewModels
             var movie3 = new MovieViewModel(this) { Title = "Eredet", Category = "Sci-Fi", Location = "Szeged" };
             movie3.ShowTimes.Add(new DateTimeOffset(2026, 2, 2, 0, 0, 0, TimeSpan.Zero));
 
+            var movie4 = new MovieViewModel(this) { Title = "Dűne 2", Category = "Sci-Fi", Location = "Budapest" };
+            movie4.ShowTimes.Add(new DateTimeOffset(2026, 2, 15, 0, 0, 0, TimeSpan.Zero));
+
             RegisterMovie(movie1);
             RegisterMovie(movie2);
             RegisterMovie(movie3);
+            RegisterMovie(movie4);
 
             Movies.Add(movie1);
             Movies.Add(movie2);
             Movies.Add(movie3);
+            Movies.Add(movie4);
 
             Prices.Add(new PriceViewModel(this) { Name = "Normál", Amount = 3000 });
             Prices.Add(new PriceViewModel(this) { Name = "Kedvezményes(Diák)", Amount = 2500 });
             Prices.Add(new PriceViewModel(this) { Name = "Kedvezményes(Nyugdíjas)", Amount = 2500 });
             Prices.Add(new PriceViewModel(this) { Name = "Családi", Amount = 10000 });
             Prices.Add(new PriceViewModel(this) { Name = "Gyermek", Amount = 2500 });
-            Prices.Add(new PriceViewModel(this) { Name = "Mozgássérült", Amount = 200 });
+            Prices.Add(new PriceViewModel(this) { Name = "Mozgássérült", Amount = 2000 });
 
 
-            var alapKategoriak = new List<string> { "Mind", "Sci-Fi", "Akció", "Dráma", "Romantikus", "Thriller", "Horror", "Vígjáték" };
+            var alapKategoriak = new List<string> {"Sci-Fi", "Akció", "Dráma", "Romantikus", "Thriller", "Horror", "Vígjáték", "Animációs" };
 
             foreach (var nev in alapKategoriak)
             {
