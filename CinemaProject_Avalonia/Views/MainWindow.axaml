@@ -41,8 +41,8 @@
 			<TextBlock Grid.Column="0" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="5"/>
 
 			<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Width="300">
+				<Label Content="Keresés: " HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
 				<TextBox Text="{Binding SearchText, Mode=TwoWay}" Width="100" Height="26" VerticalContentAlignment="Center" Margin="0 0 10 0" Background="White"/>
-				<Button Content="Keresés" Command="{Binding SearchCommand}" Width="80" Height="30" Background="GhostWhite"/>
 			</StackPanel>
 
 			<Button Content="☰" Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12" Background="GhostWhite" Command="{Binding ToggleMenuCommand}"/>
@@ -52,8 +52,6 @@
 
 
 		<StackPanel Grid.Row="1" Margin="10" Spacing="3">
-			<Label Content="Helyszínek:" FontSize="13"/>
-			<ComboBox ItemsSource="{Binding Locations}" SelectedItem="{Binding SelectedLocation}" PlaceholderText="Helyszín" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
 			<Label Content="Kategóriák:" FontSize="13"/>
 			<ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" PlaceholderText="Kategória" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
 
@@ -130,8 +128,6 @@
 					<ComboBox ItemsSource="{Binding Categories}"
 							  SelectedItem="{Binding SelectedMovie.Category, Mode=TwoWay}" />
 
-					<ComboBox ItemsSource="{Binding Locations}"
-							  SelectedItem="{Binding SelectedMovie.Location, Mode=TwoWay}" />
 
 					<TextBlock Text="Vetítési időpontok:" FontWeight="SemiBold"/>
 					<ItemsControl ItemsSource="{Binding SelectedMovie.ShowTimes}">

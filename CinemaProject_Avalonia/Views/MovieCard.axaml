@@ -18,7 +18,6 @@ x:Class="CinemaProject_Avalonia.Views.MovieCard">
 					   FontWeight="Bold"/>
 
 			<TextBlock Text="{Binding Category}"/>
-			<TextBlock Text="{Binding Location}"/>
 			<TextBlock Text="{Binding SelectedDate}" IsVisible="False"/>
 			<ItemsControl ItemsSource="{Binding ShowTimes}">
 				<ItemsControl.ItemTemplate>

@@ -24,4 +24,8 @@
     <PackageReference Include="Avalonia.Xaml.Interactions" Version="11.3.0.6" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CinemaProject\CinemaProject.csproj" />
+  </ItemGroup>
 </Project>

@@ -6,7 +6,7 @@ namespace CinemaProject.Dto
     {
         public int PaymentReservationId { get; set; }
         public int CartId { get; set; }
-        public DateTime Date { get; set; }
+        public DateTimeOffset Date { get; set; }
         public bool IsPaid { get; set; }
         public int FilmScreeningId { get; set; }
         public int Amount { get; set; }
