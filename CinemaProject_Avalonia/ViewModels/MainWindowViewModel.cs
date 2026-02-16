@@ -1,24 +1,26 @@
-﻿using CinemaProject_Avalonia.Models;
+﻿using CinemaProject.Persistence;
+using CinemaProject_Avalonia.Models;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelBase
     {
+        private readonly MainWindowModel _mainWindowModel;
+
         public ObservableCollection<MovieViewModel> Movies { get; set; }
-        public ObservableCollection<string> Locations { get; set; }
         public ObservableCollection<string> Categories { get; set; }
         public ObservableCollection<PriceViewModel> Prices { get; set; }
         public ObservableCollection<CategoryViewModel> Category { get; set; }
         private CategoryViewModel? _selectedCategoryItem { get; set; }
         private PriceViewModel? _selectedPriceItem { get; set; }
 
-        private string _selectedLocation;
         private string _selectedCategory;
         private MovieViewModel? _selectedMovie;
         private DateTimeOffset _selectedDate = DateTime.Today;
@@ -33,7 +35,6 @@ namespace CinemaProject_Avalonia.ViewModels
         private bool _isCategoriesPageOpen;
         private bool _isDateFilterActive = false;
 
-        public RelayCommand SearchCommand { get; set; }
         public RelayCommand ToggleMenuCommand { get; set; }
         public RelayCommand BlockPointerCommand { get; set; }
         public RelayCommand AddMovieCommand { get; set; }
@@ -48,16 +49,6 @@ namespace CinemaProject_Avalonia.ViewModels
 
         public ObservableCollection<MovieViewModel> FilteredMovies { get; set; } = new();
 
-        public string SelectedLocation
-        {
-            get => _selectedLocation;
-            set
-            {
-                _selectedLocation = value;
-                OnPropertyChanged();
-                ApplyFilters();
-            }
-        }
         public string SelectedCategory
         {
             get => _selectedCategory;
@@ -207,14 +198,12 @@ namespace CinemaProject_Avalonia.ViewModels
         public MainWindowViewModel()
         {
 
-
+            _mainWindowModel = new MainWindowModel("https://localhost:7199");
             Movies = new ObservableCollection<MovieViewModel>();
-            Locations = new ObservableCollection<string>();
             Categories = new ObservableCollection<string>();
             Prices = new ObservableCollection<PriceViewModel>();
             Category = new ObservableCollection<CategoryViewModel>();
 
-            SearchCommand = new RelayCommand(ApplyFilters);
             ToggleMenuCommand = new RelayCommand(ToggleMenu);
             BlockPointerCommand = new RelayCommand(() => { });
             AddMovieCommand = new RelayCommand(AddMovie);
@@ -229,27 +218,7 @@ namespace CinemaProject_Avalonia.ViewModels
             AddPriceCommand = new RelayCommand(AddPrice);
             AddCategoryCommand = new RelayCommand(AddCategory);
 
-            var movie1 = new MovieViewModel(this) { Title = "Zootropolis 2", Category = "Animációs", Location = "Budapest" };
-            movie1.ShowTimes.Add(new DateTimeOffset(2026, 2, 5, 0, 0, 0, TimeSpan.Zero));
-
-            var movie2 = new MovieViewModel(this) { Title = "Batman", Category = "Akció", Location = "Debrecen" };
-            movie2.ShowTimes.Add(new DateTimeOffset(2026, 2, 10, 0, 0, 0, TimeSpan.Zero));
-
-            var movie3 = new MovieViewModel(this) { Title = "Eredet", Category = "Sci-Fi", Location = "Szeged" };
-            movie3.ShowTimes.Add(new DateTimeOffset(2026, 2, 2, 0, 0, 0, TimeSpan.Zero));
-
-            var movie4 = new MovieViewModel(this) { Title = "Dűne 2", Category = "Sci-Fi", Location = "Budapest" };
-            movie4.ShowTimes.Add(new DateTimeOffset(2026, 2, 15, 0, 0, 0, TimeSpan.Zero));
-
-            RegisterMovie(movie1);
-            RegisterMovie(movie2);
-            RegisterMovie(movie3);
-            RegisterMovie(movie4);
-
-            Movies.Add(movie1);
-            Movies.Add(movie2);
-            Movies.Add(movie3);
-            Movies.Add(movie4);
+            AddMovie();
 
             Prices.Add(new PriceViewModel(this) { Name = "Normál", Amount = 3000 });
             Prices.Add(new PriceViewModel(this) { Name = "Kedvezményes(Diák)", Amount = 2500 });
@@ -266,16 +235,8 @@ namespace CinemaProject_Avalonia.ViewModels
                 var catVM = new CategoryViewModel(this) { Name = nev };
                 Category.Add(catVM);
                 Categories.Add(nev);
-            }
-            ;
+            };
 
-            Locations.Add("Mind");
-            Locations.Add("Budapest");
-            Locations.Add("Debrecen");
-            Locations.Add("Szeged");
-            Categories.Add("Mind");
-
-            _selectedLocation = "Mind";
             _selectedCategory = "Mind";
             SearchText = "";
 
@@ -294,8 +255,7 @@ namespace CinemaProject_Avalonia.ViewModels
             var movie = new MovieViewModel(this)
             {
                 Title = "Új film címe...",
-                Category = Categories.Count > 1 ? Categories[1] : "Sci-Fi",
-                Location = Locations.Count > 1 ? Locations[1] : "Budapest"
+                Category = Categories.Count > 1 ? Categories[1] : "Sci-Fi"
             };
 
             movie.ShowTimes.Add(DateTimeOffset.Now.AddDays(1));
@@ -415,9 +375,8 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 bool matchesSearch = string.IsNullOrWhiteSpace(SearchText) || movie.Title.ToLower().Contains(SearchText.ToLower());
                 bool matchesCategory = string.IsNullOrEmpty(SelectedCategory) || SelectedCategory == "Mind" || movie.Category == SelectedCategory;
-                bool matchesLocation = SelectedLocation == "Mind" || movie.Location == SelectedLocation;
                 bool matchesDate = !IsDateFilterActive || movie.ShowTimes.Any(d => d.Date == SelectedDate.Date);
-                bool matchesOtherFilters = matchesSearch && matchesCategory && matchesLocation;
+                bool matchesOtherFilters = matchesSearch && matchesCategory;
 
                 if (matchesOtherFilters && matchesDate)
                 {
@@ -431,6 +390,23 @@ namespace CinemaProject_Avalonia.ViewModels
             if (SelectedMovie != null)
             {
                 SelectedMovie.ShowTimes.Add(SelectedDate);
+            }
+        }
+
+        private async Task GetMoviesAsync()
+        {
+
+            List<Cinema.Dto.MovieDto> movies = await _mainWindowModel.GetMovies();
+            foreach (var movie in movies) {
+
+                var movie1 = new MovieViewModel(this) { Title = movie.MovieTitle, Category = movie.Genre,  };
+                foreach (var item in movie.Screenings)
+                {
+                    movie1.ShowTimes.Add(item.Date);
+                }   
+
+                RegisterMovie(movie1);
+                Movies.Add(movie1);
             }
         }
     }

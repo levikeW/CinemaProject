@@ -4,7 +4,7 @@
     {
         public int ReservationId { get; set; }
         public string MovieTitle { get; set; }
-        public DateTime ScreeningDate { get; set; }
+        public DateTimeOffset ScreeningDate { get; set; }
         public string RoomName { get; set; }
         public ICollection<string> Seats { get; set; } = new List<string>();
         public int TicketId { get; set; }

@@ -17,7 +17,6 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private string _title;
         private string _category;
-        private string _location;
         private DateTimeOffset _selectedDate;
 
         public event EventHandler? MovieDeleted;
@@ -47,16 +46,6 @@ namespace CinemaProject_Avalonia.ViewModels
             set
             {
                 _category = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public string Location
-        {
-            get => _location;
-            set
-            {
-                _location = value;
                 OnPropertyChanged();
             }
         }
