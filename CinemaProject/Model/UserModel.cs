@@ -21,7 +21,8 @@ namespace CinemaProject.Model
             var hash = Sha.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
         }
-        public void Regist(string email, string pass, string role = "User")
+
+        public async Task Regist(string email, string pass, string fullname, string role = "User")
         {
             if (_context.users.Any(x => x.Email == email))
             {
@@ -29,10 +30,11 @@ namespace CinemaProject.Model
             }
             using var trx = _context.Database.BeginTransaction();
             {
-                _context.users.Add(new User { Email = email, Password = HashPass(pass), Role = role });
-                _context.SaveChanges();
-                trx.Commit();
+                _context.users.Add(new User { Email = email, Password = HashPass(pass), Role = role, FullName = fullname });
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
+            await Task.CompletedTask;
         }
 
         public User? ValidateUser(string email, string pass)
@@ -68,9 +70,9 @@ namespace CinemaProject.Model
             }
         }
 
-        public void UpdateProfile(int userId, UpdateUserDto dto)
+        public async Task UpdateProfile(UpdateUserDto dto)
         {
-            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
+            var user = _context.users.FirstOrDefault(x => x.UserId == dto.UserId);
             if (user == null)
             {
                 throw new InvalidOperationException("User not found");
@@ -94,7 +96,7 @@ namespace CinemaProject.Model
             }
         }
 
-        public void ChangePassword(int userId, string oldPass, string newPass)
+        public async Task ChangePassword(int userId, string oldPass, string newPass)
         {
             var user = _context.users.FirstOrDefault(x => x.UserId == userId);
             if (user == null)
@@ -114,7 +116,7 @@ namespace CinemaProject.Model
                 trx.Commit();
             }
         }
-        public void ChangeRole(int userId)
+        public async Task ChangeRole(int userId)
         {
             var user = _context.users.FirstOrDefault(x => x.UserId == userId);
             if (user == null)

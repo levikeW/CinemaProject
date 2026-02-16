@@ -28,7 +28,7 @@ namespace CinemaProject.Persistence
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PaymentReservationId { get; set; }
         public int CartId { get; set; }
-        public DateTime Date { get; set; }
+        public DateTimeOffset Date { get; set; }
         public int FilmScreeningId { get; set; }
         public int Amount { get; set; }
         public int UserId { get; set; }
@@ -66,7 +66,7 @@ namespace CinemaProject.Persistence
         public string Password { get; set; }
         [Required]
         public string FullName { get; set; }
-        public string BillingAddress { get; set; }
+        public string BillingAddress { get; set; } = "";
         public string Role { get; set; } = "User";
     }
     public class Ticket
@@ -89,7 +89,7 @@ namespace CinemaProject.Persistence
         public int FilmScreeningId { get; set; }
         public int MovieId { get; set; }
         public int RoomId { get; set; }
-        public DateTime Date { get; set; }
+        public DateTimeOffset Date { get; set; }
         public Movie Movie { get; set; }
         public Room Room { get; set; }
     }
@@ -158,12 +158,12 @@ namespace CinemaProject.Persistence
         public int ReceiptId { get; set; }
         public int PaymentReservationId { get; set; }
         public string MovieTitle { get; set; }
-        public DateTime ScreeningDate { get; set; }
+        public DateTimeOffset ScreeningDate { get; set; }
         public string RoomName { get; set; }
         public int TicketId { get; set; }
         public int Amount { get; set; }
         public int TotalPrice { get; set; }
-        public DateTime PaymentDate { get; set; }
+        public DateTimeOffset PaymentDate { get; set; }
         public string UserEmail { get; set; }
         public ICollection<Seat> Seats { get; set; } = new List<Seat>();
         public PaymentReservation PaymentReservation { get; set; }
@@ -176,7 +176,7 @@ namespace CinemaProject.Persistence
         public int ConfirmationId { get; set; }
         public int PaymentReservationId { get; set; }
         public string MovieTitle { get; set; }
-        public DateTime ScreeningDate { get; set; }
+        public DateTimeOffset ScreeningDate { get; set; }
         public string RoomName { get; set; }
         public ICollection<Seat> Seats { get; set; } = new List<Seat>();
         public int TicketId { get; set; }

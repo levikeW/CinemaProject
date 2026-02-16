@@ -110,11 +110,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/updateprofile")]
-        public ActionResult UpdateProfile(int userId, UpdateUserDto dto)
+        public async Task <ActionResult> UpdateProfile(UpdateUserDto dto)
         {
             try
             {
-                _userModel.UpdateProfile(userId, dto);
+                await _userModel.UpdateProfile(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
