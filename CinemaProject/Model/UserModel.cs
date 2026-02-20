@@ -34,6 +34,7 @@ namespace CinemaProject.Model
                 _context.SaveChanges();
                 trx.Commit();
             }
+            await Task.CompletedTask;
         }
 
         public User? ValidateUser(LoginDto dto)
@@ -69,9 +70,9 @@ namespace CinemaProject.Model
             }
         }
 
-        public void UpdateProfile(int userId, UpdateUserDto dto)
+        public async Task UpdateProfile(UpdateUserDto dto)
         {
-            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
+            var user = _context.users.FirstOrDefault(x => x.UserId == dto.UserId);
             if (user == null)
             {
                 throw new InvalidOperationException("User not found");
@@ -95,7 +96,7 @@ namespace CinemaProject.Model
             }
         }
 
-        public void ChangePassword(int userId, string oldPass, string newPass)
+        public async Task ChangePassword(int userId, string oldPass, string newPass)
         {
             var user = _context.users.FirstOrDefault(x => x.UserId == userId);
             if (user == null)

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -136,14 +137,14 @@ namespace Cinema_Test
         {
             new User {
                 Email = "admin@cinema.hu",
-                Password = "admin123",
+                Password = HashPass("admin123"),
                 FullName = "Admin User",
                 BillingAddress = "Budapest 1.",
                 Role = "Admin"
             },
             new User {
                 Email = "user@cinema.hu",
-                Password = "user123",
+                Password = HashPass("user123"),
                 FullName = "Test User",
                 BillingAddress = "Debrecen 5.",
                 Role = "User"
@@ -224,7 +225,14 @@ namespace Cinema_Test
             db.reservationConfirmations.Add(confirmation);
             db.SaveChanges();
         }
+
+        private static string HashPass(string password)
+        {
+            using var Sha = SHA256.Create();
+            var bytes = Encoding.UTF8.GetBytes(password);
+            var hash = Sha.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
+        }
+
     }
-
 }
-
