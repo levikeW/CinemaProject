@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:viewmodels="using:CinemaProject_Avalonia.ViewModels"
+			 mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="740"
+			 x:Class="CinemaProject_Avalonia.LoginWindow"
+			 x:DataType="viewmodels:LoginViewModel"
+			 Width="360"
+			 Height="740"
+			 MinWidth="360"
+			 MinHeight="740">
+	<Grid Background="LightBlue">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<Grid Grid.Row="0" Height="50" Background="#333">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<!-- ================= HEADER ================= -->
+			<TextBlock Grid.Column="0" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="5"/>
+		</Grid>
+
+		<!-- ================= CONTENT ================= -->
+		<TextBlock Grid.Row="1" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="13" Text="Email" />
+		<TextBox Grid.Row="1" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10" Text="{Binding Email, Mode=TwoWay}" />
+
+		<TextBlock Grid.Row="2" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="13" Text="Password"/>
+		<TextBox Grid.Row="2" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10" Text="{Binding Password, Mode=TwoWay}" PasswordChar="*"/>
+
+		<Button Grid.Row="3" Grid.Column="0" Content="Login" Command="{Binding LoginCommand}" />
+		<Button Grid.Row="3" Grid.Column="1" Content="Regist" Command="{Binding RegistCommand}" />
+	</Grid>
+</UserControl>

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Cinema.Dto;
 using CinemaProject.Dto;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CinemaProject.Controllers
 {
@@ -21,12 +22,12 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPost("/Regist")]
-        public ActionResult Regist(string email, string password, bool IsAdmin)
+        public ActionResult Regist(RegistDto dto, bool IsAdmin)
         {
             try
             {
                 var role = IsAdmin ? "Admin" : "User";
-                _userModel.Regist(email, password, role);
+                _userModel.Regist(dto, role);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -40,11 +41,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPost("/login")]
-        public async Task<ActionResult> LogIn(string email, string password)
+        public async Task<ActionResult> LogIn(LoginDto dto)
         {
             try
             {
-                var user = _userModel.ValidateUser(email, password);
+                var user = _userModel.ValidateUser(dto);
                 if (user == null)
                 {
                     return null;
@@ -143,6 +144,18 @@ namespace CinemaProject.Controllers
             {
                 return BadRequest(e.Message);
             }
+        }
+
+        [HttpGet("getmydata")]
+        [Authorize]
+        public ActionResult<MyDataDto> WhoAmI()
+        {
+            return Ok(new MyDataDto
+            {
+                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                Email = User.Identity?.Name,
+                Role = User.FindFirstValue(ClaimTypes.Role)
+            });
         }
 
     }

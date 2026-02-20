@@ -39,6 +39,7 @@ namespace CinemaProject.Model
             {
                 FilmScreeningId = x.FilmScreeningId,
                 MovieId = x.MovieId,
+                MovieTitle = x.MovieTitle,
                 RoomId = x.RoomId,
                 Date = x.Date
             }).ToList();
@@ -120,22 +121,13 @@ namespace CinemaProject.Model
 
         public IEnumerable<FilmScreeningDto> GetScreeningDetails(DateTime time)
         {
-            return _context.filmScreenings.Include(x => x.Movie).Where(x => x.Date == time).Select(x => new FilmScreeningDto
+            return _context.filmScreenings.Where(x => x.Date == time).Select(x => new FilmScreeningDto
             {
                 FilmScreeningId = x.FilmScreeningId,
                 MovieId = x.MovieId,
+                MovieTitle = x.MovieTitle,
                 RoomId = x.RoomId,
                 Date = x.Date,
-                Movie = new MovieDto
-                {
-                    MovieId = x.Movie.MovieId,
-                    MovieTitle = x.Movie.MovieTitle,
-                    Duration = x.Movie.Duration,
-                    Genre = x.Movie.Genre,
-                    Director = x.Movie.Director,
-                    Description = x.Movie.Description,
-                    ImageId = x.Movie.Image.ImageId
-                }
             }).ToList();
         }
 
@@ -146,6 +138,7 @@ namespace CinemaProject.Model
             {
                 FilmScreeningId = x.FilmScreeningId,
                 MovieId = x.MovieId,
+                MovieTitle = x.MovieTitle,
                 RoomId = x.RoomId,
                 Date = x.Date
             }).ToList();

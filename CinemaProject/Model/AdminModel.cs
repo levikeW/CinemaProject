@@ -84,6 +84,7 @@ namespace CinemaProject.Model
                 _context.filmScreenings.Add(new Persistence.FilmScreening
                 {
                     MovieId = dto.MovieId,
+                    MovieTitle = dto.MovieTitle,
                     RoomId = dto.RoomId,
                     Date = dto.Date
 
@@ -124,6 +125,7 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 screening.MovieId = dto.MovieId;
+                screening.MovieTitle = dto.MovieTitle;
                 screening.RoomId = dto.RoomId;
                 screening.Date = dto.Date;
                 _context.SaveChanges();
@@ -262,6 +264,22 @@ namespace CinemaProject.Model
                 _context.SaveChanges();
                 trx.Commit();
             }
+        }
+
+        public async Task ChangeRole(int userId)
+        {
+            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
+            if (user == null)
+            {
+                throw new InvalidOperationException("User not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                user.Role = "Admin";
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+            await Task.CompletedTask;
         }
     }
 }

@@ -2,6 +2,7 @@
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -21,24 +22,24 @@ namespace CinemaProject.Model
             var hash = Sha.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
         }
-        public void Regist(string email, string pass, string role = "User")
+        public void Regist(RegistDto dto, string role = "User")
         {
-            if (_context.users.Any(x => x.Email == email))
+            if (_context.users.Any(x => x.Email == dto.Email))
             {
                 throw new InvalidOperationException("Already exixts");
             }
             using var trx = _context.Database.BeginTransaction();
             {
-                _context.users.Add(new User { Email = email, Password = HashPass(pass), Role = role });
+                _context.users.Add(new User { Email = dto.Email, Password = HashPass(dto.Password), Role = role });
                 _context.SaveChanges();
                 trx.Commit();
             }
         }
 
-        public User? ValidateUser(string email, string pass)
+        public User? ValidateUser(LoginDto dto)
         {
-            var hash = HashPass(pass);
-            var user = _context.users.Where(x => x.Email == email);
+            var hash = HashPass(dto.password);
+            var user = _context.users.Where(x => x.Email == dto.email);
             return user.Where(x => x.Password == hash).FirstOrDefault();
         }
 
@@ -110,20 +111,6 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 user.Password = newHash;
-                _context.SaveChanges();
-                trx.Commit();
-            }
-        }
-        public void ChangeRole(int userId)
-        {
-            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
-            if (user == null)
-            {
-                throw new InvalidOperationException("User not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                user.Role = "Admin";
                 _context.SaveChanges();
                 trx.Commit();
             }

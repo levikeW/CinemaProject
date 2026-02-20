@@ -4,6 +4,7 @@ using CinemaProject.Model;
 using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CinemaProject.Controllers
@@ -21,7 +22,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("/getalluser")]
-        public ActionResult<IEnumerable<UserDto>> GetAllUser()
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUser()
         {
             try
             {
@@ -39,7 +40,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("/getallreservation")]
-        public ActionResult<IEnumerable<PaymentReservationDto>> GetAllReservation()
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllReservation()
         {
             try
             {
@@ -57,7 +58,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("/searchuser")]
-        public ActionResult<IEnumerable<UserDto>> SearchUser(string item)
+        public async Task<ActionResult<IEnumerable<UserDto>>> SearchUser(string item)
         {
             try
             {
@@ -75,7 +76,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost("/newmovie")]
-        public ActionResult NewMovie(NewMovieDto dto)
+        public async Task<ActionResult> NewMovie(NewMovieDto dto)
         {
             try
             {
@@ -94,7 +95,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost("/newscreening")]
-        public ActionResult NewScreening(NewScreeningDto dto)
+        public async Task<ActionResult> NewScreening(NewScreeningDto dto)
         {
             try
             {
@@ -113,7 +114,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("/modifymovie")]
-        public ActionResult ModifyMovie(MovieDto dto, int movieId)
+        public async Task<ActionResult> ModifyMovie(MovieDto dto, int movieId)
         {
             try
             {
@@ -132,7 +133,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("/modifyfilmscreening")]
-        public ActionResult ModifyFilmScreening(FilmScreeningDto dto, int screeningId)
+        public async Task<ActionResult> ModifyFilmScreening(FilmScreeningDto dto, int screeningId)
         {
             try
             {
@@ -151,7 +152,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("/modifyreservation")]
-        public ActionResult ModifyReservation(PaymentReservationDto dto, int reservationId)
+        public async Task<ActionResult> ModifyReservation(PaymentReservationDto dto, int reservationId)
         {
             try
             {
@@ -170,7 +171,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("/modifyticket")]
-        public ActionResult ModifyTicket(TicketDto dto, int ticketId)
+        public async Task<ActionResult> ModifyTicket(TicketDto dto, int ticketId)
         {
             try
             {
@@ -189,7 +190,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("/deleteuser")]
-        public ActionResult DeleteUser(int userId)
+        public async Task<ActionResult> DeleteUser(int userId)
         {
             try
             {
@@ -208,7 +209,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("/deletemovie")]
-        public ActionResult DeleteMovie(int movieId)
+        public async Task<ActionResult> DeleteMovie(int movieId)
         {
             try
             {
@@ -227,7 +228,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("/deletescreening")]
-        public ActionResult DeleteScreening(int screeningId)
+        public async Task<ActionResult> DeleteScreening(int screeningId)
         {
             try
             {
@@ -246,7 +247,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("/deletereservation")]
-        public ActionResult DeleteReservation(int reservationId)
+        public async Task<ActionResult> DeleteReservation(int reservationId)
         {
             try
             {
@@ -265,7 +266,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost("/uploadimage")]
-        public ActionResult UploadImage(ImageDto dto)
+        public async Task<ActionResult> UploadImage(ImageDto dto)
         {
             try
             {
@@ -284,11 +285,29 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("/deleteimage")]
-        public ActionResult DeleteImage(int imageId)
+        public async Task<ActionResult> DeleteImage(int imageId)
         {
             try
             {
                 _adminModel.DeleteImage(imageId);
+                return Ok();
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpPut("/changerole")]
+        public async Task<ActionResult> ChangeRole(int userId)
+        {
+            try
+            {
+                await _adminModel.ChangeRole(userId);
                 return Ok();
             }
             catch (InvalidOperationException e)

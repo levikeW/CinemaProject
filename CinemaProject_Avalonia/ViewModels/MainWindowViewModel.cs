@@ -16,12 +16,14 @@ namespace CinemaProject_Avalonia.ViewModels
 
         public ObservableCollection<MovieViewModel> Movies { get; set; }
         public ObservableCollection<string> Categories { get; set; }
+        public ObservableCollection<string> Rooms { get; set; }
         public ObservableCollection<PriceViewModel> Prices { get; set; }
         public ObservableCollection<CategoryViewModel> Category { get; set; }
         private CategoryViewModel? _selectedCategoryItem { get; set; }
         private PriceViewModel? _selectedPriceItem { get; set; }
 
         private string _selectedCategory;
+        private string _selectedRoom;
         private MovieViewModel? _selectedMovie;
         private DateTimeOffset _selectedDate = DateTime.Today;
         private string _searchText = "";
@@ -46,6 +48,7 @@ namespace CinemaProject_Avalonia.ViewModels
         public RelayCommand AddPriceCommand { get; set; }
         public RelayCommand AddCategoryCommand { get; set; }
         public RelayCommand AddDateToSelectedMovieCommand { get; set; }
+        public RelayCommand<DateTimeOffset> DeleteDateSelectedMovieCommand { get; set; }
 
         public ObservableCollection<MovieViewModel> FilteredMovies { get; set; } = new();
 
@@ -66,6 +69,24 @@ namespace CinemaProject_Avalonia.ViewModels
                 ApplyFilters();
             }
         }
+
+        public string SelectedRoom
+        {
+            get => _selectedRoom;
+            set
+            {
+                _selectedRoom = value;
+                OnPropertyChanged();
+                if (SelectedMovie != null)
+                {
+                    if (value == "Csillagfény Terem" || SelectedMovie.Room == value)
+                    {
+                        ErrorMessage = "";
+                    }
+                }
+            }
+        }
+
         public MovieViewModel? SelectedMovie
         {
             get => _selectedMovie;
@@ -77,6 +98,11 @@ namespace CinemaProject_Avalonia.ViewModels
                 if (value != null && !IsPricesPageOpen && !IsCategoriesPageOpen)
                 {
                     if (SelectedCategory == "Mind" || value.Category == SelectedCategory)
+                    {
+                        ErrorMessage = "";
+                        IsEditPanelOpen = false;
+                    }
+                    if (SelectedRoom == "Csillagfény Terem" || value.Room == SelectedRoom)
                     {
                         ErrorMessage = "";
                         IsEditPanelOpen = false;
@@ -201,6 +227,7 @@ namespace CinemaProject_Avalonia.ViewModels
             _mainWindowModel = new MainWindowModel("https://localhost:7199");
             Movies = new ObservableCollection<MovieViewModel>();
             Categories = new ObservableCollection<string>();
+            Rooms = new ObservableCollection<string>();
             Prices = new ObservableCollection<PriceViewModel>();
             Category = new ObservableCollection<CategoryViewModel>();
 
@@ -209,6 +236,7 @@ namespace CinemaProject_Avalonia.ViewModels
             AddMovieCommand = new RelayCommand(AddMovie);
             CloseEditPanelCommand = new RelayCommand(CloseEditPanel);
             AddDateToSelectedMovieCommand = new RelayCommand(AddDateToSelectedMovie);
+            DeleteDateSelectedMovieCommand = new RelayCommand<DateTimeOffset>(DeleteDateSelectedMovie);
 
             OpenPricesPageCommand = new RelayCommand(OpenPricesPage);
             OpenCategoriesPageCommand = new RelayCommand(OpenCategoriesPage);
@@ -230,11 +258,18 @@ namespace CinemaProject_Avalonia.ViewModels
 
             var alapKategoriak = new List<string> {"Sci-Fi", "Akció", "Dráma", "Romantikus", "Thriller", "Horror", "Vígjáték", "Animációs" };
 
+            var termek = new List<string> { "Csillagfény Terem", "Panoráma Terem", "Ezüstvászon Terem" };
+
             foreach (var nev in alapKategoriak)
             {
                 var catVM = new CategoryViewModel(this) { Name = nev };
                 Category.Add(catVM);
                 Categories.Add(nev);
+            };
+
+            foreach (var nev in termek)
+            {
+                Rooms.Add(nev);
             };
 
             _selectedCategory = "Mind";
@@ -255,7 +290,8 @@ namespace CinemaProject_Avalonia.ViewModels
             var movie = new MovieViewModel(this)
             {
                 Title = "Új film címe...",
-                Category = Categories.Count > 1 ? Categories[1] : "Sci-Fi"
+                Category = Categories.Count > 1 ? Categories[1] : "Sci-Fi",
+                Room = Rooms.Count > 1 ? Rooms[1] : "Csillagfény Terem",
             };
 
             movie.ShowTimes.Add(DateTimeOffset.Now.AddDays(1));
@@ -393,17 +429,21 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
+        private void DeleteDateSelectedMovie(DateTimeOffset date)
+        {
+            if (SelectedMovie != null)
+            {
+                SelectedMovie.ShowTimes.Remove(date);
+            }
+        }
+
         private async Task GetMoviesAsync()
         {
 
-            List<Cinema.Dto.MovieDto> movies = await _mainWindowModel.GetMovies();
+            List<Cinema.Dto.FilmScreeningDto> movies = await _mainWindowModel.GetScreenings();
             foreach (var movie in movies) {
 
-                var movie1 = new MovieViewModel(this) { Title = movie.MovieTitle, Category = movie.Genre,  };
-                foreach (var item in movie.Screenings)
-                {
-                    movie1.ShowTimes.Add(item.Date);
-                }   
+                var movie1 = new MovieViewModel(this) { };
 
                 RegisterMovie(movie1);
                 Movies.Add(movie1);

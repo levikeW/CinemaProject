@@ -125,9 +125,12 @@
 							   FontWeight="Bold"/>
 
 					<TextBox Text="{Binding SelectedMovie.Title, Mode=TwoWay}" />
+
 					<ComboBox ItemsSource="{Binding Categories}"
 							  SelectedItem="{Binding SelectedMovie.Category, Mode=TwoWay}" />
 
+					<ComboBox ItemsSource="{Binding Rooms}"
+							  SelectedItem="{Binding SelectedMovie.Room, Mode=TwoWay}" />
 
 					<TextBlock Text="Vetítési időpontok:" FontWeight="SemiBold"/>
 					<ItemsControl ItemsSource="{Binding SelectedMovie.ShowTimes}">
@@ -138,13 +141,15 @@
 
 									<Button Grid.Column="1"
 											Content="X"
-											Command="{Binding ((vm:MovieViewModel)DataContext).DeleteDateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+											Command="{Binding ((vm:MainWindowViewModel)DataContext).DeleteDateSelectedMovieCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
 											CommandParameter="{Binding}"
 											Foreground="Red"/>
 								</Grid>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
+					<DatePicker SelectedDate="{Binding SelectedDate, Mode=TwoWay}"
+								 HorizontalAlignment="Stretch" Width="290" Margin="1"/>
 					<Button Content="+ Időpont hozzáadása"
 							Command="{Binding AddDateToSelectedMovieCommand}"
 							HorizontalAlignment="Stretch"/>

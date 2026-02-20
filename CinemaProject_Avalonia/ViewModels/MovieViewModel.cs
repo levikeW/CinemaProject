@@ -15,8 +15,9 @@ namespace CinemaProject_Avalonia.ViewModels
     {
         public MainWindowViewModel _viewModel;
 
-        private string _title;
-        private string _category;
+        private string _title { get; set; } = "";
+        private string _category { get; set; } = "";
+        private string _room { get; set; } = "";
         private DateTimeOffset _selectedDate;
 
         public event EventHandler? MovieDeleted;
@@ -27,7 +28,6 @@ namespace CinemaProject_Avalonia.ViewModels
         public RelayCommand EditCommand { get; }
         public RelayCommand OpenEditPanelCommand { get; set; }
         public RelayCommand DeleteCommand { get; }
-        public RelayCommand<DateTimeOffset> DeleteDateCommand { get; }
 
 
         public string Title
@@ -49,6 +49,16 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
+        public string Room
+        {
+            get => _room;
+            set
+            {
+                _room = value;
+                OnPropertyChanged();
+            }
+        }
+
         public DateTimeOffset SelectedDate
         {
             get => _selectedDate;
@@ -65,7 +75,6 @@ namespace CinemaProject_Avalonia.ViewModels
             EditCommand = new RelayCommand(Edit);
             OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
             DeleteCommand = new RelayCommand(Delete);
-            DeleteDateCommand = new RelayCommand<DateTimeOffset>(DeleteDate);
         }
 
         private void Edit()
@@ -83,10 +92,6 @@ namespace CinemaProject_Avalonia.ViewModels
         private void Delete()
         {
             MovieDeleted?.Invoke(this, EventArgs.Empty);
-        }
-        private void DeleteDate(DateTimeOffset date)
-        {
-            ShowTimes.Remove(date);
         }
     }
 }

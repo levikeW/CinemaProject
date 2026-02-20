@@ -18,9 +18,9 @@ namespace CinemaProject_Avalonia.Models
             _client = new HttpClient { BaseAddress = new Uri(port) };
         }
 
-        public async Task<List<MovieDto>> GetMovies()
+        public async Task<List<FilmScreeningDto>> GetScreenings()
         {
-            return await _client.GetFromJsonAsync<List<MovieDto>>("api/cinema/getallmovies");
+            return await _client.GetFromJsonAsync<List<FilmScreeningDto>>("api/cinema/getallscreenings");
         }
     }
 }
