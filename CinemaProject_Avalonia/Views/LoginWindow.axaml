@@ -17,17 +17,13 @@
 			<RowDefinition Height="*"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
 
-		<Grid Grid.Row="0" Height="50" Background="#333">
-			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="*"/>
-			</Grid.ColumnDefinitions>
-			<!-- ================= HEADER ================= -->
-			<TextBlock Grid.Column="0" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="5"/>
-		</Grid>
+		<!-- ================= HEADER ================= -->
+		<TextBlock Grid.ColumnSpan="2" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Stretch" Padding="5" Background="#333"/>
 
 		<!-- ================= CONTENT ================= -->
 		<TextBlock Grid.Row="1" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="13" Text="Email" />
@@ -36,7 +32,7 @@
 		<TextBlock Grid.Row="2" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="13" Text="Password"/>
 		<TextBox Grid.Row="2" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10" Text="{Binding Password, Mode=TwoWay}" PasswordChar="*"/>
 
-		<Button Grid.Row="3" Grid.Column="0" Content="Login" Command="{Binding LoginCommand}" />
-		<Button Grid.Row="3" Grid.Column="1" Content="Regist" Command="{Binding RegistCommand}" />
+		<Button Grid.Row="3" Grid.Column="1" Content="Login" Command="{Binding LoginCommand}" Margin="10" />
+		<Button Grid.Row="3" Grid.Column="0" Content="Regist" Command="{Binding RegistCommand}" Margin="10" />
 	</Grid>
 </UserControl>
