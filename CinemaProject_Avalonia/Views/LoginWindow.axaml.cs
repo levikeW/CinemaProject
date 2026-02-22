@@ -14,7 +14,7 @@ public partial class LoginWindow : Window
     {
         InitializeComponent();
 
-        var session = new ApiSession("https://localhost:7199/");
+        var session = new ApiSession("https://localhost:7199");
         var authModel = new AuthModel(session);
         var vm = new LoginViewModel(session, authModel);
 

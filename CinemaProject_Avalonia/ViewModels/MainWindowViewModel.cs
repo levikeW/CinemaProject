@@ -14,9 +14,9 @@ namespace CinemaProject_Avalonia.ViewModels
     {
         private readonly MainWindowModel _mainWindowModel;
 
-        public ObservableCollection<MovieViewModel> Movies { get; set; }
-        public ObservableCollection<string> Categories { get; set; }
-        public ObservableCollection<string> Rooms { get; set; }
+        public ObservableCollection<MovieViewModel> Movies { get; set; } = new();
+        public ObservableCollection<string> Categories { get; set; } = new();
+        public ObservableCollection<string> Rooms { get; set; } = new();
         public ObservableCollection<PriceViewModel> Prices { get; set; }
         public ObservableCollection<CategoryViewModel> Category { get; set; }
         private CategoryViewModel? _selectedCategoryItem { get; set; }
@@ -440,7 +440,7 @@ namespace CinemaProject_Avalonia.ViewModels
         private async Task GetMoviesAsync()
         {
 
-            List<Cinema.Dto.FilmScreeningDto> movies = await _mainWindowModel.GetScreenings();
+            List<Cinema.Dto.FilmScreeningDto> movies = await _mainWindowModel.GetAllScreenings();
             foreach (var movie in movies) {
 
                 var movie1 = new MovieViewModel(this) { };
