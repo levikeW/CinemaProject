@@ -119,7 +119,7 @@ namespace CinemaProject.Model
             }).ToList();
         }
 
-        public async Task<IEnumerable<FilmScreeningDto>> GetScreeningDetails(DateTime time)
+        public async Task<IEnumerable<FilmScreeningDto>> GetScreeningDetails(DateTimeOffset time)
         {
             return _context.filmScreenings.Where(x => x.Date == time).Select(x => new FilmScreeningDto
             {
