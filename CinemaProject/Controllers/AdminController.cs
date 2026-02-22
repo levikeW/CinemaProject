@@ -26,7 +26,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                return Ok(_adminModel.GetAllUsers());
+                return Ok(await _adminModel.GetAllUsers());
             }
             catch (InvalidOperationException e)
             {
@@ -44,7 +44,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                return Ok(_adminModel.GetAllReservations());
+                return Ok(await _adminModel.GetAllReservations());
             }
             catch (InvalidOperationException e)
             {
@@ -62,7 +62,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                return Ok(_adminModel.SearchUser(item));
+                return Ok(await _adminModel.SearchUser(item));
             }
             catch (InvalidOperationException e)
             {
@@ -80,7 +80,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.NewMovie(dto);
+                await _adminModel.NewMovie(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -99,7 +99,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.NewScreening(dto);
+                await _adminModel.NewScreening(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -118,7 +118,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.ModifyMovie(dto, movieId);
+                await _adminModel.ModifyMovie(dto, movieId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -137,7 +137,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.ModifyFilmScreening(dto, screeningId);
+                await _adminModel.ModifyFilmScreening(dto, screeningId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -156,7 +156,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.ModifyReservation(dto, reservationId);
+                await _adminModel.ModifyReservation(dto, reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -175,7 +175,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.ModifyTicket(dto, ticketId);
+                await _adminModel.ModifyTicket(dto, ticketId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -194,7 +194,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.DeleteUser(userId);
+                await _adminModel.DeleteUser(userId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -213,7 +213,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.DeleteMovie(movieId);
+                await _adminModel.DeleteMovie(movieId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -232,7 +232,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.DeleteScreening(screeningId);
+                await _adminModel.DeleteScreening(screeningId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -251,7 +251,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.DeleteReservation(reservationId);
+                await _adminModel.DeleteReservation(reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -270,7 +270,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.UploadImage(dto);
+                await _adminModel.UploadImage(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -289,7 +289,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                _adminModel.DeleteImage(imageId);
+                await _adminModel.DeleteImage(imageId);
                 return Ok();
             }
             catch (InvalidOperationException e)

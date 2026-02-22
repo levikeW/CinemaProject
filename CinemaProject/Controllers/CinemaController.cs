@@ -19,11 +19,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getallmovies")]
-        public ActionResult<IEnumerable<MovieDto>> GetAllMovies()
+        public async Task<ActionResult<IEnumerable<MovieDto>>> GetAllMovies()
         {
             try
             {
-                return Ok(_cinemaModel.GetAllMovies());
+                return Ok(await _cinemaModel.GetAllMovies());
             }
             catch (InvalidOperationException e)
             {
@@ -36,11 +36,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getallscreenings")]
-        public ActionResult<IEnumerable<FilmScreeningDto>> GetAllScreening()
+        public async Task<ActionResult<IEnumerable<FilmScreeningDto>>> GetAllScreening()
         {
             try
             {
-                return Ok(_cinemaModel.GetAllScreenings());
+                return Ok(await _cinemaModel.GetAllScreenings());
             }
             catch (InvalidOperationException e)
             {
@@ -53,11 +53,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getallticket")]
-        public ActionResult<IEnumerable<TicketDto>> GetAllTicket()
+        public async Task<ActionResult<IEnumerable<TicketDto>>> GetAllTicket()
         {
             try
             {
-                return Ok(_cinemaModel.GetAllTickets());
+                return Ok(await _cinemaModel.GetAllTickets());
             }
             catch (InvalidOperationException e)
             {
@@ -70,11 +70,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/searchmoviebytitle")]
-        public ActionResult<IEnumerable<MovieDto>> SearchMovieByTitle(string item)
+        public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByTitle(string item)
         {
             try
             {
-                return Ok(_cinemaModel.SearchMovieByTitle(item));
+                return Ok(await _cinemaModel.SearchMovieByTitle(item));
             }
             catch (InvalidOperationException e)
             {
@@ -87,11 +87,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/searchmoviebygenre")]
-        public ActionResult<IEnumerable<MovieDto>> SearchMovieByGenre(string item)
+        public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByGenre(string item)
         {
             try
             {
-                return Ok(_cinemaModel.SearchMovieByGenre(item));
+                return Ok(await _cinemaModel.SearchMovieByGenre(item));
             }
             catch (InvalidOperationException e)
             {
@@ -104,11 +104,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/searchmoviebydirector")]
-        public ActionResult<IEnumerable<MovieDto>> SearchMovieByDirector(string item)
+        public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByDirector(string item)
         {
             try
             {
-                return Ok(_cinemaModel.SearchMovieByDirector(item));
+                return Ok(await _cinemaModel.SearchMovieByDirector(item));
             }
             catch (InvalidOperationException e)
             {
@@ -121,11 +121,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getscreeningdetails")]
-        public ActionResult<IEnumerable<FilmScreeningDto>> GetScreeningDetails(DateTime time)
+        public async Task<ActionResult<IEnumerable<FilmScreeningDto>>> GetScreeningDetails(DateTime time)
         {
             try
             {
-                return Ok(_cinemaModel.GetScreeningDetails(time));
+                return Ok(await _cinemaModel.GetScreeningDetails(time));
             }
             catch (InvalidOperationException e)
             {
@@ -138,11 +138,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getupcomingscreenings")]
-        public ActionResult<List<FilmScreeningDto>> GetUpcomingScreenings()
+        public async Task<ActionResult<List<FilmScreeningDto>>> GetUpcomingScreenings()
         {
             try
             {
-                return Ok(_cinemaModel.GetUpcomingScreenings());
+                return Ok(await _cinemaModel.GetUpcomingScreenings());
             }
             catch (InvalidOperationException e)
             {
@@ -155,11 +155,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/ismovienowrunning")]
-        public ActionResult<bool> IsMovieNowRunning(string movieTitle)
+        public async Task<ActionResult<bool>> IsMovieNowRunning(string movieTitle)
         {
             try
             {
-                return Ok(_cinemaModel.IsMovieNowRunning(movieTitle));
+                return Ok(await _cinemaModel.IsMovieNowRunning(movieTitle));
             }
             catch (InvalidOperationException e)
             {
@@ -172,11 +172,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getroomcapacity")]
-        public ActionResult<int> GetRoomCapacity(int roomId)
+        public async Task<ActionResult<int>> GetRoomCapacity(int roomId)
         {
             try
             {
-                return Ok(_cinemaModel.GetRoomCapacity(roomId));
+                return Ok(await _cinemaModel.GetRoomCapacity(roomId));
             }
             catch (InvalidOperationException e)
             {
@@ -189,11 +189,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getseats")]
-        public ActionResult<List<SeatDto>> GetSeats(int roomId, int screeningId)
+        public async Task<ActionResult<List<SeatDto>>> GetSeats(int roomId, int screeningId)
         {
             try
             {
-                return Ok(_cinemaModel.GetSeats(roomId, screeningId));
+                return Ok(await _cinemaModel.GetSeats(roomId, screeningId));
             }
             catch (InvalidOperationException e)
             {
@@ -206,11 +206,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/isseatavailable")]
-        public ActionResult<bool> IsSeatAvailable(int seatId, int screeningId)
+        public async Task<ActionResult<bool>> IsSeatAvailable(int seatId, int screeningId)
         {
             try
             {
-                return Ok(_cinemaModel.IsSeatAvailable(seatId, screeningId));
+                return Ok(await _cinemaModel.IsSeatAvailable(seatId, screeningId));
             }
             catch (InvalidOperationException e)
             {
@@ -223,11 +223,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/hasfreeseat")]
-        public ActionResult<bool> HasFreeSeat(int screeningId, int requiredSeats)
+        public async Task<ActionResult<bool>> HasFreeSeat(int screeningId, int requiredSeats)
         {
             try
             {
-                return Ok(_cinemaModel.HasFreeSeats(screeningId, requiredSeats));
+                return Ok(await _cinemaModel.HasFreeSeats(screeningId, requiredSeats));
             }
             catch (InvalidOperationException e)
             {
@@ -240,11 +240,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/selecttickettype")]
-        public ActionResult<TicketDto> SelectTicketType(int screeningId)
+        public async Task<ActionResult<TicketDto>> SelectTicketType(int screeningId)
         {
             try
             {
-                return Ok(_cinemaModel.SelectTicketType(screeningId));
+                return Ok(await _cinemaModel.SelectTicketType(screeningId));
             }
             catch (InvalidOperationException e)
             {
@@ -257,11 +257,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/setquantity")]
-        public ActionResult SetQuantity(int cartId, int amount)
+        public async Task<ActionResult> SetQuantity(int cartId, int amount)
         {
             try
             {
-                _cinemaModel.SetQuantity(cartId, amount);
+                await _cinemaModel.SetQuantity(cartId, amount);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -275,11 +275,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getimage")]
-        public ActionResult<ImageDto> GetImage(int movieId)
+        public async Task<ActionResult<ImageDto>> GetImage(int movieId)
         {
             try
             {
-                return Ok(_cinemaModel.GetImage(movieId));
+                return Ok(await _cinemaModel.GetImage(movieId));
             }
             catch (InvalidOperationException e)
             {

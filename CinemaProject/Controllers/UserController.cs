@@ -22,12 +22,12 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPost("/Regist")]
-        public ActionResult Regist(RegistDto dto, bool IsAdmin)
+        public async Task<ActionResult> Regist(RegistDto dto, bool IsAdmin)
         {
             try
             {
                 var role = IsAdmin ? "Admin" : "User";
-                _userModel.Regist(dto, role);
+                await _userModel.Regist(dto, role);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -45,7 +45,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                var user = _userModel.ValidateUser(dto);
+                var user = await _userModel.ValidateUser(dto);
                 if (user == null)
                 {
                     return null;
@@ -76,11 +76,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/viewprofile")]
-        public ActionResult<IEnumerable<UserDto>> ViewProfile(int userId)
+        public async Task<ActionResult<IEnumerable<UserDto>>> ViewProfile(int userId)
         {
             try
             {
-                return Ok(_userModel.ViewProfile(userId));
+                return Ok(await _userModel.ViewProfile(userId));
             }
             catch (InvalidOperationException e)
             {
@@ -93,11 +93,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpDelete("/deleteprofile")]
-        public ActionResult DeleteProfile(int userId)
+        public async Task<ActionResult> DeleteProfile(int userId)
         {
             try
             {
-                _userModel.DeleteProfile(userId);
+                await _userModel.DeleteProfile(userId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -111,7 +111,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/updateprofile")]
-        public async Task <ActionResult> UpdateProfile(UpdateUserDto dto)
+        public async Task<ActionResult> UpdateProfile(UpdateUserDto dto)
         {
             try
             {
@@ -129,11 +129,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/changepass")]
-        public ActionResult ChangePassword(int userId, string oldPass, string newPass)
+        public async Task<ActionResult> ChangePassword(int userId, string oldPass, string newPass)
         {
             try
             {
-                _userModel.ChangePassword(userId, oldPass, newPass);
+                await _userModel.ChangePassword(userId, oldPass, newPass);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -148,7 +148,7 @@ namespace CinemaProject.Controllers
 
         [HttpGet("getmydata")]
         [Authorize]
-        public ActionResult<MyDataDto> WhoAmI()
+        public async Task<ActionResult<MyDataDto>> WhoAmI()
         {
             return Ok(new MyDataDto
             {

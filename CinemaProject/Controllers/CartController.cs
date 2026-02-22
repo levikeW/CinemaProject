@@ -4,6 +4,7 @@ using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using System.Threading.Tasks;
 
 namespace CinemaProject.Controllers
 {
@@ -18,11 +19,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getcart")]
-        public ActionResult<IEnumerable<CartDto>> GetCart(CartDto dto, int userId)
+        public async Task<ActionResult<IEnumerable<CartDto>>> GetCart(CartDto dto, int userId)
         {
             try
             {
-                return Ok(_cartModel.GetCart(dto, userId));
+                return Ok(await _cartModel.GetCart(dto, userId));
             }
             catch (InvalidOperationException e)
             {
@@ -35,11 +36,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/addtocart")]
-        public ActionResult AddToCart(CartDto dto)
+        public async Task<ActionResult> AddToCart(CartDto dto)
         {
             try
             {
-                _cartModel.AddToCart(dto);
+                await _cartModel.AddToCart(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -53,11 +54,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPost("/removefromcart")]
-        public ActionResult RemoveFromCart(int cartId)
+        public async Task<ActionResult> RemoveFromCart(int cartId)
         {
             try
             {
-                _cartModel.RemoveFromCart(cartId);
+                await _cartModel.RemoveFromCart(cartId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -71,11 +72,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/updatecart")]
-        public ActionResult UpdateCart(CartDto dto, int cartId)
+        public async Task<ActionResult> UpdateCart(CartDto dto, int cartId)
         {
             try
             {
-                _cartModel.UpdateCart(dto, cartId);
+                await _cartModel.UpdateCart(dto, cartId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -89,11 +90,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/modifycart")]
-        public ActionResult ModifyCart(int cartId, int? newAmount = null, List<int>? newSeatIds = null)
+        public async Task<ActionResult> ModifyCart(int cartId, int? newAmount = null, List<int>? newSeatIds = null)
         {
             try
             {
-                _cartModel.ModifyCart(cartId, newAmount, newSeatIds);
+                await _cartModel.ModifyCart(cartId, newAmount, newSeatIds);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -126,11 +127,11 @@ namespace CinemaProject.Controllers
         */
 
         [HttpDelete("/clearcart")]
-        public ActionResult ClearCart(int userId)
+        public async Task<ActionResult> ClearCart(int userId)
         {
             try
             {
-                _cartModel.ClearCart(userId);
+                await _cartModel.ClearCart(userId);
                 return Ok();
             }
             catch (InvalidOperationException e)

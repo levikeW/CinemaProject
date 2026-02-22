@@ -17,11 +17,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPost("/createreservation")]
-        public ActionResult CreateReservation(int cartId)
+        public async Task<ActionResult> CreateReservation(int cartId)
         {
             try
             {
-                _paymentReservationModel.CreateReservation(cartId);
+                await _paymentReservationModel.CreateReservation(cartId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -35,11 +35,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpDelete("/cancelreservation")]
-        public ActionResult CancelReservaton(int reservationId)
+        public async Task<ActionResult> CancelReservaton(int reservationId)
         {
             try
             {
-                _paymentReservationModel.CancelReservation(reservationId);
+                await _paymentReservationModel.CancelReservation(reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -53,11 +53,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/payreservation")]
-        public ActionResult PayReservation(int reservationId)
+        public async Task<ActionResult> PayReservation(int reservationId)
         {
             try
             {
-                _paymentReservationModel.PayReservation(reservationId);
+                await _paymentReservationModel.PayReservation(reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -71,11 +71,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getreceipt")]
-        public ActionResult<ReceiptDto> GetReceipt(int reservationId)
+        public async Task<ActionResult<ReceiptDto>> GetReceipt(int reservationId)
         {
             try
             {
-                return Ok(_paymentReservationModel.GetReceipt(reservationId));
+                return Ok(await _paymentReservationModel.GetReceipt(reservationId));
             }
             catch (InvalidOperationException e)
             {
@@ -88,11 +88,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getconfirmation")]
-        public ActionResult<ConfirmationDto> GetConfirmation(int reservationId)
+        public async Task<ActionResult<ConfirmationDto>> GetConfirmation(int reservationId)
         {
             try
             {
-                return Ok(_paymentReservationModel.GetConfirmation(reservationId));
+                return Ok(await _paymentReservationModel.GetConfirmation(reservationId));
             }
             catch (InvalidOperationException e)
             {
@@ -105,11 +105,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/viewupcomingreservation")]
-        public ActionResult<List<PaymentReservationDto>> ViewUpcomingReservation(int userId)
+        public async Task<ActionResult<List<PaymentReservationDto>>> ViewUpcomingReservation(int userId)
         {
             try
             {
-                return Ok(_paymentReservationModel.ViewUpcomigReservations(userId));
+                return Ok(await _paymentReservationModel.ViewUpcomigReservations(userId));
             }
             catch (InvalidOperationException e)
             {
@@ -122,11 +122,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/viewpastreservation")]
-        public ActionResult<List<PaymentReservationDto>> ViewPastReservations(int userId)
+        public async Task<ActionResult<List<PaymentReservationDto>>> ViewPastReservations(int userId)
         {
             try
             {
-                return Ok(_paymentReservationModel.ViewPastReservations(userId));
+                return Ok(await _paymentReservationModel.ViewPastReservations(userId));
             }
             catch (InvalidOperationException e)
             {
