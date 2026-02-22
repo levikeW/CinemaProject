@@ -93,16 +93,22 @@ namespace Cinema_Test
         {
             new FilmScreening {
                 MovieId = movies[0].MovieId,
+                MovieTitle = movies[0].MovieTitle,
+                RoomName = rooms[0].RoomName,
                 RoomId = rooms[0].RoomId,
                 Date = DateTime.Now.AddDays(1)
             },
             new FilmScreening {
                 MovieId = movies[1].MovieId,
+                MovieTitle = movies[1].MovieTitle,
+                RoomName = rooms[1].RoomName,
                 RoomId = rooms[1].RoomId,
                 Date = DateTime.Now.AddDays(2)
             },
             new FilmScreening {
                 MovieId = movies[2].MovieId,
+                MovieTitle = movies[2].MovieTitle,
+                RoomName = rooms[0].RoomName,
                 RoomId = rooms[0].RoomId,
                 Date = DateTime.Now.AddDays(3)
             }

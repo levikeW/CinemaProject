@@ -28,29 +28,49 @@ namespace Cinema_Test
             return Convert.ToBase64String(hash);
         }
 
+
+        // ValidateUser
         [Fact]
-        public async Task ValidatePass()
+        public async Task ValidateUser()
         {
-            string hash = ("user123");
-            var user = _userModel.ValidateUser("user@cinema.hu", hash);
+            var dto = new LoginDto { email = "user@cinema.hu", password = "user123" };
+            var user = await Task.Run(() => _userModel.ValidateUser(dto));
 
             Assert.NotNull(user);
             Assert.Equal("Test User", user.FullName);
             Assert.Equal("User", user.Role);
         }
         [Fact]
-        public async Task ValidatePass_WrongPassword()
+        public async Task ValidateUser_WrongPassword()
         {
-            var user = await Task.Run(() => _userModel.ValidateUser("user@cinema.hu", "wrongpassword"));
+            var dto = new LoginDto { email = "user@cinema.hu", password = "wrongpassword" };
+            var hash = HashPass(dto.password);
+            var user = await Task.Run(() => _userModel.ValidateUser(new LoginDto { email = dto.email, password = hash }));
+
+            Assert.Null(user);
+        }
+        [Fact]
+        public async Task ValidateUser_WrongEmail()
+        {
+            var dto = new LoginDto { email = "wrong@cinema.hu", password = "user123" };
+            var hash = HashPass(dto.password);
+            var user = await Task.Run(() => _userModel.ValidateUser(new LoginDto { email = dto.email, password = hash }));
+
             Assert.Null(user);
         }
 
-
-
+        // Regist
         [Fact]
         public async Task RegistValidate()
         {
-            await _userModel.Regist("asd@gmail.com", "regist123", "Asd Elek");
+            var dto = new RegistDto
+            {
+                Email = "asd@gmail.com",
+                Password = "regist123",
+                FullName = "Asd Elek"
+            };
+
+            await _userModel.Regist(dto);
 
             var user = _context.users.FirstOrDefault(x => x.Email == "asd@gmail.com");
 
@@ -58,39 +78,56 @@ namespace Cinema_Test
             Assert.Equal("asd@gmail.com", user.Email);
             Assert.Equal(HashPass("regist123"), user.Password);
         }
+
         [Fact]
         public async Task RegistValidate_Wrong()
         {
-            await _userModel.Regist("asd@gmail.com", "regist123", "Asd Elek");
+            var dto1 = new RegistDto
+            {
+                Email = "asd@gmail.com",
+                Password = "regist123",
+                FullName = "Asd Elek"
+            };
+
+            await _userModel.Regist(dto1);
+
+            var dto2 = new RegistDto
+            {
+                Email = "asd@gmail.com",
+                Password = "anotherPass",
+                FullName = "Duplicate User"
+            };
+
             var ex = await Record.ExceptionAsync(async () =>
             {
-                await _userModel.Regist("asd@gmail.com", "anotherPass", "Duplicate User");
+                await _userModel.Regist(dto2);
             });
+
             Assert.NotNull(ex);
             Assert.IsType<InvalidOperationException>(ex);
         }
 
-
+        // ViewProfile
         [Fact]
         public async Task ViewProfile()
         {
             var user = _context.users.First(x => x.Email == "admin@cinema.hu");
 
-            var dto = _userModel.ViewProfile(user.UserId);
+            var dto = await Task.Run(() => _userModel.ViewProfile(user.UserId));
 
             Assert.NotNull(dto);
             Assert.Equal(user.UserId, dto.UserId);
             Assert.Equal("admin@cinema.hu", dto.Email);
             Assert.Equal("Admin User", dto.FullName);
-
         }
         [Fact]
-        public void ViewProfile_Wrong()
+        public async Task ViewProfile_Wrong()
         {
-            var dto = _userModel.ViewProfile(99999);
+            var dto = await _userModel.ViewProfile(99999);
             Assert.Null(dto);
         }
 
+        // DeleteProfile
         [Fact]
         public async Task Delete()
         {
@@ -99,13 +136,18 @@ namespace Cinema_Test
             Assert.False(_context.users.Any(x => x.UserId == 1));
         }
         [Fact]
-        public void Delete_Wrong()
+        public async Task Delete_Wrong()
         {
-            var ex = Record.Exception(() => _userModel.DeleteProfile(99999));
+            var ex = await Record.ExceptionAsync(async () =>
+            {
+                await Task.Run(() => _userModel.DeleteProfile(99999));
+            });
+
             Assert.NotNull(ex);
             Assert.IsType<InvalidOperationException>(ex);
         }
 
+        // UpdateProfile
         [Fact]
         public async Task Update()
         {
@@ -127,6 +169,7 @@ namespace Cinema_Test
             Assert.IsType<InvalidOperationException>(ex);
         }
 
+        // ChangePassword
         [Fact]
         public async Task ChangePass()
         {
