@@ -12,7 +12,7 @@ namespace CinemaProject.Model
         {
             _context = context;
         }
-        public IEnumerable<CartDto> GetCart(CartDto dto, int userId)
+        public async Task<IEnumerable<CartDto>> GetCart(CartDto dto, int userId)
         {
             var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
             var seats = _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToList();
@@ -27,7 +27,7 @@ namespace CinemaProject.Model
             }).ToList();
         }
 
-        public void AddToCart(CartDto dto)
+        public async Task AddToCart(CartDto dto)
         {
             using var trx = _context.Database.BeginTransaction();
             {
@@ -42,12 +42,12 @@ namespace CinemaProject.Model
                     Amount = dto.Amount,
                     TotalPrice = dto.TotalPrice * dto.Amount,
                 });
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void RemoveFromCart(int cartId)
+        public async Task RemoveFromCart(int cartId)
         {
             if (!_context.carts.Any(x => x.CartId == cartId))
             {
@@ -56,12 +56,12 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.carts.Remove(_context.carts.Where(x => x.CartId == cartId).First());
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void UpdateCart(CartDto dto, int cartId)
+        public async Task UpdateCart(CartDto dto, int cartId)
         {
             var cart = _context.carts.Include(x => x.Seats).FirstOrDefault(x => x.CartId == cartId);
             if (cart == null)
@@ -82,12 +82,12 @@ namespace CinemaProject.Model
                 {
                     cart.Seats.Add(seat);
                 }
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void ModifyCart(int cartId, int? newAmount = null, List<int>? newSeatIds = null)
+        public async Task ModifyCart(int cartId, int? newAmount = null, List<int>? newSeatIds = null)
         {
             var cart = _context.carts.Include(x => x.Seats).FirstOrDefault(x => x.CartId == cartId);
             if (cart == null)
@@ -110,8 +110,8 @@ namespace CinemaProject.Model
                         cart.Seats.Add(seat);
                     }
                 }
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
@@ -130,7 +130,7 @@ namespace CinemaProject.Model
           }
         */
 
-        public void ClearCart(int userId)
+        public async Task ClearCart(int userId)
         {
             var carts = _context.carts.Where(x => x.UserId == userId).ToList();
             if (!carts.Any()) return;
@@ -138,8 +138,8 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.carts.RemoveRange(carts);
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
     }

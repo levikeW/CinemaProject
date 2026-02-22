@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CinemaProject.Model
 {
@@ -15,14 +16,14 @@ namespace CinemaProject.Model
         {
             _context = context;
         }
-        private string HashPass(string password)
+        private async Task<string> HashPass(string password)
         {
             using var Sha = SHA256.Create();
             var bytes = Encoding.UTF8.GetBytes(password);
             var hash = Sha.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
         }
-        public void Regist(RegistDto dto, string role = "User")
+        public async Task Regist(RegistDto dto, string role = "User")
         {
             if (_context.users.Any(x => x.Email == dto.Email))
             {
@@ -30,21 +31,21 @@ namespace CinemaProject.Model
             }
             using var trx = _context.Database.BeginTransaction();
             {
-                _context.users.Add(new User { Email = dto.Email, Password = HashPass(dto.Password), Role = role });
-                _context.SaveChanges();
-                trx.Commit();
+                _context.users.Add(new User { Email = dto.Email, Password = await HashPass(dto.Password), Role = role });
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
             await Task.CompletedTask;
         }
 
-        public User? ValidateUser(LoginDto dto)
+        public async Task<User?> ValidateUser(LoginDto dto)
         {
-            var hash = HashPass(dto.password);
+            var hash = await HashPass(dto.password);
             var user = _context.users.Where(x => x.Email == dto.email);
             return user.Where(x => x.Password == hash).FirstOrDefault();
         }
 
-        public UserDto? ViewProfile(int userId)
+        public async Task<UserDto?> ViewProfile(int userId)
         {
             return _context.users.Where(x => x.UserId == userId).Select(x => new UserDto
             {
@@ -55,7 +56,7 @@ namespace CinemaProject.Model
             }).FirstOrDefault();
         }
 
-        public void DeleteProfile(int userId)
+        public async Task DeleteProfile(int userId)
         {
             var user = _context.users.FirstOrDefault(x => x.UserId == userId);
             if (user == null)
@@ -65,8 +66,8 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.users.Remove(user);
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
@@ -91,8 +92,8 @@ namespace CinemaProject.Model
                 {
                     user.BillingAddress = dto.BillingAddress;
                 }
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
@@ -103,17 +104,17 @@ namespace CinemaProject.Model
             {
                 throw new InvalidOperationException("User not found");
             }
-            var oldHash = HashPass(oldPass);
+            var oldHash = await HashPass(oldPass);
             if (user.Password != oldHash)
             {
                 throw new InvalidOperationException("Old password is incorrect");
             }
-            var newHash = HashPass(newPass);
+            var newHash = await HashPass(newPass);
             using var trx = _context.Database.BeginTransaction();
             {
                 user.Password = newHash;
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
     }

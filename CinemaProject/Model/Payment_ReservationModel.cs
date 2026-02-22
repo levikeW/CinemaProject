@@ -12,7 +12,7 @@ namespace CinemaProject.Model
         {
             _context = context;
         }
-        public ConfirmationDto CreateReservation(int cartId)
+        public async Task<ConfirmationDto> CreateReservation(int cartId)
         {
             var reservation = new PaymentReservation
             {
@@ -36,7 +36,7 @@ namespace CinemaProject.Model
             }).First();
         }
 
-        public void CancelReservation(int reservationId)
+        public async Task CancelReservation(int reservationId)
         {
             var reservation = _context.paymentReservations.FirstOrDefault(x => x.PaymentReservationId == reservationId);
             if (reservation == null)
@@ -50,12 +50,12 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.paymentReservations.Remove(reservation);
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public ReceiptDto PayReservation(int reservationId)
+        public async Task<ReceiptDto> PayReservation(int reservationId)
         {
             var reservation = _context.paymentReservations.FirstOrDefault(x => x.PaymentReservationId == reservationId);
             if (reservation == null)
@@ -84,7 +84,7 @@ namespace CinemaProject.Model
 
         }
 
-        public ReceiptDto? GetReceipt(int reservationId)
+        public async Task<ReceiptDto?> GetReceipt(int reservationId)
         {
             return _context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).Select(x => new ReceiptDto
             {
@@ -102,7 +102,7 @@ namespace CinemaProject.Model
             }).FirstOrDefault();
         }
 
-        public ConfirmationDto? GetConfirmation(int reservationId)
+        public async Task<ConfirmationDto?> GetConfirmation(int reservationId)
         {
             return _context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).Select(x => new ConfirmationDto
             {
@@ -118,7 +118,7 @@ namespace CinemaProject.Model
             }).FirstOrDefault();
         }
 
-        public List<PaymentReservationDto> ViewUpcomigReservations(int userId)
+        public async Task<List<PaymentReservationDto>> ViewUpcomigReservations(int userId)
         {
             var now = DateTime.UtcNow;
             return _context.paymentReservations.Where(x => x.Cart.UserId == userId && x.Cart.FilmScreening.Date >= now).Select(x => new PaymentReservationDto
@@ -133,7 +133,7 @@ namespace CinemaProject.Model
             }).ToList();
         }
 
-        public List<PaymentReservationDto> ViewPastReservations(int userId)
+        public async Task<List<PaymentReservationDto>> ViewPastReservations(int userId)
         {
             var now = DateTime.UtcNow;
             return _context.paymentReservations.Where(x => x.Cart.UserId == userId && x.Cart.FilmScreening.Date < now).Select(x => new PaymentReservationDto
