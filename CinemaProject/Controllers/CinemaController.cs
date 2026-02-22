@@ -227,7 +227,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                return Ok(await _cinemaModel.HasFreeSeats(screeningId, requiredSeats));
+                return Ok(_cinemaModel.HasFreeSeats(screeningId, requiredSeats));
             }
             catch (InvalidOperationException e)
             {

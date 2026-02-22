@@ -1,11 +1,12 @@
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using CinemaProject_Avalonia.Models;
 using CinemaProject_Avalonia.ViewModels;
 using CinemaProject_Avalonia.Views;
+using System.Linq;
 
 namespace CinemaProject_Avalonia
 {
@@ -23,11 +24,17 @@ namespace CinemaProject_Avalonia
                 // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
                 // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
                 DisableAvaloniaDataAnnotationValidation();
-                var viewModel = new MainWindowViewModel();  
-                desktop.MainWindow = new MainWindow
+                var session = new ApiSession("https://localhost:5001/");
+                var authModel = new AuthModel(session);
+                var loginViewModel = new LoginViewModel(session, authModel);
+                var viewModel = new MainWindowViewModel();
+
+                var loginWindow = new LoginWindow
                 {
-                    DataContext = viewModel,
+                    DataContext = loginViewModel
                 };
+
+                desktop.MainWindow = loginWindow;
             }
 
             base.OnFrameworkInitializationCompleted();
