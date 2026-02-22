@@ -22,7 +22,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPost("/Regist")]
-        public async Task<ActionResult> Regist(RegistDto dto, bool IsAdmin)
+        public async Task<ActionResult> Regist([FromBody] RegistDto dto, [FromQuery] bool IsAdmin)
         {
             try
             {
@@ -41,7 +41,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPost("/login")]
-        public async Task<ActionResult> LogIn(LoginDto dto)
+        public async Task<ActionResult> LogIn([FromBody] LoginDto dto)
         {
             try
             {
@@ -76,7 +76,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/viewprofile")]
-        public async Task<ActionResult<IEnumerable<UserDto>>> ViewProfile(int userId)
+        public async Task<ActionResult<IEnumerable<UserDto>>> ViewProfile([FromQuery] int userId)
         {
             try
             {
@@ -93,7 +93,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpDelete("/deleteprofile")]
-        public async Task<ActionResult> DeleteProfile(int userId)
+        public async Task<ActionResult> DeleteProfile([FromQuery] int userId)
         {
             try
             {
@@ -111,7 +111,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/updateprofile")]
-        public async Task<ActionResult> UpdateProfile(UpdateUserDto dto)
+        public async Task<ActionResult> UpdateProfile([FromBody] UpdateUserDto dto)
         {
             try
             {
@@ -129,7 +129,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/changepass")]
-        public async Task<ActionResult> ChangePassword(int userId, string oldPass, string newPass)
+        public async Task<ActionResult> ChangePassword([FromQuery] int userId, [FromQuery] string oldPass, [FromQuery] string newPass)
         {
             try
             {

@@ -70,7 +70,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/searchmoviebytitle")]
-        public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByTitle(string item)
+        public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByTitle([FromQuery] string item)
         {
             try
             {
@@ -87,7 +87,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/searchmoviebygenre")]
-        public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByGenre(string item)
+        public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByGenre([FromQuery] string item)
         {
             try
             {
@@ -104,7 +104,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/searchmoviebydirector")]
-        public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByDirector(string item)
+        public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByDirector([FromQuery] string item)
         {
             try
             {
@@ -121,7 +121,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getscreeningdetails")]
-        public async Task<ActionResult<IEnumerable<FilmScreeningDto>>> GetScreeningDetails(DateTime time)
+        public async Task<ActionResult<IEnumerable<FilmScreeningDto>>> GetScreeningDetails([FromQuery] DateTimeOffset time)
         {
             try
             {
@@ -155,7 +155,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/ismovienowrunning")]
-        public async Task<ActionResult<bool>> IsMovieNowRunning(string movieTitle)
+        public async Task<ActionResult<bool>> IsMovieNowRunning([FromQuery] string movieTitle)
         {
             try
             {
@@ -172,7 +172,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getroomcapacity")]
-        public async Task<ActionResult<int>> GetRoomCapacity(int roomId)
+        public async Task<ActionResult<int>> GetRoomCapacity([FromQuery] int roomId)
         {
             try
             {
@@ -189,7 +189,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getseats")]
-        public async Task<ActionResult<List<SeatDto>>> GetSeats(int roomId, int screeningId)
+        public async Task<ActionResult<List<SeatDto>>> GetSeats([FromQuery] int roomId, [FromQuery] int screeningId)
         {
             try
             {
@@ -206,7 +206,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/isseatavailable")]
-        public async Task<ActionResult<bool>> IsSeatAvailable(int seatId, int screeningId)
+        public async Task<ActionResult<bool>> IsSeatAvailable([FromQuery] int seatId, [FromQuery] int screeningId)
         {
             try
             {
@@ -223,7 +223,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/hasfreeseat")]
-        public async Task<ActionResult<bool>> HasFreeSeat(int screeningId, int requiredSeats)
+        public async Task<ActionResult<bool>> HasFreeSeat([FromQuery] int screeningId, [FromQuery] int requiredSeats)
         {
             try
             {
@@ -240,7 +240,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/selecttickettype")]
-        public async Task<ActionResult<TicketDto>> SelectTicketType(int screeningId)
+        public async Task<ActionResult<TicketDto>> SelectTicketType([FromQuery] int screeningId)
         {
             try
             {
@@ -257,7 +257,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/setquantity")]
-        public async Task<ActionResult> SetQuantity(int cartId, int amount)
+        public async Task<ActionResult> SetQuantity([FromQuery] int cartId, [FromQuery] int amount)
         {
             try
             {
@@ -275,7 +275,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getimage")]
-        public async Task<ActionResult<ImageDto>> GetImage(int movieId)
+        public async Task<ActionResult<ImageDto>> GetImage([FromQuery] int movieId)
         {
             try
             {

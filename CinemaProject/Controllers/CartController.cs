@@ -19,7 +19,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("/getcart")]
-        public async Task<ActionResult<IEnumerable<CartDto>>> GetCart(CartDto dto, int userId)
+        public async Task<ActionResult<IEnumerable<CartDto>>> GetCart([FromBody] CartDto dto, [FromQuery] int userId)
         {
             try
             {
@@ -36,7 +36,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/addtocart")]
-        public async Task<ActionResult> AddToCart(CartDto dto)
+        public async Task<ActionResult> AddToCart([FromBody] CartDto dto)
         {
             try
             {
@@ -54,7 +54,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPost("/removefromcart")]
-        public async Task<ActionResult> RemoveFromCart(int cartId)
+        public async Task<ActionResult> RemoveFromCart([FromQuery] int cartId)
         {
             try
             {
@@ -72,7 +72,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/updatecart")]
-        public async Task<ActionResult> UpdateCart(CartDto dto, int cartId)
+        public async Task<ActionResult> UpdateCart([FromBody] CartDto dto, [FromQuery] int cartId)
         {
             try
             {
@@ -90,7 +90,7 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("/modifycart")]
-        public async Task<ActionResult> ModifyCart(int cartId, int? newAmount = null, List<int>? newSeatIds = null)
+        public async Task<ActionResult> ModifyCart([FromQuery] int cartId, [FromQuery] int? newAmount = null, [FromQuery] List<int>? newSeatIds = null)
         {
             try
             {
@@ -127,7 +127,7 @@ namespace CinemaProject.Controllers
         */
 
         [HttpDelete("/clearcart")]
-        public async Task<ActionResult> ClearCart(int userId)
+        public async Task<ActionResult> ClearCart([FromQuery] int userId)
         {
             try
             {
