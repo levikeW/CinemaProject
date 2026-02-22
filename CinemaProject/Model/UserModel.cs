@@ -31,7 +31,7 @@ namespace CinemaProject.Model
             }
             using var trx = _context.Database.BeginTransaction();
             {
-                _context.users.Add(new User { Email = dto.Email, Password = await HashPass(dto.Password), Role = role });
+                _context.users.Add(new User { Email = dto.Email, Password = await HashPass(dto.Password), Role = role, FullName = dto.FullName});
                 await _context.SaveChangesAsync();
                 await trx.CommitAsync();
             }

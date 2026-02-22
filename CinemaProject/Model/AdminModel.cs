@@ -85,6 +85,7 @@ namespace CinemaProject.Model
                 {
                     MovieId = dto.MovieId,
                     MovieTitle = dto.MovieTitle,
+                    RoomName = dto.RoomName,
                     RoomId = dto.RoomId,
                     Date = dto.Date
 
@@ -255,7 +256,7 @@ namespace CinemaProject.Model
             }
             if (_context.movies.Any(m => m.ImageId == imageId))
             {
-                throw new InvalidOperationException("Image is still in use by a movie");
+                throw new InvalidOperationException("Image is already exist");
             }
 
             using var trx = _context.Database.BeginTransaction();

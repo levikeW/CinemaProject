@@ -1,11 +1,11 @@
-﻿using CinemaProject.Dto;
+﻿using Cinema.Dto;
+using CinemaProject.Dto;
 using CinemaProject.Model;
 using CinemaProject.Persistence;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Cinema_Test
 {
@@ -20,22 +20,17 @@ namespace Cinema_Test
             DbSeeder.Seed(_context);
             _adminModel = new AdminModel(_context);
         }
-        private string HashPass(string password)
-        {
-            using var Sha = SHA256.Create();
-            var bytes = Encoding.UTF8.GetBytes(password);
-            var hash = Sha.ComputeHash(bytes);
-            return Convert.ToBase64String(hash);
-        }
 
+        // CHANGE ROLE
         [Fact]
         public async Task ChangeRole()
         {
-            var changerole = _context.users.FirstOrDefault(x => x.UserId == 1);
-
-            Assert.NotNull(changerole);
-            Assert.Equal("Admin", changerole.Role);
+            var user = _context.users.FirstOrDefault(x => x.UserId == 2);
+            await _adminModel.ChangeRole(user.UserId);
+            var updated = _context.users.First(u => u.UserId == user.UserId);
+            Assert.Equal("Admin", updated.Role);
         }
+
         [Fact]
         public async Task ChangeRole_Wrong()
         {
@@ -44,6 +39,244 @@ namespace Cinema_Test
                 await _adminModel.ChangeRole(99999);
             });
             Assert.Equal("User not found", ex.Message);
+        }
+
+        // USER AND RESERVATION
+        [Fact]
+        public async Task GetAllUsers()
+        {
+            var users = await _adminModel.GetAllUsers();
+            Assert.NotEmpty(users);
+        }
+
+        [Fact]
+        public async Task SearchUser()
+        {
+            var results = await _adminModel.SearchUser("user");
+            Assert.NotEmpty(results);
+        }
+
+        [Fact]
+        public async Task DeleteUser()
+        {
+            var userId = 2;
+            await _adminModel.DeleteUser(userId);
+            Assert.False(_context.users.Any(u => u.UserId == userId));
+        }
+
+        [Fact]
+        public async Task DeleteUserThrows()
+        {
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _adminModel.DeleteUser(99999));
+            Assert.Equal("User not found", ex.Message);
+        }
+
+        [Fact]
+        public async Task GetAllReservations()
+        {
+            var reservations = await _adminModel.GetAllReservations();
+            Assert.NotEmpty(reservations);
+        }
+
+        [Fact]
+        public async Task ModifyReservation()
+        {
+            var reservation = _context.paymentReservations.Include(x => x.Cart).First();
+            var dto = new PaymentReservationDto
+            {
+                PaymentReservationId = reservation.PaymentReservationId,
+                CartId = reservation.CartId,
+                Date = reservation.Date.AddDays(1),
+                IsPaid = !reservation.IsPaid,
+                Amount = reservation.Cart.Amount,
+                Price = reservation.Cart.TotalPrice / reservation.Cart.Amount,
+                Seats = reservation.Cart.Seats.ToList(),
+                FilmScreeningId = reservation.Cart.FilmScreeningId,
+                UserId = reservation.Cart.UserId
+            };
+
+            await _adminModel.ModifyReservation(dto, reservation.PaymentReservationId);
+            var updated = _context.paymentReservations.Include(x => x.Cart)
+                .First(x => x.PaymentReservationId == reservation.PaymentReservationId);
+
+            Assert.Equal(dto.Date, updated.Date);
+            Assert.Equal(dto.IsPaid, updated.IsPaid);
+        }
+
+        [Fact]
+        public async Task DeleteReservation()
+        {
+            var reservation = _context.paymentReservations.First();
+            await _adminModel.DeleteReservation(reservation.PaymentReservationId);
+            Assert.False(_context.paymentReservations.Any(r => r.PaymentReservationId == reservation.PaymentReservationId));
+        }
+
+        // MOVIE
+        [Fact]
+        public async Task AddNewMovie()
+        {
+            var dto = new NewMovieDto
+            {
+                MovieTitle = "Test Movie",
+                Duration = 120,
+                Genre = "Action",
+                Director = "Director X",
+                Description = "Desc",
+                ImageId = 1
+            };
+
+            await _adminModel.NewMovie(dto);
+            var movie = _context.movies.FirstOrDefault(m => m.MovieTitle == "Test Movie");
+            Assert.NotNull(movie);
+        }
+
+        [Fact]
+        public async Task MovieDuplicate()
+        {
+            _context.movies.Add(new Movie
+            {
+                MovieTitle = "Test Movie",
+                Duration = 120,
+                Genre = "Action",
+                Director = "Director X",
+                Description = "Desc",
+                ImageId = 1
+            });
+            await _context.SaveChangesAsync();
+
+            var dto = new NewMovieDto
+            {
+                MovieTitle = "Test Movie",
+                Duration = 120,
+                Genre = "Action",
+                Director = "Director X",
+                Description = "Desc",
+                ImageId = 1
+            };
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _adminModel.NewMovie(dto));
+            Assert.Equal("Already exists", ex.Message);
+        }
+
+        [Fact]
+        public async Task ModifyMovie()
+        {
+            var movie = _context.movies.First();
+            var dto = new MovieDto
+            {
+                MovieTitle = movie.MovieTitle + " Updated",
+                Duration = movie.Duration + 10,
+                Genre = movie.Genre,
+                Director = movie.Director,
+                Description = movie.Description,
+                ImageId = movie.ImageId
+            };
+
+            await _adminModel.ModifyMovie(dto, movie.MovieId);
+            var updated = _context.movies.First(m => m.MovieId == movie.MovieId);
+            Assert.Equal(dto.MovieTitle, updated.MovieTitle);
+        }
+
+        [Fact]
+        public async Task DeleteMovie()
+        {
+            var movie = _context.movies.First();
+            await _adminModel.DeleteMovie(movie.MovieId);
+            Assert.False(_context.movies.Any(m => m.MovieId == movie.MovieId));
+        }
+
+        // SCREENING
+        [Fact]
+        public async Task AddNewScreening()
+        {
+            var movie = _context.movies.First();
+            var dto = new NewScreeningDto
+            {
+                MovieId = movie.MovieId,
+                MovieTitle = movie.MovieTitle,
+                RoomName = "Room 1",
+                RoomId = 1,
+                Date = System.DateTime.Now.AddDays(1)
+            };
+
+            await _adminModel.NewScreening(dto);
+            var screening = _context.filmScreenings.FirstOrDefault(s => s.MovieId == movie.MovieId && s.RoomId == 1);
+            Assert.NotNull(screening);
+        }
+
+        [Fact]
+        public async Task ModifyScreening()
+        {
+            var screening = _context.filmScreenings.First();
+            var dto = new FilmScreeningDto
+            {
+                MovieId = screening.MovieId,
+                MovieTitle = screening.MovieTitle + " Updated",
+                RoomName = screening.RoomName,
+                RoomId = screening.RoomId,
+                Date = screening.Date.AddDays(1)
+            };
+
+            await _adminModel.ModifyFilmScreening(dto, screening.FilmScreeningId);
+            var updated = _context.filmScreenings.First(s => s.FilmScreeningId == screening.FilmScreeningId);
+            Assert.Equal(dto.MovieTitle, updated.MovieTitle);
+        }
+
+        [Fact]
+        public async Task DeleteScreening()
+        {
+            var screening = _context.filmScreenings.First();
+            await _adminModel.DeleteScreening(screening.FilmScreeningId);
+            Assert.False(_context.filmScreenings.Any(s => s.FilmScreeningId == screening.FilmScreeningId));
+        }
+
+        // TICKET
+        [Fact]
+        public async Task ModifyTicket()
+        {
+            var ticket = _context.tickets.First();
+            var dto = new TicketDto
+            {
+                TicketType = ticket.TicketType + " Updated",
+                TicketPrice = ticket.TicketPrice + 10
+            };
+
+            await _adminModel.ModifyTicket(dto, ticket.TicketId);
+            var updated = _context.tickets.First(t => t.TicketId == ticket.TicketId);
+            Assert.Equal(dto.TicketType, updated.TicketType);
+            Assert.Equal(dto.TicketPrice, updated.TicketPrice);
+        }
+
+        // IMAGE
+        [Fact]
+        public async Task AddImage()
+        {
+            var dto = new ImageDto { ImageContent = new byte[] { 0x1, 0x2 } };
+            await _adminModel.UploadImage(dto);
+            Assert.True(_context.images.Any(img => img.ImageContent.SequenceEqual(dto.ImageContent)));
+        }
+
+        [Fact]
+        public async Task DeleteImage()
+        {
+            var image = _context.images.FirstOrDefault(i => !_context.movies.Any(m => m.ImageId == i.ImageId));
+            if (image == null)
+            {
+                image = new Image { ImageContent = [] };
+                _context.images.Add(image);
+                await _context.SaveChangesAsync();
+            }
+
+            await _adminModel.DeleteImage(image.ImageId);
+            Assert.False(_context.images.Any(i => i.ImageId == image.ImageId));
+        }
+
+        [Fact]
+        public async Task DeleteImageThrows()
+        {
+            var movie = _context.movies.First();
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _adminModel.DeleteImage(movie.ImageId));
+            Assert.Equal("Image is already exist", ex.Message);
         }
     }
 }
