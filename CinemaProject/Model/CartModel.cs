@@ -29,22 +29,31 @@ namespace CinemaProject.Model
 
         public async Task AddToCart(CartDto dto)
         {
-            using var trx = _context.Database.BeginTransaction();
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
+            var seats = await _context.seats
+                .Where(s => seatIds.Contains(s.SeatId))
+                .ToListAsync();
+
+            foreach (var seat in seats)
             {
-                var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
-                var seats = _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToList();
-                _context.carts.Add(new Cart
-                {
-                    UserId = dto.UserId,
-                    FilmScreeningId = dto.FilmScreeningId,
-                    Seats = seats,
-                    TicketId = dto.TicketId,
-                    Amount = dto.Amount,
-                    TotalPrice = dto.TotalPrice * dto.Amount,
-                });
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
+                seat.IsReserved = true;
             }
+
+            var cart = new Cart
+            {
+                UserId = dto.UserId,
+                FilmScreeningId = dto.FilmScreeningId,
+                TicketId = dto.TicketId,
+                Amount = dto.Amount,
+                TotalPrice = dto.TotalPrice * dto.Amount,
+                Seats = seats
+            };
+
+            _context.carts.Add(cart);
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task RemoveFromCart(int cartId)
