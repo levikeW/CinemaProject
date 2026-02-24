@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Cinema.Dto;
 using CinemaProject.Dto;
 using Microsoft.AspNetCore.Authorization;
+using System.Diagnostics;
 
 namespace CinemaProject.Controllers
 {
@@ -21,7 +22,8 @@ namespace CinemaProject.Controllers
             _userModel = usermodel;
         }
 
-        [HttpPost("/Regist")]
+        [AllowAnonymous]
+        [HttpPost("Regist")]
         public async Task<ActionResult> Regist([FromBody] RegistDto dto, [FromQuery] bool IsAdmin)
         {
             try
@@ -40,15 +42,20 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPost("/login")]
+        [AllowAnonymous]
+        [HttpPost("login")]
         public async Task<ActionResult> LogIn([FromBody] LoginDto dto)
         {
             try
             {
                 var user = await _userModel.ValidateUser(dto);
+
+                Debug.WriteLine("Email: " + dto.email);
+                Debug.WriteLine("Password: " + dto.password);
+                Debug.WriteLine("User found: " + (user != null));
                 if (user == null)
                 {
-                    return null;
+                    return Unauthorized("Hibás email vagy jelszó.");
                 }
 
                 List<Claim> claims = new()
@@ -62,12 +69,13 @@ namespace CinemaProject.Controllers
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
                 return Ok(new { role = user.Role });
             }
-            catch (Exception e)
+            catch
             {
                 return BadRequest();
             }
         }
 
+        [Authorize(Roles = "User")]
         [HttpPost("/logout")]
         public async Task<ActionResult> LogOut()
         {
@@ -75,6 +83,7 @@ namespace CinemaProject.Controllers
             return Ok();
         }
 
+        [Authorize(Roles = "User")]
         [HttpGet("/viewprofile")]
         public async Task<ActionResult<IEnumerable<UserDto>>> ViewProfile([FromQuery] int userId)
         {
@@ -92,6 +101,7 @@ namespace CinemaProject.Controllers
             }
         }
 
+        [Authorize(Roles = "User")]
         [HttpDelete("/deleteprofile")]
         public async Task<ActionResult> DeleteProfile([FromQuery] int userId)
         {
@@ -110,6 +120,7 @@ namespace CinemaProject.Controllers
             }
         }
 
+        [Authorize(Roles = "User")]
         [HttpPut("/updateprofile")]
         public async Task<ActionResult> UpdateProfile([FromBody] UpdateUserDto dto)
         {
@@ -128,6 +139,7 @@ namespace CinemaProject.Controllers
             }
         }
 
+        [Authorize(Roles = "User")]
         [HttpPut("/changepass")]
         public async Task<ActionResult> ChangePassword([FromQuery] int userId, [FromQuery] string oldPass, [FromQuery] string newPass)
         {
@@ -146,15 +158,16 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("getmydata")]
+        [Authorize(Roles = "User")]
+        [HttpGet("/getmydata")]
         [Authorize]
         public async Task<ActionResult<MyDataDto>> WhoAmI()
         {
             return Ok(new MyDataDto
             {
-                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier),
-                Email = User.Identity?.Name,
-                Role = User.FindFirstValue(ClaimTypes.Role)
+                UserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty,
+                Email = User.Identity?.Name ?? string.Empty,
+                Role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty
             });
         }
 

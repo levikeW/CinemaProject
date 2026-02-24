@@ -19,12 +19,15 @@ namespace CinemaProject_Avalonia.Models
         }
         private async Task<MyDataDto> ViewProfile()
         {
-            return await _session.Client.GetFromJsonAsync<MyDataDto>("api/user/getmydata");
+            var result = await _session.Client.GetFromJsonAsync<MyDataDto>("api/user/getmydata");
+            if (result == null)
+                throw new InvalidOperationException("Failed to retrieve user profile data.");
+            return result;
         }
 
         public async Task Login(LoginDto dto)
         {
-            var res = await _session.Client.PostAsJsonAsync("api/user/login", dto);
+            var res = await _session.Client.PostAsJsonAsync("/login", dto);
 
             var user = await ViewProfile();
             _session.Userid = Convert.ToInt32(user.UserId);

@@ -16,11 +16,11 @@ namespace CinemaProject.Model
         {
             _context = context;
         }
-        private async Task<string> HashPass(string password)
+        private string HashPass(string password)
         {
-            using var Sha = SHA256.Create();
+            using var sha = SHA256.Create();
             var bytes = Encoding.UTF8.GetBytes(password);
-            var hash = Sha.ComputeHash(bytes);
+            var hash = sha.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
         }
         public async Task Regist(RegistDto dto, string role = "User")
@@ -31,7 +31,7 @@ namespace CinemaProject.Model
             }
             using var trx = _context.Database.BeginTransaction();
             {
-                _context.users.Add(new User { Email = dto.Email, Password = await HashPass(dto.Password), Role = role, FullName = dto.FullName});
+                _context.users.Add(new User { Email = dto.Email, Password = HashPass(dto.Password), Role = role, FullName = dto.FullName});
                 await _context.SaveChangesAsync();
                 await trx.CommitAsync();
             }
@@ -40,20 +40,19 @@ namespace CinemaProject.Model
 
         public async Task<User?> ValidateUser(LoginDto dto)
         {
-            var hash = await HashPass(dto.password);
-            var user = _context.users.Where(x => x.Email == dto.email);
-            return user.Where(x => x.Password == hash).FirstOrDefault();
+            return await _context.users
+                .FirstOrDefaultAsync(x => x.Email == dto.email && x.Password == HashPass(dto.password));
         }
 
         public async Task<UserDto?> ViewProfile(int userId)
         {
-            return _context.users.Where(x => x.UserId == userId).Select(x => new UserDto
+            return await _context.users.Where(x => x.UserId == userId).Select(x => new UserDto
             {
                 UserId = x.UserId,
                 Email = x.Email,
                 FullName = x.FullName,
                 BillingAddress = x.BillingAddress
-            }).FirstOrDefault();
+            }).FirstOrDefaultAsync();
         }
 
         public async Task DeleteProfile(int userId)
@@ -104,12 +103,12 @@ namespace CinemaProject.Model
             {
                 throw new InvalidOperationException("User not found");
             }
-            var oldHash = await HashPass(oldPass);
+            var oldHash = HashPass(oldPass);
             if (user.Password != oldHash)
             {
                 throw new InvalidOperationException("Old password is incorrect");
             }
-            var newHash = await HashPass(newPass);
+            var newHash = HashPass(newPass);
             using var trx = _context.Database.BeginTransaction();
             {
                 user.Password = newHash;

@@ -17,14 +17,16 @@ namespace CinemaProject_Avalonia.Models
 
         public HttpClient Client { get; set; }
         public CookieContainer Cookies { get; }
-        public ApiSession(string url)
+        public ApiSession(string url, bool acceptAnyCert = false)
         {
             Cookies = new CookieContainer();
-            var handler = new HttpClientHandler
+            var handler = new HttpClientHandler();
+            if (acceptAnyCert)
             {
-                UseCookies = true,
-                CookieContainer = Cookies
-            };
+                handler.ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                handler.CookieContainer = Cookies;
+            }
 
             Client = new HttpClient(handler)
             {

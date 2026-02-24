@@ -13,21 +13,7 @@ public partial class LoginWindow : Window
     public LoginWindow()
     {
         InitializeComponent();
-
-        var session = new ApiSession("https://localhost:7199");
-        var authModel = new AuthModel(session);
-        var vm = new LoginViewModel(session, authModel);
-
-        vm.NavigationToMainRequested += OnNavigationToMainRequested;
-
-        DataContext = vm;
     }
 
-    private void OnNavigationToMainRequested(object? sender, EventArgs e)
-    {
-        var mainWindow = new MainWindow();
-
-        mainWindow.Show();
-        this.Close();
-    }
+    
 }

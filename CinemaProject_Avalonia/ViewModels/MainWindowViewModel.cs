@@ -278,6 +278,35 @@ namespace CinemaProject_Avalonia.ViewModels
             IsMenuOpen = false;
             IsEditPanelOpen = false;
         }
+        public async Task LoadAsync()
+        {
+            try
+            {
+                Movies.Clear();
+
+                var screenings = await _mainWindowModel.GetAllScreenings();
+
+                foreach (var screening in screenings)
+                {
+                    var movieVm = new MovieViewModel(this)
+                    {
+                        Title = screening.MovieTitle,
+                        Room = screening.RoomName
+                    };
+
+                    movieVm.ShowTimes.Add(screening.Date);
+
+                    RegisterMovie(movieVm);
+                    Movies.Add(movieVm);
+                }
+
+                ApplyFilters();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba történt az adatok betöltésekor: " + ex.Message;
+            }
+        }
 
         public void ToggleMenu()
         {

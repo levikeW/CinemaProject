@@ -76,7 +76,7 @@ namespace CinemaProject_Avalonia.Models
         }
         public async Task SetQuantity(int cartId, int amount)
         {
-            var response = await _client.PutAsJsonAsync($"api/cinema/setquantity?cartId={cartId}&amount={amount}", "");
+            var response = await _client.PutAsync($"api/cinema/setquantity?cartId={cartId}&amount={amount}", null);
             response.EnsureSuccessStatusCode();
         }
         public async Task<ImageDto> GetImage(int movieId)
