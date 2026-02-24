@@ -121,27 +121,34 @@ namespace CinemaProject.Model
 
         public async Task<IEnumerable<FilmScreeningDto>> GetScreeningDetails(DateTimeOffset time)
         {
-            return _context.filmScreenings.Where(x => x.Date == time).Select(x => new FilmScreeningDto
+            return await _context.filmScreenings.Where(x => x.Date == time).Select(x => new FilmScreeningDto
             {
                 FilmScreeningId = x.FilmScreeningId,
                 MovieId = x.MovieId,
                 MovieTitle = x.MovieTitle,
                 RoomId = x.RoomId,
                 Date = x.Date,
-            }).ToList();
+            }).ToListAsync();
         }
 
         public async Task<List<FilmScreeningDto>> GetUpcomingScreenings()
         {
             var now = DateTime.UtcNow;
-            return _context.filmScreenings.Where(x => x.Date >= now && x.Movie.Status == MovieStatus.NowRunning).Select(x => new FilmScreeningDto
-            {
-                FilmScreeningId = x.FilmScreeningId,
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                RoomId = x.RoomId,
-                Date = x.Date
-            }).ToList();
+
+            return _context.filmScreenings.AsEnumerable()
+                .Where(x => x.Date >= now)
+                .Where(x => _context.movies
+                    .Any(m => m.MovieId == x.MovieId &&
+                              m.Status == MovieStatus.NowRunning))
+                .Select(x => new FilmScreeningDto
+                {
+                    FilmScreeningId = x.FilmScreeningId,
+                    MovieId = x.MovieId,
+                    MovieTitle = x.MovieTitle,
+                    RoomId = x.RoomId,
+                    Date = x.Date
+                })
+                .ToList();
         }
 
         public async Task<bool> IsMovieNowRunning(string movieTitle)
