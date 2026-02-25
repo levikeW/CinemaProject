@@ -164,6 +164,7 @@ namespace Cinema_Test
             var movie = _context.movies.First();
             var dto = new MovieDto
             {
+                MovieId = movie.MovieId,
                 MovieTitle = movie.MovieTitle + " Updated",
                 Duration = movie.Duration + 10,
                 Genre = movie.Genre,
@@ -172,8 +173,8 @@ namespace Cinema_Test
                 ImageId = movie.ImageId
             };
 
-            await _adminModel.ModifyMovie(dto, movie.MovieId);
-            var updated = _context.movies.First(m => m.MovieId == movie.MovieId);
+            await _adminModel.ModifyMovie(dto);
+            var updated = _context.movies.First(m => m.MovieId == dto.MovieId);
             Assert.Equal(dto.MovieTitle, updated.MovieTitle);
         }
 
