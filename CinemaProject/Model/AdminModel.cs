@@ -95,9 +95,9 @@ namespace CinemaProject.Model
             }
         }
 
-        public async Task ModifyMovie(MovieDto dto, int movieId)
+        public async Task ModifyMovie(MovieDto dto)
         {
-            var movie = _context.movies.First(x => x.MovieId == movieId);
+            var movie = _context.movies.First(x => x.MovieId == dto.MovieId);
             if (movie == null)
             {
                 throw new InvalidOperationException("Movie not found");

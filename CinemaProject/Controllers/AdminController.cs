@@ -36,6 +36,7 @@ namespace CinemaProject.Controllers
             {
                 return BadRequest(e.Message);
             }
+
         }
 
         [Authorize(Roles = "Admin")]
@@ -114,11 +115,11 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("/modifymovie")]
-        public async Task<ActionResult> ModifyMovie([FromBody] MovieDto dto, [FromQuery] int movieId)
+        public async Task<ActionResult> ModifyMovie([FromBody] MovieDto dto)
         {
             try
             {
-                await _adminModel.ModifyMovie(dto, movieId);
+                await _adminModel.ModifyMovie(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)

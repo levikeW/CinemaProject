@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CinemaProject_Avalonia", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cinema_Test", "Cinema_Test\Cinema_Test.csproj", "{6F8A3396-46E4-44ED-87DA-FE98D880CF29}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cinema_IntegrationTest", "Cinema_IntegrationTest\Cinema_IntegrationTest.csproj", "{801EB34C-EC93-41FF-93D9-8354E6B5D7C7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{6F8A3396-46E4-44ED-87DA-FE98D880CF29}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F8A3396-46E4-44ED-87DA-FE98D880CF29}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F8A3396-46E4-44ED-87DA-FE98D880CF29}.Release|Any CPU.Build.0 = Release|Any CPU
+		{801EB34C-EC93-41FF-93D9-8354E6B5D7C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{801EB34C-EC93-41FF-93D9-8354E6B5D7C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{801EB34C-EC93-41FF-93D9-8354E6B5D7C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{801EB34C-EC93-41FF-93D9-8354E6B5D7C7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
