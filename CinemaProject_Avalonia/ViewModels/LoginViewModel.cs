@@ -2,9 +2,11 @@
 using CinemaProject_Avalonia.Dto;
 using CinemaProject_Avalonia.Models;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Net.Http.Json;
 using System.Text;
@@ -12,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
-    public class LoginViewModel
+    public class LoginViewModel : ViewModelBase
     {
         private readonly AuthModel _authModel;
         private readonly ApiSession _session;
@@ -20,15 +22,17 @@ namespace CinemaProject_Avalonia.ViewModels
         private string _email;
         private string _password;
 
-        private string _registEmail;
-        private string _registName;
-        private string _registPassword;
-        private string _registAddress;
+        private string _errorMessage;
 
         public AsyncRelayCommand LoginCommand { get; set; }
         public AsyncRelayCommand RegistCommand { get; set; }
 
         public event EventHandler NavigationToMainRequested;
+
+        public bool HasError
+        { 
+            get => !string.IsNullOrEmpty(ErrorMessage);
+        }
 
         public string Email
         {
@@ -36,6 +40,7 @@ namespace CinemaProject_Avalonia.ViewModels
             set
             {
                 _email = value;
+                OnPropertyChanged();
             }
         }
 
@@ -45,42 +50,18 @@ namespace CinemaProject_Avalonia.ViewModels
             set
             {
                 _password = value;
+                OnPropertyChanged();
             }
         }
 
-        public string RegistEmail
+        public string ErrorMessage
         {
-            get => _registEmail;
+            get => _errorMessage;
             set
             {
-                _registEmail = value;
-            }
-        }
-
-        public string RegistName
-        {
-            get => _registName;
-            set
-            {
-                _registName = value;
-            }
-        }
-
-        public string RegistPassword
-        {
-            get => _registPassword;
-            set
-            {
-                _registPassword = value;
-            }
-        }
-
-        public string RegistAddress
-        {
-            get => _registAddress;
-            set
-            {
-                _registAddress = value;
+                _errorMessage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasError));
             }
         }
 
@@ -90,7 +71,6 @@ namespace CinemaProject_Avalonia.ViewModels
             _authModel = model;
 
             LoginCommand = new AsyncRelayCommand(Login);
-            //RegistCommand = new AsyncRelayCommand(Regist);
         }
 
         private async Task Login()
@@ -113,61 +93,27 @@ namespace CinemaProject_Avalonia.ViewModels
                         }
                         else
                         {
+                            ErrorMessage = "Hiba: csak admin felhasználók tudnak belépni.";
                             Debug.WriteLine("Login failed: Only Admin users can log in.");
-
-                           // ErrorMessage = "Hiba: csak admin felhasználók tudnak belépni.";
                         }
                     }
                     else
                     {
+                        ErrorMessage = "Hiba: érvénytelen szerver válasz.";
                         Debug.WriteLine("Login failed: Invalid response from server.");
-                        //ErrorMessage = "Hiba: érvénytelen szerver válasz.";
                     }
+                }
+                else
+                {
+                    ErrorMessage = "Hiba: érvénytelen szerver válasz.";
                 }
             }
             catch (Exception ex)
             {
+                ErrorMessage = "Szerver hiba történt.";
                 Debug.WriteLine($"Login exception: {ex.Message}");
             }
         }
-
-
-        /*   private async Task Regist()
-           {
-               // NavigationToMainRequested?.Invoke(this, EventArgs.Empty);
-               if (string.IsNullOrWhiteSpace(RegistEmail) ||
-                   string.IsNullOrWhiteSpace(RegistName) ||
-                   string.IsNullOrWhiteSpace(RegistPassword) ||
-                   string.IsNullOrWhiteSpace(RegistAddress))
-                   return;
-               try
-               {
-                   var registerDto = new
-                   {
-                       Email = RegistEmail,
-                       Password = RegistPassword,
-                       FullName = RegistName,
-                       BillingAddress = RegistAddress
-                   };
-
-                   var response = await _session.Client.PostAsJsonAsync("api/user/regist?IsAdmin=false", registerDto);
-
-                   if (response.IsSuccessStatusCode)
-                   {
-                       Console.WriteLine("Registration OK");
-                       await Login();
-                   }
-                   else
-                   {
-                       var text = await response.Content.ReadAsStringAsync();
-                       Console.WriteLine($"Registration failed: {response.StatusCode} - {text}");
-                   }
-               }
-               catch (Exception ex)
-               {
-                   Console.WriteLine($"Registration exception: {ex.Message}");
-               }
-           }*/
     }
 }
 

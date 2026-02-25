@@ -4,8 +4,13 @@ using System.Runtime.CompilerServices;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
-    public abstract class ViewModelBase : ObservableObject
+    public class ViewModelBase : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
 
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
     }
 }

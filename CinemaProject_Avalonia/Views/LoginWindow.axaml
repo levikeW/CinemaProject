@@ -20,11 +20,6 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="*"/>
@@ -33,37 +28,19 @@
 		</Grid.ColumnDefinitions>
 
 		<!-- ================= HEADER ================= -->
-		<TextBlock Grid.ColumnSpan="3" Text="Log�" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Stretch" Padding="5" Background="#333"/>
+		<TextBlock Grid.ColumnSpan="3" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Stretch" Padding="5" Background="#333"/>
 
 		<!-- ================= CONTENT ================= -->
-		<Label Grid.Row="1" Grid.ColumnSpan="2" Content="Admin Login:" FontSize="20" FontWeight="Bold" Foreground="#333" HorizontalAlignment="Left" Margin="10"/>
+		<Label Grid.Row="1" Grid.ColumnSpan="2" Content="👤 Admin Login:" FontSize="22" FontWeight="Bold" Foreground="#333" HorizontalAlignment="Left" Margin="10"/>
 		<!-- ================= LOGIN ================= -->
-		<TextBlock Grid.Row="2" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="13" Text="Email" />
-		<TextBox Grid.Row="2" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10" Text="{Binding Email, Mode=TwoWay}" />
+		<TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" Margin="10 10 0 0" Text="📧 Email:" FontSize="18" Foreground="#333" />
+		<TextBox Grid.Row="3" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10 0 0 10" Text="{Binding Email, Mode=TwoWay}" />
 
-		<TextBlock Grid.Row="3" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="13" Text="Password"/>
-		<TextBox Grid.Row="3" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10" Text="{Binding Password, Mode=TwoWay}" PasswordChar="*"/>
+		<TextBlock Grid.Row="4" Grid.Column="0" HorizontalAlignment="Left" Margin="10 10 0 0" Text="🔒 Password:" FontSize="18" Foreground="#333"/>
+		<TextBox Grid.Row="5" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10 0 0 10" Text="{Binding Password, Mode=TwoWay}" PasswordChar="*"/>
 
-		<Button Grid.Row="4" Grid.ColumnSpan="2" Grid.Column="0"  Content="Login" Command="{Binding LoginCommand}" Margin="10"/>
+		<Button Grid.Row="6" Grid.ColumnSpan="2" Grid.Column="0"  Content="Login" FontSize="18" Foreground="#333" Command="{Binding LoginCommand}" Margin="10"/>
 
-		<!-- ================= REGIST ================= 
-		<Label Grid.Row="5" Grid.ColumnSpan="2" Content="Regist:" FontSize="20" FontWeight="Bold" Foreground="#333" HorizontalAlignment="Left" Margin="10"/>
-
-		<TextBlock Grid.Row="6" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="13" Text="Email" />
-		<TextBox Grid.Row="6" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10" Text="{Binding RegistEmail, Mode=TwoWay}"/>
-
-		<TextBlock Grid.Row="7" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="13" Text="FullName"/>
-		<TextBox Grid.Row="7" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10" Text="{Binding RegistName, Mode=TwoWay}"/>
-
-		<TextBlock Grid.Row="8" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="13" Text="Password" />
-		<TextBox Grid.Row="8" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10" Text="{Binding RegistPassword, Mode=TwoWay}"/>
-
-		<TextBlock Grid.Row="9" Grid.Column="0" Height="30" HorizontalAlignment="Left" Margin="10 10 0 0" Text="BillingAddress" />
-		<TextBox Grid.Row="9" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10 0 0 0" Text="{Binding RegistAddress, Mode=TwoWay}" />
-		
-		<Label Grid.Row="10" Grid.ColumnSpan="2" Content="(ZIP code, Street Name, Street Number)" Margin="10 0 0 0" FontSize="11" Foreground="#333" HorizontalAlignment="Left"/>
-
-		<Button Grid.Row="12" Grid.Column="0" Content="Regist" Command="{Binding RegistCommand}" Margin="10" />
-		-->
+		<TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Left" Margin="10" IsVisible="{Binding HasError}"/>
 	</Grid>
 </Window>

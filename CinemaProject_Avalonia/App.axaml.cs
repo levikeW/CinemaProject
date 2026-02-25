@@ -26,8 +26,9 @@ namespace CinemaProject_Avalonia
                 DisableAvaloniaDataAnnotationValidation();
                 var session = new ApiSession("https://localhost:7199", acceptAnyCert: true);
                 var authModel = new AuthModel(session);
+                var mainModel = new MainWindowModel(session);
                 var loginViewModel = new LoginViewModel(session, authModel);
-                var viewModel = new MainWindowViewModel();
+                var viewModel = new MainWindowViewModel(mainModel);
 
                 var loginWindow = new LoginWindow
                 {
@@ -44,7 +45,7 @@ namespace CinemaProject_Avalonia
                     desktop.MainWindow = mainWindow;
                     mainWindow.Show();
 
-                    await viewModel.LoadAsync();
+                  //  await viewModel.LoadAllDataAsync();
 
                     loginWindow.Close();
                 };
