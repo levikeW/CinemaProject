@@ -219,7 +219,7 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {

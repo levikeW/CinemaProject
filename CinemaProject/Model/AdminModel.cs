@@ -202,6 +202,7 @@ namespace CinemaProject.Model
                 await _context.SaveChangesAsync();
                 await trx.CommitAsync();
             }
+            await Task.CompletedTask;
         }
 
         public async Task DeleteScreening(int screeningId)
