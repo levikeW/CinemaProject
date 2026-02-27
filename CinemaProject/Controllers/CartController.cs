@@ -107,6 +107,26 @@ namespace CinemaProject.Controllers
             }
         }
 
+
+        [HttpDelete("/clearcart")]
+        public async Task<ActionResult> ClearCart([FromQuery] int userId)
+        {
+            try
+            {
+                await _cartModel.ClearCart(userId);
+                return Ok();
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+
         /* [HttpDelete("/deletecart")]
          public ActionResult DeleteCart(int cartId)
          {
@@ -126,22 +146,5 @@ namespace CinemaProject.Controllers
          }
         */
 
-        [HttpDelete("/clearcart")]
-        public async Task<ActionResult> ClearCart([FromQuery] int userId)
-        {
-            try
-            {
-                await _cartModel.ClearCart(userId);
-                return Ok();
-            }
-            catch (InvalidOperationException e)
-            {
-                return BadRequest(e.Message);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
     }
 }
