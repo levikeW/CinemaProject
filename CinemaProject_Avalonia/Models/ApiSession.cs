@@ -34,6 +34,7 @@ namespace CinemaProject_Avalonia.Models
 
             Client = new HttpClient(handler)
             {
+                Timeout = TimeSpan.FromSeconds(60),
                 BaseAddress = new Uri(url)
             };
         }

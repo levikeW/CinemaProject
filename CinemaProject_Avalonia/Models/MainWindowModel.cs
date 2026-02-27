@@ -56,7 +56,7 @@ namespace CinemaProject_Avalonia.Models
 
         public async Task<List<FilmScreeningDto>> GetAllScreenings()
         {
-            var response = await _client.GetAsync("/getallscreenings");
+            var response = await _client.GetAsync("getallscreenings");
 
             Console.WriteLine(response.StatusCode);
 

@@ -291,6 +291,7 @@ namespace CinemaProject_Avalonia.ViewModels
 
                 foreach (var screeningDto in screenings)
                 {
+                    Debug.WriteLine($"Screening: {screeningDto.MovieTitle}");
                     var movie = movies.FirstOrDefault(m => m.MovieId == screeningDto.MovieId) ?? new MovieDto();
 
                     var screeningVm = new ScreeningsViewModel(this)
@@ -332,6 +333,12 @@ namespace CinemaProject_Avalonia.ViewModels
                 ErrorMessage = "Válassz ki egy filmet a vetítés létrehozásához!";
                 return;
             }
+            if (SelectedDate == DateTimeOffset.MinValue)
+            {
+                ErrorMessage = "Válassz egy érvényes dátumot!";
+                return;
+            }
+
 
             try
             {
@@ -425,9 +432,9 @@ namespace CinemaProject_Avalonia.ViewModels
 
             foreach (var screening in Screenings)
             {
+                bool matchesDate = !IsDateFilterActive || screening.ShowTimes.Any(d => d.DateTime.Date == SelectedDate.Date);
                 bool matchesSearch = string.IsNullOrWhiteSpace(SearchText) || screening.Title.ToLower().Contains(SearchText.ToLower());
                 bool matchesRoom = string.IsNullOrEmpty(SelectedRoom) || SelectedRoom == "Mind" || screening.Room == SelectedRoom;
-                bool matchesDate = !IsDateFilterActive || screening.ShowTimes.Any(d => d.DateTime.Date == SelectedDate.Date);
 
                 if (matchesSearch && matchesRoom && matchesDate)
                     FilteredScreenings.Add(screening);
