@@ -24,10 +24,10 @@ namespace CinemaProject_Avalonia
                 // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
                 // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
                 DisableAvaloniaDataAnnotationValidation();
-                var session = new ApiSession("https://localhost:7199", acceptAnyCert: true);
+                var session = new ApiSession("https://localhost:7199/",acceptAnyCert: true);
                 var authModel = new AuthModel(session);
-                var mainModel = new MainWindowModel(session);
                 var loginViewModel = new LoginViewModel(session, authModel);
+                var mainModel = new MainWindowModel(session);
                 var viewModel = new MainWindowViewModel(mainModel);
 
                 var loginWindow = new LoginWindow

@@ -20,12 +20,16 @@ namespace CinemaProject_Avalonia.Models
         public ApiSession(string url, bool acceptAnyCert = false)
         {
             Cookies = new CookieContainer();
-            var handler = new HttpClientHandler();
+
+            var handler = new HttpClientHandler
+            {
+                CookieContainer = Cookies
+            };
+
             if (acceptAnyCert)
             {
                 handler.ServerCertificateCustomValidationCallback =
                     HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-                handler.CookieContainer = Cookies;
             }
 
             Client = new HttpClient(handler)

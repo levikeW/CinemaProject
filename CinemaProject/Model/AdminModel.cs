@@ -73,7 +73,7 @@ namespace CinemaProject.Model
             }
         }
 
-        public async Task NewScreening(NewScreeningDto dto)
+        public async Task<NewScreeningDto> NewScreening(NewScreeningDto dto)
         {
             if (_context.filmScreenings.Any(x => x.FilmScreeningId == dto.FilmScreeningId))
             {
@@ -93,6 +93,8 @@ namespace CinemaProject.Model
                 await _context.SaveChangesAsync();
                 await trx.CommitAsync();
             }
+            await Task.CompletedTask;
+            return dto;
         }
 
         public async Task ModifyMovie(MovieDto dto)

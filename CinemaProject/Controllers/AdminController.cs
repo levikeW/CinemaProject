@@ -96,12 +96,12 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost("/newscreening")]
-        public async Task<ActionResult> NewScreening([FromBody] NewScreeningDto dto)
+        public async Task<ActionResult<NewScreeningDto>> NewScreening([FromBody] NewScreeningDto dto)
         {
             try
             {
-                await _adminModel.NewScreening(dto);
-                return Ok();
+                var result =await _adminModel.NewScreening(dto);
+                return Ok(result);
             }
             catch (InvalidOperationException e)
             {
