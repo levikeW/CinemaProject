@@ -231,6 +231,86 @@ namespace Cinema_IntegrationTest
             };
             db.paymentReservations.Add(pastReservation);
             db.SaveChanges();
+
+
+
+            //DELETE
+            var testUser = new User
+            {
+                Email = "deleteuser@cinema.hu",
+                Password = HashPass("test123"),
+                FullName = "Delete User",
+                BillingAddress = "Test Address",
+                Role = "User"
+            };
+            db.users.Add(testUser);
+            db.SaveChanges();
+
+            var testImage = new Image { ImageContent = new byte[] { 0xFF } };
+            db.images.Add(testImage);
+            db.SaveChanges();
+
+
+            var testMovie = new Movie
+            {
+                MovieTitle = "DeleteMovie",
+                Duration = 100,
+                Genre = "Test",
+                Director = "Test Director",
+                Description = "Test Movie for delete",
+                ImageId = testImage.ImageId,
+                Status = MovieStatus.NowRunning
+            };
+            db.movies.Add(testMovie);
+            db.SaveChanges();
+
+
+            var testRoom = new Room
+            {
+                RoomName = "DeleteRoom"
+            };
+            db.rooms.Add(testRoom);
+            db.SaveChanges();
+
+            var testScreening = new FilmScreening
+            {
+                MovieId = testMovie.MovieId,
+                MovieTitle = testMovie.MovieTitle,
+                RoomId = testRoom.RoomId,
+                RoomName = testRoom.RoomName,
+                Date = DateTime.UtcNow.AddDays(10)
+            };
+            db.filmScreenings.Add(testScreening);
+            db.SaveChanges();
+
+
+            var testCart = new Cart
+            {
+                UserId = testUser.UserId,
+                FilmScreeningId = testScreening.FilmScreeningId,
+                TicketId = tickets[0].TicketId,
+                Amount = 1,
+                TotalPrice = tickets[0].TicketPrice
+            };
+            db.carts.Add(testCart);
+            db.SaveChanges();
+
+            var testReservation = new PaymentReservation
+            {
+                CartId = testCart.CartId,
+                FilmScreeningId = testScreening.FilmScreeningId,
+                UserId = testUser.UserId,
+                Amount = testCart.Amount,
+                Date = DateTime.UtcNow.AddHours(2),
+                IsPaid = false
+            };
+            db.paymentReservations.Add(testReservation);
+            db.SaveChanges();
+
+
+
+
+
         }
 
 
