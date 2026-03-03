@@ -21,7 +21,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpGet("/getalluser")]
+        [HttpGet("getalluser")]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUser()
         {
             try
@@ -40,7 +40,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpGet("/getallreservation")]
+        [HttpGet("getallreservation")]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetAllReservation()
         {
             try
@@ -58,7 +58,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpGet("/searchuser")]
+        [HttpGet("searchuser")]
         public async Task<ActionResult<IEnumerable<UserDto>>> SearchUser([FromQuery] string item)
         {
             try
@@ -76,7 +76,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("/newmovie")]
+        [HttpPost("newmovie")]
         public async Task<ActionResult> NewMovie([FromBody] NewMovieDto dto)
         {
             try
@@ -95,7 +95,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("/newscreening")]
+        [HttpPost("newscreening")]
         public async Task<ActionResult<NewScreeningDto>> NewScreening([FromBody] NewScreeningDto dto)
         {
             try
@@ -114,7 +114,26 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("/modifymovie")]
+        [HttpPost("newroom")]
+        public async Task<ActionResult<NewRoomDto>> NewRoom([FromBody] NewRoomDto dto)
+        {
+            try
+            {
+                var result = await _adminModel.NewRoom(dto);
+                return Ok(result);
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("modifymovie")]
         public async Task<ActionResult> ModifyMovie([FromBody] MovieDto dto)
         {
             try
@@ -133,7 +152,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("/modifyfilmscreening")]
+        [HttpPut("modifyfilmscreening")]
         public async Task<ActionResult> ModifyFilmScreening([FromBody] FilmScreeningDto dto, [FromQuery] int screeningId)
         {
             try
@@ -152,7 +171,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("/modifyreservation")]
+        [HttpPut("modifyreservation")]
         public async Task<ActionResult> ModifyReservation([FromBody] PaymentReservationDto dto, [FromQuery] int reservationId)
         {
             try
@@ -171,7 +190,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("/modifyticket")]
+        [HttpPut("modifyticket")]
         public async Task<ActionResult> ModifyTicket([FromBody] TicketDto dto, [FromQuery] int ticketId)
         {
             try
@@ -190,7 +209,26 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deleteuser")]
+        [HttpPut("modifyroom")]
+        public async Task<ActionResult> ModifyRoom([FromBody] RoomDto dto, [FromQuery] int roomId)
+        {
+            try
+            {
+                await _adminModel.ModifyRoom(dto, roomId);
+                return Ok();
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("deleteuser")]
         public async Task<ActionResult> DeleteUser([FromQuery] int userId)
         {
             try
@@ -209,7 +247,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deletemovie")]
+        [HttpDelete("deletemovie")]
         public async Task<ActionResult> DeleteMovie([FromQuery] int movieId)
         {
             try
@@ -228,7 +266,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deletescreening")]
+        [HttpDelete("deletescreening")]
         public async Task<ActionResult> DeleteScreening([FromQuery] int screeningId)
         {
             try
@@ -247,7 +285,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deletereservation")]
+        [HttpDelete("deletereservation")]
         public async Task<ActionResult> DeleteReservation([FromQuery] int reservationId)
         {
             try
@@ -266,7 +304,26 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("/uploadimage")]
+        [HttpDelete("deleteroom")]
+        public async Task<ActionResult> DeleteRoom([FromQuery] int roomId)
+        {
+            try
+            {
+                await _adminModel.DeleteRoom(roomId);
+                return Ok();
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("uploadimage")]
         public async Task<ActionResult> UploadImage([FromBody] ImageDto dto)
         {
             try
@@ -285,7 +342,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deleteimage")]
+        [HttpDelete("deleteimage")]
         public async Task<ActionResult> DeleteImage([FromQuery] int imageId)
         {
             try
@@ -303,7 +360,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPut("/changerole")]
+        [HttpPut("changerole")]
         public async Task<ActionResult> ChangeRole([FromQuery] int userId)
         {
             try

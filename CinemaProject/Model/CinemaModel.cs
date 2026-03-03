@@ -56,6 +56,15 @@ namespace CinemaProject.Model
             }).ToList();
         }
 
+        public async Task<IEnumerable<RoomDto>> GetAllRooms()
+        {
+            return _context.rooms.Select(x => new RoomDto
+            {
+                RoomId = x.RoomId,
+                RoomName = x.RoomName,
+            }).ToList();
+        }
+
         public async Task<IEnumerable<MovieDto>> SearchMovieByTitle(string item)
         {
             return _context.movies.Include(x => x.Image).Include(x => x.FilmScreenings).Where(x => x.MovieTitle.ToLower().Contains(item.ToLower())).Select(x => new MovieDto

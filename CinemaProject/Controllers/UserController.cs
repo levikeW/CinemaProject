@@ -76,7 +76,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "User")]
-        [HttpPost("/logout")]
+        [HttpPost("logout")]
         public async Task<ActionResult> LogOut()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -84,7 +84,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "User")]
-        [HttpGet("/viewprofile")]
+        [HttpGet("viewprofile")]
         public async Task<ActionResult<IEnumerable<UserDto>>> ViewProfile([FromQuery] int userId)
         {
             try
@@ -102,7 +102,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "User")]
-        [HttpDelete("/deleteprofile")]
+        [HttpDelete("deleteprofile")]
         public async Task<ActionResult> DeleteProfile([FromQuery] int userId)
         {
             try
@@ -121,7 +121,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "User")]
-        [HttpPut("/updateprofile")]
+        [HttpPut("updateprofile")]
         public async Task<ActionResult> UpdateProfile([FromBody] UpdateUserDto dto)
         {
             try
@@ -140,7 +140,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "User")]
-        [HttpPut("/changepass")]
+        [HttpPut("changepass")]
         public async Task<ActionResult> ChangePassword([FromQuery] int userId, [FromQuery] string oldPass, [FromQuery] string newPass)
         {
             try
@@ -159,7 +159,7 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "User")]
-        [HttpGet("/getmydata")]
+        [HttpGet("getmydata")]
         [Authorize]
         public async Task<ActionResult<MyDataDto>> WhoAmI()
         {

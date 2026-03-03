@@ -16,7 +16,7 @@ namespace CinemaProject.Controllers
             _paymentReservationModel = paymentReservationModel;
         }
 
-        [HttpPost("/createreservation")]
+        [HttpPost("createreservation")]
         public async Task<ActionResult> CreateReservation([FromQuery] int cartId)
         {
             try
@@ -34,7 +34,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpDelete("/cancelreservation")]
+        [HttpDelete("cancelreservation")]
         public async Task<ActionResult> CancelReservaton([FromQuery] int reservationId)
         {
             try
@@ -52,7 +52,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPut("/payreservation")]
+        [HttpPut("payreservation")]
         public async Task<ActionResult> PayReservation([FromQuery] int reservationId)
         {
             try
@@ -70,7 +70,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getreceipt")]
+        [HttpGet("getreceipt")]
         public async Task<ActionResult<ReceiptDto>> GetReceipt( [FromQuery] int reservationId)
         {
             try
@@ -87,7 +87,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getconfirmation")]
+        [HttpGet("getconfirmation")]
         public async Task<ActionResult<ConfirmationDto>> GetConfirmation([FromQuery] int reservationId)
         {
             try
@@ -104,7 +104,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/viewupcomingreservation")]
+        [HttpGet("viewupcomingreservation")]
         public async Task<ActionResult<List<PaymentReservationDto>>> ViewUpcomingReservation([FromQuery] int userId)
         {
             try
@@ -121,7 +121,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/viewpastreservation")]
+        [HttpGet("viewpastreservation")]
         public async Task<ActionResult<List<PaymentReservationDto>>> ViewPastReservations([FromQuery] int userId)
         {
             try

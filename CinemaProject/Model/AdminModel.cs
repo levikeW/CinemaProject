@@ -1,4 +1,5 @@
-﻿using Cinema.Dto;
+﻿using System.Net.Sockets;
+using Cinema.Dto;
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -88,7 +89,26 @@ namespace CinemaProject.Model
                     RoomName = dto.RoomName,
                     RoomId = dto.RoomId,
                     Date = dto.Date
+                });
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+            await Task.CompletedTask;
+            return dto;
+        }
 
+        public async Task<NewRoomDto> NewRoom(NewRoomDto dto)
+        {
+            if (_context.rooms.Any(x => x.RoomId == dto.RoomId))
+            {
+                throw new InvalidOperationException("Already exists");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.rooms.Add(new Persistence.Room
+                {
+                    RoomId = dto.RoomId,
+                    RoomName = dto.RoomName
                 });
                 await _context.SaveChangesAsync();
                 await trx.CommitAsync();
@@ -178,6 +198,21 @@ namespace CinemaProject.Model
             }
         }
 
+        public async Task ModifyRoom(RoomDto dto, int roomId)
+        {
+            var room = _context.rooms.First(x => x.RoomId == roomId);
+            if (room == null)
+            {
+                throw new InvalidOperationException("Room not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                room.RoomName = dto.RoomName;
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+        }
+
         public async Task DeleteUser(int userId)
         {
             if (!_context.users.Any(x => x.UserId == userId))
@@ -220,6 +255,20 @@ namespace CinemaProject.Model
                 await trx.CommitAsync();
             }
 
+        }
+
+        public async Task DeleteRoom(int roomId)
+        {
+            if (!_context.rooms.Any(x => x.RoomId == roomId))
+            {
+                throw new InvalidOperationException("Room not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.rooms.Remove(_context.rooms.Where(x => x.RoomId == roomId).First());
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
         }
 
         public async Task DeleteReservation(int reservationId)

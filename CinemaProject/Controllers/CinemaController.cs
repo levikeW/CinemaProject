@@ -18,7 +18,7 @@ namespace CinemaProject.Controllers
             _cinemaModel = cinemaModel;
         }
 
-        [HttpGet("/getallmovies")]
+        [HttpGet("getallmovies")]
         public async Task<ActionResult<IEnumerable<MovieDto>>> GetAllMovies()
         {
             try
@@ -35,7 +35,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getallscreenings")]
+        [HttpGet("getallscreenings")]
         public async Task<ActionResult<IEnumerable<FilmScreeningDto>>> GetAllScreening()
         {
             try
@@ -52,7 +52,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getallticket")]
+        [HttpGet("getallticket")]
         public async Task<ActionResult<IEnumerable<TicketDto>>> GetAllTicket()
         {
             try
@@ -69,7 +69,24 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/searchmoviebytitle")]
+        [HttpGet("getallrooms")]
+        public async Task<ActionResult<IEnumerable<RoomDto>>> GetAllRoom()
+        {
+            try
+            {
+                return Ok(await _cinemaModel.GetAllRooms());
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet("searchmoviebytitle")]
         public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByTitle([FromQuery] string item)
         {
             try
@@ -86,7 +103,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/searchmoviebygenre")]
+        [HttpGet("searchmoviebygenre")]
         public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByGenre([FromQuery] string item)
         {
             try
@@ -103,7 +120,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/searchmoviebydirector")]
+        [HttpGet("searchmoviebydirector")]
         public async Task<ActionResult<IEnumerable<MovieDto>>> SearchMovieByDirector([FromQuery] string item)
         {
             try
@@ -120,7 +137,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getscreeningdetails")]
+        [HttpGet("getscreeningdetails")]
         public async Task<ActionResult<IEnumerable<FilmScreeningDto>>> GetScreeningDetails([FromQuery] DateTimeOffset time)
         {
             try
@@ -137,7 +154,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getupcomingscreenings")]
+        [HttpGet("getupcomingscreenings")]
         public async Task<ActionResult<List<FilmScreeningDto>>> GetUpcomingScreenings()
         {
             try
@@ -154,7 +171,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/ismovienowrunning")]
+        [HttpGet("ismovienowrunning")]
         public async Task<ActionResult<bool>> IsMovieNowRunning([FromQuery] string movieTitle)
         {
             try
@@ -171,7 +188,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getroomcapacity")]
+        [HttpGet("getroomcapacity")]
         public async Task<ActionResult<int>> GetRoomCapacity([FromQuery] int roomId)
         {
             try
@@ -188,7 +205,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getseats")]
+        [HttpGet("getseats")]
         public async Task<ActionResult<List<SeatDto>>> GetSeats([FromQuery] int roomId, [FromQuery] int screeningId)
         {
             try
@@ -205,7 +222,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/isseatavailable")]
+        [HttpGet("isseatavailable")]
         public async Task<ActionResult<bool>> IsSeatAvailable([FromQuery] int seatId, [FromQuery] int screeningId)
         {
             try
@@ -222,7 +239,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/hasfreeseat")]
+        [HttpGet("hasfreeseat")]
         public async Task<ActionResult<bool>> HasFreeSeat([FromQuery] int screeningId, [FromQuery] int requiredSeats)
         {
             try
@@ -239,7 +256,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/selecttickettype")]
+        [HttpGet("selecttickettype")]
         public async Task<ActionResult<TicketDto>> SelectTicketType([FromQuery] int screeningId)
         {
             try
@@ -256,7 +273,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPut("/setquantity")]
+        [HttpPut("setquantity")]
         public async Task<ActionResult> SetQuantity([FromQuery] int cartId, [FromQuery] int amount)
         {
             try
@@ -274,7 +291,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getimage")]
+        [HttpGet("getimage")]
         public async Task<ActionResult<ImageDto>> GetImage([FromQuery] int movieId)
         {
             try
