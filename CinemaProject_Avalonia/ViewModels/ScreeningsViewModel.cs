@@ -17,6 +17,7 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private string _title { get; set; } = "";
         private string _room { get; set; } = "";
+
         public ObservableCollection<DateTimeOffset> ShowTimes { get; set; } = new();
 
         public event EventHandler? ScreeningDeleted;
@@ -48,6 +49,10 @@ namespace CinemaProject_Avalonia.ViewModels
         public ScreeningsViewModel(MainWindowViewModel mainViewModel)
         {
             _mainViewModel = mainViewModel;
+
+            _title = Title;
+            _room = Room;
+
             OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
             DeleteCommand = new RelayCommand(Delete);
         }

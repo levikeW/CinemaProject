@@ -7,27 +7,28 @@ using System.Threading.Tasks;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
-    public class PriceViewModel : ViewModelBase
+    public class UserViewModel : ViewModelBase
     {
         public MainWindowViewModel _viewModel;
+        private string _email;
 
         private string _name;
-        private decimal _amount;
+        private string _role;
 
-        public event EventHandler? PriceDeleted;
+        public event EventHandler? UserDeleted;
 
         public RelayCommand OpenEditPanelCommand { get; }
         public RelayCommand DeleteCommand { get; }
-        public decimal Amount
+
+        public string Email
         {
-            get => _amount;
+            get => _email;
             set
             {
-                _amount = value;
+                _email = value;
                 OnPropertyChanged();
             }
         }
-
         public string Name
         {
             get => _name;
@@ -37,24 +38,37 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
+        public string Role
+        {
+            get => _role;
+            set
+            {
+                _role = value;
+                OnPropertyChanged();
+            }
+        }
 
-        public PriceViewModel(MainWindowViewModel viewModel)
+        public UserViewModel(MainWindowViewModel viewModel)
         {
             _viewModel = viewModel;
-            _amount = Amount;
+
+            _email = Email;
+            _name = Name;
+            _role = Role;
+
             OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
             DeleteCommand = new RelayCommand(Delete);
         }
 
         private void OpenEditPanel()
         {
-           _viewModel.SelectedPriceItem = this;
+            _viewModel.SelectedUserItem = this;
             _viewModel.IsEditPanelOpen = true;
         }
 
         private void Delete()
         {
-            PriceDeleted?.Invoke(this, EventArgs.Empty);
+            UserDeleted?.Invoke(this, EventArgs.Empty);
         }
     }
 }

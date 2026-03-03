@@ -1,22 +1,23 @@
-﻿using CommunityToolkit.Mvvm.Input;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Input;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
-    public class CategoryViewModel : ViewModelBase
+    public class RoomViewModel : ViewModelBase
     {
         public MainWindowViewModel _viewModel;
 
         private string _name;
 
-        public event EventHandler? CategoryDeleted;
+        public event EventHandler? RoomDeleted;
 
         public RelayCommand OpenEditPanelCommand { get; }
         public RelayCommand DeleteCommand { get; }
+
         public string Name
         {
             get => _name;
@@ -26,23 +27,26 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
-        public CategoryViewModel(MainWindowViewModel viewModel)
+
+        public RoomViewModel(MainWindowViewModel viewModel)
         {
             _viewModel = viewModel;
+
             _name = Name;
+
             OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
             DeleteCommand = new RelayCommand(Delete);
         }
 
         private void OpenEditPanel()
         {
-            _viewModel.SelectedCategoryItem = this;
+            _viewModel.SelectedRoomItem = this;
             _viewModel.IsEditPanelOpen = true;
         }
 
         private void Delete()
         {
-            CategoryDeleted?.Invoke(this, EventArgs.Empty);
+            RoomDeleted?.Invoke(this, EventArgs.Empty);
         }
     }
 }

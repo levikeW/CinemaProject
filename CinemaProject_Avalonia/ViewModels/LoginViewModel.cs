@@ -75,6 +75,7 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private async Task Login()
         {
+            NavigationToMainRequested?.Invoke(this, EventArgs.Empty);
             try
             {
                 var loginDto = new { email = Email, password = Password };

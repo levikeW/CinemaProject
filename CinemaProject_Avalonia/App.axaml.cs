@@ -24,29 +24,40 @@ namespace CinemaProject_Avalonia
                 // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
                 // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
                 DisableAvaloniaDataAnnotationValidation();
+
                 var session = new ApiSession("https://localhost:7199/",acceptAnyCert: true);
                 var authModel = new AuthModel(session);
-                var loginViewModel = new LoginViewModel(session, authModel);
                 var mainModel = new MainWindowModel(session);
-                var viewModel = new MainWindowViewModel(mainModel);
+
+                var loginViewModel = new LoginViewModel(session, authModel);    
+                var viewModel = new MainWindowViewModel(mainModel,authModel);
 
                 var loginWindow = new LoginWindow
                 {
                     DataContext = loginViewModel
                 };
 
-                loginViewModel.NavigationToMainRequested += async (s, e) =>
+                loginViewModel.NavigationToMainRequested += (s, e) =>
                 {
                     var mainWindow = new MainWindow
                     {
                         DataContext = viewModel
                     };
 
+                    viewModel.ExitToNavigationRequest += (s2, e2) =>
+                    {
+                        var newLoginWindow = new LoginWindow
+                        {
+                            DataContext = new LoginViewModel(session, authModel)
+                        };
+
+                        desktop.MainWindow = newLoginWindow;
+                        newLoginWindow.Show();
+                        mainWindow.Close();
+                    };
+
                     desktop.MainWindow = mainWindow;
                     mainWindow.Show();
-
-                  //  await viewModel.LoadAllDataAsync();
-
                     loginWindow.Close();
                 };
 
