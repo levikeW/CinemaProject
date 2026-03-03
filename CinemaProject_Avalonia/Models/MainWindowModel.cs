@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Cinema.Dto;
 using CinemaProject.Dto;
+using CinemaProject.Persistence;
 
 namespace CinemaProject_Avalonia.Models
 {
@@ -114,6 +115,32 @@ namespace CinemaProject_Avalonia.Models
         public async Task<TicketDto> SelectTicketType(int screeningId)
         {
             return await _client.GetFromJsonAsync<TicketDto>($"api/cinema/selecttickettype?screeningId={screeningId}");
+        }
+
+        // ==================== ROOMS ====================
+
+        public async Task<List<RoomDto>> GetAllRooms()
+        {
+            return await _client.GetFromJsonAsync<List<RoomDto>>("getallrooms");
+        }
+
+        public async Task<NewRoomDto> NewRoom(NewRoomDto dto)
+        {
+            var response = await _client.PostAsJsonAsync("api/admin/newroom", dto);
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<NewRoomDto>();
+            return result!;
+        }
+
+        public async Task ModifyRoom(RoomDto dto, int roomId)
+        {
+            var response = await _client.PutAsJsonAsync($"api/admin/modifyroom?roomId={roomId}", dto);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task DeleteRoom(int roomId)
+        {
+            var response = await _client.DeleteAsync($"api/admin/deleteroom?roomId={roomId}");
         }
 
         // ===================== USERS (ADMIN) =====================
