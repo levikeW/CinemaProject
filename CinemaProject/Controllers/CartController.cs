@@ -1,4 +1,5 @@
 ﻿using Cinema.Dto;
+using CinemaProject.Dto;
 using CinemaProject.Model;
 using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Http;
@@ -90,11 +91,12 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("modifycart")]
-        public async Task<ActionResult> ModifyCart([FromQuery] int cartId, [FromQuery] int? newAmount = null, [FromQuery] List<int>? newSeatIds = null)
+        public async Task<ActionResult> ModifyCart([FromBody] ModifyCartDto dto)
+            
         {
             try
             {
-                await _cartModel.ModifyCart(cartId, newAmount, newSeatIds);
+                await _cartModel.ModifyCart(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
