@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using CinemaProject.Model;
 
 namespace Cinema_IntegrationTest
 {
@@ -66,7 +67,7 @@ namespace Cinema_IntegrationTest
             db.rooms.AddRange(rooms);
             db.SaveChanges();
 
-            // EATS
+            // SEATS
             var seats = new List<Seat>();
             foreach (var room in rooms)
             {
@@ -232,9 +233,7 @@ namespace Cinema_IntegrationTest
             db.paymentReservations.Add(pastReservation);
             db.SaveChanges();
 
-
-
-            //DELETE
+            // DELETE USER & TEST DATA
             var testUser = new User
             {
                 Email = "deleteuser@cinema.hu",
@@ -250,7 +249,6 @@ namespace Cinema_IntegrationTest
             db.images.Add(testImage);
             db.SaveChanges();
 
-
             var testMovie = new Movie
             {
                 MovieTitle = "DeleteMovie",
@@ -263,7 +261,6 @@ namespace Cinema_IntegrationTest
             };
             db.movies.Add(testMovie);
             db.SaveChanges();
-
 
             var testRoom = new Room
             {
@@ -283,37 +280,112 @@ namespace Cinema_IntegrationTest
             db.filmScreenings.Add(testScreening);
             db.SaveChanges();
 
-
-            var testCart = new Cart
+            foreach (var user in users)
             {
-                UserId = testUser.UserId,
-                FilmScreeningId = testScreening.FilmScreeningId,
-                TicketId = tickets[0].TicketId,
-                Amount = 1,
-                TotalPrice = tickets[0].TicketPrice
-            };
-            db.carts.Add(testCart);
-            db.SaveChanges();
+                var screening = screenings.First();
+                var ticket = tickets.First();
+                var testCart = new Cart
+                {
+                    UserId = testUser.UserId,
+                    FilmScreeningId = testScreening.FilmScreeningId,
+                    TicketId = tickets[0].TicketId,
+                    Amount = 1,
+                    TotalPrice = tickets[0].TicketPrice
+                };
+                db.carts.Add(testCart);
+                db.SaveChanges();
 
-            var testReservation = new PaymentReservation
+                var testReservation = new PaymentReservation
+                {
+                    CartId = testCart.CartId,
+                    FilmScreeningId = testScreening.FilmScreeningId,
+                    UserId = testUser.UserId,
+                    Amount = testCart.Amount,
+                    Date = DateTime.UtcNow.AddHours(2),
+                    IsPaid = false
+                };
+                db.paymentReservations.Add(testReservation);
+                db.SaveChanges();
+            }
+
+            // CINEMA
+            if (!db.users.Any(u => u.Email == "integration@cinema.hu"))
             {
-                CartId = testCart.CartId,
-                FilmScreeningId = testScreening.FilmScreeningId,
-                UserId = testUser.UserId,
-                Amount = testCart.Amount,
-                Date = DateTime.UtcNow.AddHours(2),
-                IsPaid = false
-            };
-            db.paymentReservations.Add(testReservation);
-            db.SaveChanges();
+                var integrationUser = new User
+                {
+                    Email = "integration@cinema.hu",
+                    Password = HashPass("integration"),
+                    FullName = "Integration User",
+                    BillingAddress = "Test Address",
+                    Role = "User"
+                };
+                db.users.Add(integrationUser);
+                db.SaveChanges();
 
+                var integrationRoom = new Room { RoomName = "Integration Room" };
+                db.rooms.Add(integrationRoom);
+                db.SaveChanges();
 
+                var integrationMovie = new Movie
+                {
+                    MovieTitle = "Integration Movie",
+                    Duration = 110,
+                    Genre = "Drama",
+                    Director = "Integration Director",
+                    Description = "Integration test movie",
+                    ImageId = images[0].ImageId,
+                    Status = MovieStatus.NowRunning
+                };
+                db.movies.Add(integrationMovie);
+                db.SaveChanges();
 
+                var integrationScreening = new FilmScreening
+                {
+                    MovieId = integrationMovie.MovieId,
+                    MovieTitle = integrationMovie.MovieTitle,
+                    RoomId = integrationRoom.RoomId,
+                    RoomName = integrationRoom.RoomName,
+                    Date = DateTime.UtcNow.AddDays(5)
+                };
+                db.filmScreenings.Add(integrationScreening);
+                db.SaveChanges();
 
+                var integrationTicket = new Ticket
+                {
+                    FilmScreeningId = integrationScreening.FilmScreeningId,
+                    TicketType = "Adult",
+                    TicketPrice = 1500
+                };
+                db.tickets.Add(integrationTicket);
+                db.SaveChanges();
 
+                var integrationSeats = new List<Seat>();
+                for (int i = 1; i <= 5; i++)
+                {
+                    integrationSeats.Add(new Seat
+                    {
+                        RoomId = integrationRoom.RoomId,
+                        RowNumber = 1,
+                        SeatNumber = i,
+                        IsReserved = false
+                    });
+                }
+                db.seats.AddRange(integrationSeats);
+                db.SaveChanges();
+
+                var integrationCart = new Cart
+                {
+                    UserId = integrationUser.UserId,
+                    FilmScreeningId = integrationScreening.FilmScreeningId,
+                    TicketId = integrationTicket.TicketId,
+                    Amount = 2,
+                    TotalPrice = 2 * integrationTicket.TicketPrice,
+                    Seats = integrationSeats.Take(2).ToList()
+                };
+                db.carts.Add(integrationCart);
+                db.SaveChanges();
+            }
         }
-
-
 
         private static string HashPass(string password)
         {

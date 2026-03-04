@@ -51,7 +51,7 @@ namespace Cinema_IntegrationTest
         {
             await AuthenticateAsAdminAsync();
 
-            var response = await _client.GetAsync("/getalluser");
+            var response = await _client.GetAsync("api/admin/getalluser");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -60,7 +60,7 @@ namespace Cinema_IntegrationTest
         {
             await AuthenticateAsAdminAsync();
 
-            var response = await _client.GetAsync("/getallreservation");
+            var response = await _client.GetAsync("api/admin/getallreservation");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -69,7 +69,7 @@ namespace Cinema_IntegrationTest
         {
             await AuthenticateAsAdminAsync();
 
-            var response = await _client.GetAsync("/searchuser?item=Test");
+            var response = await _client.GetAsync("api/admin/searchuser?item=Test");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -89,7 +89,7 @@ namespace Cinema_IntegrationTest
             await AuthenticateAsAdminAsync();
 
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
-            var response = await _client.PostAsync("/newmovie", content);
+            var response = await _client.PostAsync("api/admin/newmovie", content);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -108,7 +108,7 @@ namespace Cinema_IntegrationTest
             await AuthenticateAsAdminAsync();
 
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
-            var response = await _client.PostAsync("/newscreening", content);
+            var response = await _client.PostAsync("api/admin/newscreening", content);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -267,7 +267,7 @@ namespace Cinema_IntegrationTest
             await AuthenticateAsAdminAsync();
 
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
-            var response = await _client.PutAsync("/modifyticket?ticketId=1", content);
+            var response = await _client.PutAsync("api/admin/modifyticket?ticketId=1", content);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -282,7 +282,7 @@ namespace Cinema_IntegrationTest
 
             var user = db.users.First(x => x.Email == "deleteuser@cinema.hu");
 
-            var response = await _client.DeleteAsync($"/deleteuser?userId={user.UserId}");
+            var response = await _client.DeleteAsync($"api/admin/deleteuser?userId={user.UserId}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var deletedUser = db.users.FirstOrDefault(x => x.UserId == user.UserId);
@@ -300,7 +300,7 @@ namespace Cinema_IntegrationTest
             var movie = db.movies.First(x=> x.MovieTitle == "DeleteMovie");
 
             var response = await _client.DeleteAsync(
-                $"/deletemovie?movieId={movie.MovieId}"
+                $"api/admin/deletemovie?movieId={movie.MovieId}"
             );
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -310,7 +310,7 @@ namespace Cinema_IntegrationTest
             await AuthenticateAsAdminAsync();
 
             var response = await _client.DeleteAsync(
-                $"/deletemovie?movieId={66}"
+                $"api/admin/deletemovie?movieId={66}"
             );
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
@@ -328,7 +328,7 @@ namespace Cinema_IntegrationTest
                 .First(x => x.MovieTitle == "DeleteMovie");
 
             var response = await _client.DeleteAsync(
-                $"/deletescreening?screeningId={screening.FilmScreeningId}"
+                $"api/admin/deletescreening?screeningId={screening.FilmScreeningId}"
             );
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -348,7 +348,7 @@ namespace Cinema_IntegrationTest
             var reservation = db.paymentReservations.First();
 
             var response = await _client.DeleteAsync(
-                $"/deletereservation?reservationId={reservation.PaymentReservationId}"
+                $"api/admin/deletereservation?reservationId={reservation.PaymentReservationId}"
             );
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -370,7 +370,7 @@ namespace Cinema_IntegrationTest
             db.SaveChanges();
 
             var response = await _client.DeleteAsync(
-                $"/deleteimage?imageId={freeImage.ImageId}"
+                $"api/admin/deleteimage?imageId={freeImage.ImageId}"
             );
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

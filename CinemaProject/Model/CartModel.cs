@@ -15,12 +15,18 @@ namespace CinemaProject.Model
         public async Task<IEnumerable<CartDto>> GetCart(CartDto dto, int userId)
         {
             var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
-            var seats = _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToList();
-            return _context.carts.Include(x => x.FilmScreening).Include(x => x.Ticket).Where(x => x.UserId == userId).Select(x => new CartDto
+            var seatDtos = dto.Seats.Select(s => new SeatDto
+            {
+                SeatId = s.SeatId,
+                RowNumber = s.RowNumber,
+                SeatNumber = s.SeatNumber,
+                RoomId = s.RoomId,
+                IsReserved = s.IsReserved
+            }).ToList(); return _context.carts.Include(x => x.FilmScreening).Include(x => x.Ticket).Where(x => x.UserId == userId).Select(x => new CartDto
             {
                 CartId = x.CartId,
                 FilmScreeningId = x.FilmScreeningId,
-                Seats = seats,
+                Seats = seatDtos,
                 TicketId = x.TicketId,
                 Amount = x.Amount,
                 TotalPrice = x.Ticket.TicketPrice * x.Amount,
@@ -96,32 +102,35 @@ namespace CinemaProject.Model
             }
         }
 
-        public async Task ModifyCart(int cartId, int? newAmount = null, List<int>? newSeatIds = null)
+        public async Task ModifyCart(ModifyCartDto dto)
         {
-            var cart = _context.carts.Include(x => x.Seats).FirstOrDefault(x => x.CartId == cartId);
+            var cart = _context.carts.Include(x => x.Seats).FirstOrDefault(x => x.CartId == dto.CartId);
+
             if (cart == null)
-            {
                 throw new InvalidOperationException("Cart not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            if (dto.NewAmount > 0)
             {
-                if (newAmount.HasValue)
-                {
-                    cart.Amount = newAmount.Value;
-                    cart.TotalPrice = cart.Ticket.TicketPrice * newAmount.Value;
-                }
-                if (newSeatIds != null && newSeatIds.Any())
-                {
-                    cart.Seats.Clear();
-                    var seats = _context.seats.Where(x => newSeatIds.Contains(x.SeatId)).ToList();
-                    foreach (var seat in seats)
-                    {
-                        cart.Seats.Add(seat);
-                    }
-                }
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
+                cart.Amount = dto.NewAmount;
+                cart.TotalPrice = cart.Ticket.TicketPrice * dto.NewAmount;
             }
+
+            if (dto.NewSeatIds != null && dto.NewSeatIds.Any())
+            {
+                cart.Seats.Clear();
+                var seats = _context.seats.Where(s => dto.NewSeatIds.Contains(s.SeatId)).ToList();
+
+                foreach (var seat in seats)
+                {
+                    cart.Seats.Add(seat);
+                    seat.IsReserved = true;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         /*  public void DeleteCart(int cartId)
