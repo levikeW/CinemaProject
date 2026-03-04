@@ -75,7 +75,6 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [Authorize(Roles = "User")]
         [HttpPost("logout")]
         public async Task<ActionResult> LogOut()
         {
@@ -158,7 +157,6 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [Authorize(Roles = "User")]
         [HttpGet("getmydata")]
         [Authorize]
         public async Task<ActionResult<MyDataDto>> WhoAmI()
