@@ -2,7 +2,9 @@
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using CinemaProject_Avalonia.Models;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,8 +16,8 @@ namespace CinemaProject_Avalonia.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelBase
     {
+
         private readonly MainWindowModel _mainWindowModel;
-        private readonly AuthModel _authModel;
 
         public ObservableCollection<MovieDto> Movies { get; set; } = new();
         public ObservableCollection<ScreeningsViewModel> Screenings { get; set; } = new();
@@ -53,7 +55,8 @@ namespace CinemaProject_Avalonia.ViewModels
         public RelayCommand ToggleMenuCommand { get; set; }
         public RelayCommand BlockPointerCommand { get; set; }
 
-        public AsyncRelayCommand AddNewScreeningCommand { get; set; }
+        public RelayCommand AddNewMovieCommand {  get; set; }
+        public RelayCommand AddNewScreeningCommand { get; set; }
         public RelayCommand AddPriceCommand { get; set; }
         public RelayCommand AddDateToSelectedMovieCommand { get; set; }
 
@@ -70,13 +73,25 @@ namespace CinemaProject_Avalonia.ViewModels
 
         public RelayCommand<DateTimeOffset> DeleteDateSelectedMovieCommand { get; set; }
 
-        public AsyncRelayCommand Logout {  get; set; }
+        public RelayCommand ClearFiltersCommand { get; set; }
+
+        public AsyncRelayCommand Logout { get; set; }
 
 
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
 
         public EventHandler ExitToNavigationRequest;
 
+        private bool _isAdmin;
+        public bool IsAdmin
+        {
+            get => _mainWindowModel._session.IsAdmin;
+            set
+            {
+                _isAdmin = value;
+                OnPropertyChanged();
+            }
+        }
 
         public string SelectedRoom
         {
@@ -112,6 +127,7 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 _selectedMovie = value;
                 OnPropertyChanged();
+                ApplyFilters();
             }
         }
 
@@ -254,10 +270,9 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public MainWindowViewModel(MainWindowModel model, AuthModel authModel)
+        public MainWindowViewModel(MainWindowModel model)
         {
             _mainWindowModel = model;
-            _authModel = authModel;
 
             Prices = new ObservableCollection<TicketViewModel>();
             Users = new ObservableCollection<UserViewModel>();
@@ -275,7 +290,8 @@ namespace CinemaProject_Avalonia.ViewModels
             ToggleMenuCommand = new RelayCommand(ToggleMenu);
             BlockPointerCommand = new RelayCommand(() => { });
 
-            AddNewScreeningCommand = new AsyncRelayCommand(AddNewScreening);
+            AddNewMovieCommand = new RelayCommand(AddNewMovie);
+            AddNewScreeningCommand = new RelayCommand(AddNewScreening);
             AddDateToSelectedMovieCommand = new RelayCommand(AddDateToSelectedMovie);
             AddPriceCommand = new RelayCommand(AddPrice);
 
@@ -292,19 +308,27 @@ namespace CinemaProject_Avalonia.ViewModels
 
             DeleteDateSelectedMovieCommand = new RelayCommand<DateTimeOffset>(DeleteDateSelectedMovie);
 
+            ClearFiltersCommand = new RelayCommand(ClearFilters);
+
             Logout = new AsyncRelayCommand(LogOut);
 
-            _ = LoadAllDataAsync();
         }
-
+        public async Task InitializeAfterLoginAsync()
+        {
+            await LoadAllDataAsync();
+        }
         public async Task LoadAllDataAsync()
-        {   
+        {
             await LoadRoomsAsync();
-            await LoadTicketsAsync(); 
-            await LoadUsersAsync();
-            await LoadReservationAsync();
+            await LoadTicketsAsync();
             await LoadMoviesForScreeningsAsync();
             await LoadScreeningsAsync();
+
+            if (IsAdmin)
+            {
+                await LoadUsersAsync();
+                await LoadReservationAsync();
+            }
         }
 
         private async Task LoadRoomsAsync()
@@ -323,6 +347,7 @@ namespace CinemaProject_Avalonia.ViewModels
                     });
                     Rooms.Add(terem.RoomName);
                 }
+                IsAdmin = true;
             }
             catch (Exception ex)
             {
@@ -355,6 +380,9 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private async Task LoadUsersAsync()
         {
+            if (!IsAdmin)
+                return;
+
             try
             {
                 Users.Clear();
@@ -369,6 +397,7 @@ namespace CinemaProject_Avalonia.ViewModels
                         //Role = ember.Role
                     });
                 }
+                Console.WriteLine($"Users: {Users.Count}");
             }
             catch (Exception ex)
             {
@@ -378,6 +407,9 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private async Task LoadReservationAsync()
         {
+            if (!IsAdmin)
+                return;
+
             try
             {
                 Reservations.Clear();
@@ -395,6 +427,7 @@ namespace CinemaProject_Avalonia.ViewModels
                         UserId = foglalas.UserId,
                     });
                 }
+                Console.WriteLine($"Reser: {Reservations.Count}");
             }
             catch (Exception ex)
             {
@@ -428,23 +461,25 @@ namespace CinemaProject_Avalonia.ViewModels
 
                 var screenings = await _mainWindowModel.GetAllScreenings();
                 var movies = await _mainWindowModel.GetAllMovies();
+                var rooms = await _mainWindowModel.GetAllRooms();
 
                 foreach (var screeningDto in screenings)
                 {
-                    Debug.WriteLine($"Screening: {screeningDto.MovieTitle}");
-                    var movie = movies.FirstOrDefault(m => m.MovieId == screeningDto.MovieId) ?? new MovieDto();
+                    var movie = movies.FirstOrDefault(m => m.MovieId == screeningDto.MovieId);
+                    var room = rooms.FirstOrDefault(r => r.RoomId == screeningDto.RoomId);
+
+                    if (movie == null || room == null)
+                        continue;
 
                     var screeningVm = new ScreeningsViewModel(this)
                     {
                         FilmScreeningId = screeningDto.FilmScreeningId,
                         MovieId = screeningDto.MovieId,
                         RoomId = screeningDto.RoomId,
-                        Movie = movie,
-                        Title = screeningDto.MovieTitle ?? "",
-                        Room = screeningDto.RoomName ?? ""
+                        Title = movie.MovieTitle,
+                        Room = room.RoomName
                     };
 
-                    screeningVm.ShowTimes.Clear();
                     screeningVm.ShowTimes.Add(screeningDto.Date);
 
                     RegisterScreening(screeningVm);
@@ -452,7 +487,6 @@ namespace CinemaProject_Avalonia.ViewModels
                 }
 
                 SelectedScreening = Screenings.FirstOrDefault();
-
                 ApplyFilters();
             }
             catch (Exception ex)
@@ -466,43 +500,23 @@ namespace CinemaProject_Avalonia.ViewModels
             IsMenuOpen = !IsMenuOpen;
         }
 
-        private async Task AddNewScreening()
+        private void AddNewScreening()
         {
-            if (SelectedMovie == null)
-            {
-                ErrorMessage = "Válassz ki egy filmet a vetítés létrehozásához!";
-                return;
-            }
-            if (SelectedDate == DateTimeOffset.MinValue)
-            {
-                ErrorMessage = "Válassz egy érvényes dátumot!";
-                return;
-            }
-
-
             try
             {
-                var newScreeningDto = new NewScreeningDto
-                {
-                    MovieId = SelectedMovie.MovieId,
-                    RoomId = Rooms.Any() ? 1 : 0,
-                    Date = SelectedDate
-                };
-
-                var createdScreening = await _mainWindowModel.NewScreening(newScreeningDto);
-
                 var screeningVm = new ScreeningsViewModel(this)
                 {
-                    FilmScreeningId = createdScreening.FilmScreeningId,
-                    MovieId = createdScreening.MovieId,
-                    RoomId = createdScreening.RoomId,
-                    Title = createdScreening.MovieTitle,
-                    Room = createdScreening.RoomName
+                    FilmScreeningId = 0,
+                    MovieId = 0,
+                    RoomId = 0,
+                    Title = "",
+                    Room = ""
                 };
 
-                screeningVm.ShowTimes.Add(createdScreening.Date);
+                screeningVm.ShowTimes = new ObservableCollection<DateTimeOffset>();
 
                 RegisterScreening(screeningVm);
+
                 Screenings.Add(screeningVm);
 
                 SelectedScreening = screeningVm;
@@ -511,8 +525,13 @@ namespace CinemaProject_Avalonia.ViewModels
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Hiba az új vetítés létrehozásakor: " + ex.Message;
+                ErrorMessage = "Hiba az új üres vetítés létrehozásakor: " + ex.Message;
             }
+        }
+
+        private void AddNewMovie()
+        {
+
         }
 
         private void CloseEditPanel()
@@ -602,11 +621,21 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 bool matchesDate = !IsDateFilterActive || screening.ShowTimes.Any(d => d.DateTime.Date == SelectedDate.Date);
                 bool matchesSearch = string.IsNullOrWhiteSpace(SearchText) || screening.Title.ToLower().Contains(SearchText.ToLower());
-                bool matchesRoom = string.IsNullOrEmpty(SelectedRoom) || SelectedRoom == "Mind" || screening.Room == SelectedRoom;
+                bool matchesRoom = string.IsNullOrEmpty(SelectedRoom) || screening.Room == SelectedRoom;
+                bool matchesMovie = SelectedMovie == null || screening.MovieId == SelectedMovie.MovieId;
 
-                if (matchesSearch && matchesRoom && matchesDate)
+                if (matchesSearch && matchesRoom && matchesDate && matchesMovie)
                     FilteredScreenings.Add(screening);
             }
+        }
+
+        private void ClearFilters() 
+        {
+            SelectedMovie = null;
+            SelectedRoom = "";
+            SelectedDate = DateTime.Today;
+            SearchText = "";
+            ApplyFilters();
         }
 
         private void AddDateToSelectedMovie()
@@ -629,7 +658,12 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             try
             {
-                await _authModel.Logout();
+                var res = await _mainWindowModel._session.Client.PostAsync("api/user/logout", null);
+
+                res.EnsureSuccessStatusCode();
+                _mainWindowModel._session.Userid = 0;
+                _mainWindowModel._session.Username = "";
+                _mainWindowModel._session.Role = "";
 
                 ExitToNavigationRequest?.Invoke(this, EventArgs.Empty);
             }

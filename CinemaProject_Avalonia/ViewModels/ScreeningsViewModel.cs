@@ -10,13 +10,13 @@ namespace CinemaProject_Avalonia.ViewModels
     {
         private readonly MainWindowViewModel _mainViewModel;
 
-        public int FilmScreeningId { get; set; } = 0;
-        public int MovieId { get; set; } = 0;
-        public int RoomId { get; set; } = 0;
+        public int FilmScreeningId { get; set; }
+        public int MovieId { get; set; }
+        public int RoomId { get; set; }
         public MovieDto Movie { get; set; } = new MovieDto();
 
-        private string _title { get; set; } = "";
-        private string _room { get; set; } = "";
+        private string _title { get; set; }
+        private string _room { get; set; }
 
         public ObservableCollection<DateTimeOffset> ShowTimes { get; set; } = new();
 

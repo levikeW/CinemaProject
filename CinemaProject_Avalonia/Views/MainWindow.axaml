@@ -53,16 +53,19 @@
 			<Label Content=" Termek:" FontSize="13"/>
 			<ComboBox ItemsSource="{Binding Rooms}" SelectedItem="{Binding SelectedRoom}" PlaceholderText="Terem" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
 
-			<CheckBox Content="Szűrés dátumra" IsChecked="{Binding IsDateFilterActive}"/>
-			<DatePicker SelectedDate="{Binding SelectedDate}" IsEnabled="{Binding IsDateFilterActive}" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
-
-			<ComboBox ItemsSource="{Binding Movies}" SelectedItem="{Binding SelectedMovie}" Background="WhiteSmoke" HorizontalAlignment="Stretch">
+			<Label Content=" Filmek:" FontSize="13"/>
+			<ComboBox ItemsSource="{Binding Movies}" SelectedItem="{Binding SelectedMovie}" PlaceholderText="Film" Background="WhiteSmoke" HorizontalAlignment="Stretch">
 				<ComboBox.ItemTemplate>
 					<DataTemplate>
 						<TextBlock Text="{Binding MovieTitle}" />
 					</DataTemplate>
 				</ComboBox.ItemTemplate>
 			</ComboBox>
+
+			<CheckBox Content="Szűrés dátumra" IsChecked="{Binding IsDateFilterActive}"/>
+			<DatePicker SelectedDate="{Binding SelectedDate}" IsEnabled="{Binding IsDateFilterActive}" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
+
+			<Button Content="Szűrések törlése" Command="{Binding ClearFiltersCommand}" Width="140" HorizontalAlignment="Right" Background="WhiteSmoke"/>
 
 			<TextBlock Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" IsVisible="{Binding HasError}"/>
 		</StackPanel>
@@ -96,7 +99,8 @@
 					PointerPressed="Menu_PointerPressed">
 
 				<StackPanel Margin="16" Spacing="12">
-					<Button Content="Új film hozzáadása" Command="{Binding AddNewScreeningCommand}"/>
+					<Button Content="Új Film létrehozása" Command="{Binding AddNewMovieCommand}"/>
+					<Button Content="Új Vetítés létrehozása" Command="{Binding AddNewScreeningCommand}"/>
 					<Button Content="Felhasználók" Command="{Binding OpenUsersPageCommand}"/>
 					<Button Content="Jegyek" Command="{Binding OpenTicketsPageCommand}"/>
 					<Button Content="Termek" Command="{Binding OpenRoomPageCommand}"/>
@@ -126,10 +130,16 @@
 							   FontSize="18"
 							   FontWeight="Bold"/>
 
-					<TextBox Text="{Binding SelectedScreening.Title, Mode=TwoWay, FallbackValue=''}" />
+					<ComboBox ItemsSource="{Binding Movies}" SelectedItem="{Binding SelectedScreening.Title}" PlaceholderText="Film" Background="WhiteSmoke" HorizontalAlignment="Stretch">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding MovieTitle}" />
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
 
 					<ComboBox ItemsSource="{Binding Rooms}"
-							  SelectedItem="{Binding SelectedScreening.Room, Mode=TwoWay, FallbackValue=''}" />
+							  SelectedItem="{Binding SelectedScreening.Room, Mode=TwoWay, FallbackValue=''}" PlaceholderText="Terem" Background="WhiteSmoke" HorizontalAlignment="Stretch" />
 
 					<TextBlock Text="Vetítési időpontok:" FontWeight="SemiBold"/>
 					<ItemsControl ItemsSource="{Binding SelectedScreening.ShowTimes}">

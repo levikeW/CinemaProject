@@ -17,7 +17,6 @@ namespace CinemaProject_Avalonia.ViewModels
     public class LoginViewModel : ViewModelBase
     {
         private readonly AuthModel _authModel;
-        private readonly ApiSession _session;
 
         private string _email;
         private string _password;
@@ -30,7 +29,7 @@ namespace CinemaProject_Avalonia.ViewModels
         public event EventHandler NavigationToMainRequested;
 
         public bool HasError
-        { 
+        {
             get => !string.IsNullOrEmpty(ErrorMessage);
         }
 
@@ -65,9 +64,8 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public LoginViewModel(ApiSession session, AuthModel model)
+        public LoginViewModel(AuthModel model)
         {
-            _session = session;
             _authModel = model;
 
             LoginCommand = new AsyncRelayCommand(Login);
@@ -75,44 +73,34 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private async Task Login()
         {
-            NavigationToMainRequested?.Invoke(this, EventArgs.Empty);
             try
             {
-                var loginDto = new { email = Email, password = Password };
-                var response = await _session.Client.PostAsJsonAsync("api/user/login", loginDto);
-
-                if (response.IsSuccessStatusCode)
+                var loginDto = new LoginDto
                 {
-                    var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                    email = Email,
+                    password = Password
+                };
 
-                    if (result != null)
-                    {
-                        if (result.Role == "Admin")
-                        {
-                            Debug.WriteLine("Admin login OK");
-                            NavigationToMainRequested?.Invoke(this, EventArgs.Empty);
-                        }
-                        else
-                        {
-                            ErrorMessage = "Hiba: csak admin felhasználók tudnak belépni.";
-                            Debug.WriteLine("Login failed: Only Admin users can log in.");
-                        }
-                    }
-                    else
-                    {
-                        ErrorMessage = "Hiba: érvénytelen szerver válasz.";
-                        Debug.WriteLine("Login failed: Invalid response from server.");
-                    }
-                }
-                else
+                var response = await _authModel.Login(loginDto);
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    ErrorMessage = "Hiba: érvénytelen szerver válasz.";
+                    ErrorMessage = "Hibás email vagy jelszó.";
+                    return;
                 }
+
+                if (_authModel._session.Role != "Admin")
+                {
+                    ErrorMessage = "Csak admin léphet be.";
+                    return;
+                }
+
+                NavigationToMainRequested?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Szerver hiba történt.";
-                Debug.WriteLine($"Login exception: {ex.Message}");
+                Debug.WriteLine(ex.Message);
             }
         }
     }

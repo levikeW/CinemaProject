@@ -6,12 +6,18 @@ using Avalonia.Markup.Xaml;
 using CinemaProject_Avalonia.Models;
 using CinemaProject_Avalonia.ViewModels;
 using CinemaProject_Avalonia.Views;
+using System.Diagnostics;
 using System.Linq;
 
 namespace CinemaProject_Avalonia
 {
+    public static class SessionStore
+    {
+        public static ApiSession Session { get; } = new ApiSession("https://localhost:7199", acceptAnyCert: true);
+    }
     public partial class App : Application
     {
+        public static ApiSession session { get; private set; }
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
@@ -25,30 +31,32 @@ namespace CinemaProject_Avalonia
                 // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
                 DisableAvaloniaDataAnnotationValidation();
 
-                var session = new ApiSession("https://localhost:7199/",acceptAnyCert: true);
+                session = new ApiSession("https://localhost:7199",acceptAnyCert: true);
                 var authModel = new AuthModel(session);
-                var mainModel = new MainWindowModel(session);
 
-                var loginViewModel = new LoginViewModel(session, authModel);    
-                var viewModel = new MainWindowViewModel(mainModel,authModel);
+                var loginViewModel = new LoginViewModel(authModel);    
+                var mainModel = new MainWindowModel(session);
+                var viewModel = new MainWindowViewModel(mainModel);
 
                 var loginWindow = new LoginWindow
                 {
                     DataContext = loginViewModel
                 };
 
-                loginViewModel.NavigationToMainRequested += (s, e) =>
+                loginViewModel.NavigationToMainRequested += async (s, e) =>
                 {
                     var mainWindow = new MainWindow
                     {
                         DataContext = viewModel
                     };
 
+                    await viewModel.InitializeAfterLoginAsync();
+
                     viewModel.ExitToNavigationRequest += (s2, e2) =>
                     {
                         var newLoginWindow = new LoginWindow
                         {
-                            DataContext = new LoginViewModel(session, authModel)
+                            DataContext = new LoginViewModel(authModel)
                         };
 
                         desktop.MainWindow = newLoginWindow;
