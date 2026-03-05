@@ -11,18 +11,17 @@
 <body>
   <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <a class="navbar-brand" href="#">Logó</a>
+      <a class="navbar-brand" href="Cinema.html"><img src="Logo.png" alt="Logo" height="50"></a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCinema" aria-controls="navbarCinema" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-
+      
       <div class="collapse navbar-collapse" id="navbarCinema">
          <form class="d-flex ms-3">
           <input class="form-control me-2" type="search" placeholder="Keresés" aria-label="Keresés">
           <button class="btn btn-outline-success" type="submit">Keresés</button>
         </form>
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-          
           <li class="nav-item">
             <a class="nav-link" href="Cinema.html">Főoldal</a>
           </li>
@@ -42,25 +41,73 @@
       </div>
     </nav>
   </header>
-      <div class="row Arakall">
-        <div class="row Arakkeret kartya">
-          <h1 class="Arakh1">Jegyárak:</h1>
-          <div class="col Araknev">
-            <h4>Normál</h4><br>
-            <h4>Kedvezményes</h4><p>Diák/Nyugdíjas</p>
-            <h4>Családi</h4><p>2 Felnőtt 2 Gyermek</p>
-            <h4>Gyermek</h4><br>
-            <h4>Mozgássérült</h4>
-          </div>
-          <div class="col Arakar">
-            <h4>3000 Huf</h4><br>
-            <h4>2500 Huf</h4><br>
-            <h4>10000 Huf</h4><br>
-            <h4>2500 Huf</h4><br>
-            <h4>2000 Huf</h4>
-          </div>
-          </div>
+    
+      <section class="filters">
+        <label>
+          Helyszín:
+          <select>
+            <option>Budapest-Aréna Mall</option>
+            <option>Budapest-Duna Plaza</option>
+          </select>
+        </label>
+        <label>
+          Kategóriára szűrés:
+          <select>
+            <option>Akció</option>
+            <option>Vígjáték</option>
+            <option>Családi</option>
+          </select>
+        </label>
+        <label>
+          Film kiválasztása:
+          <select>
+            <option>Film 1</option>
+            <option>Film 2</option>
+            <option>Film 3</option>
+          </select>
+        </label>
+        <label>
+          Dátum kiválasztás:
+          <input type="date">
+        </label>
+      </section>
+    <div class="row Fooldalall">
+      <section class="movie-list">
+        <div class="row movie-card my-3">
+			<div class="col">
+				<img alt="Film kép">
+			</div>
+			<div class="col">
+			  <h3>Cím: Film 1</h3>
+			  <button>Adás 1</button>
+			  <button>Adás 2</button>
+			  <p>Kor besorolás: 16+</p>
+			</div>
         </div>
+        <div class="row movie-card my-3">
+			<div class="col">
+			<img alt="Film kép">
+			</div>
+			<div class="col">
+			  <h3>Cím: Film 2</h3>
+			  <button>Adás 1</button>
+			  <button>Adás 2</button>
+			  <p>Kor besorolás: 12+</p>
+			</div>
+        </div>
+        <div class="row movie-card my-3">
+			<div class="col">
+			<img alt="Film kép">
+			</div>
+			<div class="col">
+			  <h3>Cím: Film 3</h3>
+			  <button>Adás 1</button>
+			  <button>Adás 2</button>
+			  <p>Kor besorolás: 18+</p>
+			</div>
+        </div>
+      </section>
+    </div>
       <footer>
         &copy; 2025 Filmes oldal
       </footer>
