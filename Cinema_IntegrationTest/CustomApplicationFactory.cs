@@ -21,6 +21,7 @@ namespace Cinema_IntegrationTest
     public class CustomApplicationFactory : WebApplicationFactory<Program>
     {
         private SqliteConnection _connection = null;
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureServices(services =>
@@ -29,29 +30,34 @@ namespace Cinema_IntegrationTest
                 services.RemoveAll(typeof(IDbContextPool<CinemaDbContext>));
                 services.RemoveAll(typeof(IScopedDbContextLease<CinemaDbContext>));
                 services.RemoveAll<Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptionsConfiguration<CinemaDbContext>>();
+
                 _connection = new SqliteConnection("Data Source=:memory:");
                 _connection.Open();
+
                 services.AddDbContextPool<CinemaDbContext>(options =>
                 {
                     options.UseSqlite(_connection);
                     options.EnableSensitiveDataLogging();
                 });
+
                 var sp = services.BuildServiceProvider();
+
                 using var scope = sp.CreateScope();
                 var db = scope.ServiceProvider.GetService<CinemaDbContext>();
                // db.Database.EnsureDeleted();
                 db.Database.EnsureCreated();
+
                 if (!db.movies.Any())
                 {
                     DbSeeder.Seed(db);
                 }
             });
-
         }
 
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+
             if (disposing)
             {
                 _connection.Dispose();
