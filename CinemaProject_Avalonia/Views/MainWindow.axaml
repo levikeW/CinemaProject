@@ -40,7 +40,7 @@
 			</Grid.ColumnDefinitions>
 
 			<!-- ================= HEADER ================= -->
-			<TextBlock Grid.Column="0" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="5"/>
+			<TextBlock Grid.Column="0" Text="Cinemánia" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="5"/>
 
 			<Button Content="☰" Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12" Background="GhostWhite" Command="{Binding ToggleMenuCommand}"/>
 		</Grid>
@@ -87,11 +87,7 @@
 		</Border>
 
 		<!-- ================= MENU (OVERLAY) ================= -->
-		<Border Grid.RowSpan="4"
-				Background="#AA000000"
-				ZIndex="50"
-				IsVisible="{Binding IsMenuOpen}"
-				PointerPressed="Overlay_PointerPressed">
+		<Border Grid.RowSpan="4" Background="#AA000000"	ZIndex="50"	IsVisible="{Binding IsMenuOpen}" PointerPressed="Overlay_PointerPressed">
 
 			<Border Width="240"
 					Background="White"
@@ -110,22 +106,11 @@
 			</Border>
 		</Border>
 
-		<!-- ================= EDITPANEL (OVERLAY) ================= -->
-		<Border Grid.RowSpan="4"
-				Background="#AA000000"
-				ZIndex="100"
-				IsVisible="{Binding IsEditPanelOpen}"
-				IsHitTestVisible="{Binding IsEditPanelOpen}">
+		<!-- ================= SCREENING EDITPANEL (OVERLAY) ================= -->
+		<Border Grid.RowSpan="4" Background="#AA000000" ZIndex="100" IsVisible="{Binding IsScreeningEditPanelOpen}" IsHitTestVisible="{Binding IsScreeningEditPanelOpen}">
 
-			<Border Width="300"
-					Background="White"
-					CornerRadius="8"
-					Padding="16"
-					HorizontalAlignment="Center"
-					VerticalAlignment="Center">
-
+			<Border Width="300"	Background="White" CornerRadius="8"	Padding="16" HorizontalAlignment="Center" VerticalAlignment="Center">
 				<StackPanel Spacing="10">
-
 					<TextBlock Text="Film szerkesztése"
 							   FontSize="18"
 							   FontWeight="Bold"/>
@@ -163,6 +148,46 @@
 				</StackPanel>
 			</Border>
 		</Border>
+		<!-- ================= MOVIE EDITPANEL (OVERLAY) ================= -->
+		<Border Grid.RowSpan="4" Background="#AA000000" ZIndex="100" IsVisible="{Binding IsMovieEditPanelOpen}">
+
+			<Border Width="320" Background="White" CornerRadius="8" Padding="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+				<StackPanel Spacing="10" DataContext="{Binding SelectedMovieEdit}">
+
+					<TextBlock Text="Új film hozzáadása" FontSize="18" FontWeight="Bold"/>
+
+					<TextBox Text="{Binding MovieTitle}" Watermark="Film címe" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding Duration}" Watermark="Hossz (perc)" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding Genre}" Watermark="Műfaj" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding Director}" Watermark="Rendező" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding Description}" Watermark="Leírás" AcceptsReturn="True" Height="60" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding ImageId}" Watermark="Image ID" Background="WhiteSmoke"/>
+
+					<ComboBox ItemsSource="{Binding MovieStatuses}" SelectedItem="{Binding Status}">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding}" />
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
+
+					<TextBlock Text="{Binding ErrorMessage}" Foreground="Red"/>
+
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+
+						<Button Content="Mentés" Background="#C8E6C9" Command="{Binding SaveMovieCommand}"/>
+
+						<Button Content="Bezárás" Background="#FFCDD2" Command="{Binding ((vm:MainWindowViewModel)DataContext).CloseMovieEditPanelCommand, RelativeSource={RelativeSource AncestorType=Border}}"/>
+					</StackPanel>
+				</StackPanel>
+			</Border>
+		</Border>
 		<!-- ================= USERSPANEL (OVERLAY) ================= -->
 		<Border Grid.RowSpan="4" Background="White" ZIndex="200" IsVisible="{Binding IsUsersPageOpen}">
 			<Grid RowDefinitions="Auto, *, Auto" Margin="20">
@@ -182,6 +207,9 @@
 					</ItemsControl>
 				</ScrollViewer>
 				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
+
+					<!--<Button Content="Mentés" Background="#C8E6C9" Command="{Binding SaveUsersCommand}"/>-->
+
 					<Button Content="Vissza a főoldalra" Command="{Binding CloseUsersPageCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
 				</StackPanel>
 			</Grid>
@@ -260,6 +288,7 @@
 					</ItemsControl>
 				</ScrollViewer>
 				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
+					<!--<Button Content="Mentés" Background="#C8E6C9" Command="{Binding SaveReservationCommand}"/>-->
 					<Button Content="Vissza a főoldalra" Command="{Binding CloseReservationPageCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
 				</StackPanel>
 			</Grid>

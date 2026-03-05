@@ -39,7 +39,7 @@ namespace Cinema_IntegrationTest
                 var sp = services.BuildServiceProvider();
                 using var scope = sp.CreateScope();
                 var db = scope.ServiceProvider.GetService<CinemaDbContext>();
-                db.Database.EnsureDeleted();
+               // db.Database.EnsureDeleted();
                 db.Database.EnsureCreated();
                 if (!db.movies.Any())
                 {

@@ -52,7 +52,7 @@ namespace CinemaProject_Avalonia.ViewModels
         private void OpenEditPanel()
         {
            _viewModel.SelectedPriceItem = this;
-            _viewModel.IsEditPanelOpen = true;
+            _viewModel.IsScreeningEditPanelOpen = true;
         }
 
         private void Delete()

@@ -64,11 +64,6 @@ namespace CinemaProject_Avalonia.Models
             return await _session.Client.GetFromJsonAsync<List<FilmScreeningDto>>($"api/cinema/getscreeningdetails?time={time}");
         }
 
-        public async Task<List<FilmScreeningDto>> GetUpcomingScreenings()
-        {
-            return await _session.Client.GetFromJsonAsync<List<FilmScreeningDto>>("api/cinema/getupcomingscreenings");
-        }
-
         public async Task<NewScreeningDto> NewScreening(NewScreeningDto dto)
         {
             var response = await _session.Client.PostAsJsonAsync("api/admin/newscreening", dto);
@@ -100,11 +95,6 @@ namespace CinemaProject_Avalonia.Models
         {
             var response = await _session.Client.PutAsJsonAsync($"api/admin/modifyticket?ticketId={ticketId}", dto);
             response.EnsureSuccessStatusCode();
-        }
-
-        public async Task<TicketDto> SelectTicketType(int screeningId)
-        {
-            return await _session.Client.GetFromJsonAsync<TicketDto>($"api/cinema/selecttickettype?screeningId={screeningId}");
         }
 
         // ==================== ROOMS ====================

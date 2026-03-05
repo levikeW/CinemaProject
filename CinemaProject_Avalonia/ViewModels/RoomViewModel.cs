@@ -11,12 +11,23 @@ namespace CinemaProject_Avalonia.ViewModels
     {
         public MainWindowViewModel _viewModel;
 
+        private int _roomId;
         private string _name;
 
         public event EventHandler? RoomDeleted;
 
         public RelayCommand OpenEditPanelCommand { get; }
         public RelayCommand DeleteCommand { get; }
+
+        public int RoomId
+        {
+            get => _roomId;
+            set
+            {
+                _roomId = value;
+                OnPropertyChanged();
+            }
+        }
 
         public string Name
         {
@@ -41,7 +52,7 @@ namespace CinemaProject_Avalonia.ViewModels
         private void OpenEditPanel()
         {
             _viewModel.SelectedRoomItem = this;
-            _viewModel.IsEditPanelOpen = true;
+            _viewModel.IsScreeningEditPanelOpen = true;
         }
 
         private void Delete()

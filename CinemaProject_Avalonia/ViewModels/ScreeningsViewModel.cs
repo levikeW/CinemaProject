@@ -60,7 +60,7 @@ namespace CinemaProject_Avalonia.ViewModels
         private void OpenEditPanel()
         {
             _mainViewModel.SelectedScreening = this;
-            _mainViewModel.IsEditPanelOpen = true;
+            _mainViewModel.IsScreeningEditPanelOpen = true;
         }
 
         private void Delete()
