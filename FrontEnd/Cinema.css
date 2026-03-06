@@ -177,3 +177,103 @@ footer {
 .Kategbold{
     font-weight: bold;
 }
+
+/*Rolunk.html*/
+.Rolunk{
+    background-image: url(cinemaniabackground1.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    padding-bottom: 150px;
+}
+
+.Rolunkh1{
+    border: 2px solid black;
+    width: 250px;
+    text-align: center;
+    margin: auto;
+    margin-top: 40px;
+    padding: 8px;
+}
+
+.Infocim{
+    text-align: center;
+    margin-top: 40px;
+}
+
+.Rolunkkeret{
+    width: 70%;
+    margin: auto;
+    margin-top: 50px;
+}
+
+.Elerhetoseg{
+    text-align: left;
+    padding: 20px;
+}
+
+.kapcsolat{
+    margin-bottom: 15px;
+}
+
+.kapcsolat input{
+    width: 200px;
+}
+
+.Nyitvatartas{
+    text-align: center;
+}
+
+.nyitbox{
+    border: 2px solid lightblue;
+    width: 150px;
+    margin: auto;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+.hirlevel{
+    width: 300px;
+    margin: auto;
+    margin-top: 80px;
+    text-align: center;
+}
+
+.hirinput{
+    margin-top: 10px;
+}
+
+/*Bejelenkezes.html*/
+.Bejelall{
+    background-image: url(cinemaniabackground2.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    padding-bottom: 100px;
+}
+
+.Bejelkeret{
+    width: 300px;
+    margin: auto;
+    margin-top: 60px;
+}
+
+.Regkeret{
+    width: 300px;
+    margin: auto;
+    margin-top: 60px;
+}
+
+.formcsoport{
+    margin-bottom: 15px;
+}
+
+.formcsoport input{
+    width: 200px;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+button{
+    margin-top: 10px;
+}
