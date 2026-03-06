@@ -1,4 +1,5 @@
-﻿using Cinema.Dto;
+﻿using System.Net.Sockets;
+using Cinema.Dto;
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ namespace CinemaProject.Model
         {
             _context = context;
         }
-        public IEnumerable<UserDto> GetAllUsers()
+        public async Task<IEnumerable<UserDto>> GetAllUsers()
         {
             return _context.users.Select(x => new UserDto
             {
@@ -22,7 +23,7 @@ namespace CinemaProject.Model
             }).ToList();
         }
 
-        public IEnumerable<PaymentReservationDto> GetAllReservations()
+        public async Task<IEnumerable<PaymentReservationDto>> GetAllReservations()
         {
             return _context.paymentReservations.Select(x => new PaymentReservationDto
             {
@@ -36,7 +37,7 @@ namespace CinemaProject.Model
             }).ToList();
         }
 
-        public IEnumerable<UserDto> SearchUser(string item)
+        public async Task<IEnumerable<UserDto>> SearchUser(string item)
         {
             return _context.users.Where(x => x.Email.ToLower().Contains(item.ToLower()) ||
             x.FullName.ToLower().Contains(item.ToLower()))
@@ -48,7 +49,7 @@ namespace CinemaProject.Model
                 }).ToList();
         }
 
-        public void NewMovie(NewMovieDto dto)
+        public async Task NewMovie(NewMovieDto dto)
         {
             if (_context.movies.Any(x => x.MovieTitle == dto.MovieTitle))
             {
@@ -68,12 +69,12 @@ namespace CinemaProject.Model
                     ImageId = imageId,
                     Status = MovieStatus.Inactive
                 });
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void NewScreening(NewScreeningDto dto)
+        public async Task<NewScreeningDto> NewScreening(NewScreeningDto dto)
         {
             if (_context.filmScreenings.Any(x => x.FilmScreeningId == dto.FilmScreeningId))
             {
@@ -84,18 +85,41 @@ namespace CinemaProject.Model
                 _context.filmScreenings.Add(new Persistence.FilmScreening
                 {
                     MovieId = dto.MovieId,
+                    MovieTitle = dto.MovieTitle,
+                    RoomName = dto.RoomName,
                     RoomId = dto.RoomId,
                     Date = dto.Date
-
                 });
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
+            await Task.CompletedTask;
+            return dto;
         }
 
-        public void ModifyMovie(MovieDto dto, int movieId)
+        public async Task<NewRoomDto> NewRoom(NewRoomDto dto)
         {
-            var movie = _context.movies.First(x => x.MovieId == movieId);
+            if (_context.rooms.Any(x => x.RoomId == dto.RoomId))
+            {
+                throw new InvalidOperationException("Already exists");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.rooms.Add(new Persistence.Room
+                {
+                    RoomId = dto.RoomId,
+                    RoomName = dto.RoomName
+                });
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+            await Task.CompletedTask;
+            return dto;
+        }
+
+        public async Task ModifyMovie(MovieDto dto)
+        {
+            var movie = _context.movies.First(x => x.MovieId == dto.MovieId);
             if (movie == null)
             {
                 throw new InvalidOperationException("Movie not found");
@@ -109,12 +133,12 @@ namespace CinemaProject.Model
                 movie.Director = dto.Director;
                 movie.Description = dto.Description;
                 movie.ImageId = imageId;
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void ModifyFilmScreening(FilmScreeningDto dto, int screeningId)
+        public async Task ModifyFilmScreening(FilmScreeningDto dto, int screeningId)
         {
             var screening = _context.filmScreenings.First(x => x.FilmScreeningId == screeningId);
             if (screening == null)
@@ -124,14 +148,15 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 screening.MovieId = dto.MovieId;
+                screening.MovieTitle = dto.MovieTitle;
                 screening.RoomId = dto.RoomId;
                 screening.Date = dto.Date;
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void ModifyReservation(PaymentReservationDto dto, int reservationId)
+        public async Task ModifyReservation(PaymentReservationDto dto, int reservationId)
         {
             var reservation = _context.paymentReservations.Include(x => x.Cart).FirstOrDefault(x => x.PaymentReservationId == reservationId);
             if (reservation == null)
@@ -152,12 +177,12 @@ namespace CinemaProject.Model
                     reservation.Cart.TotalPrice = dto.Price * dto.Amount;
                     reservation.Cart.UserId = dto.UserId;
                 }
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void ModifyTicket(TicketDto dto, int ticketId)
+        public async Task ModifyTicket(TicketDto dto, int ticketId)
         {
             var ticket = _context.tickets.First(x => x.TicketId == ticketId);
             if (ticket == null)
@@ -168,12 +193,27 @@ namespace CinemaProject.Model
             {
                 ticket.TicketType = dto.TicketType;
                 ticket.TicketPrice = dto.TicketPrice;
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void DeleteUser(int userId)
+        public async Task ModifyRoom(RoomDto dto, int roomId)
+        {
+            var room = _context.rooms.First(x => x.RoomId == roomId);
+            if (room == null)
+            {
+                throw new InvalidOperationException("Room not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                room.RoomName = dto.RoomName;
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+        }
+
+        public async Task DeleteUser(int userId)
         {
             if (!_context.users.Any(x => x.UserId == userId))
             {
@@ -182,12 +222,12 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.users.Remove(_context.users.Where(x => x.UserId == userId).First());
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void DeleteMovie(int movieId)
+        public async Task DeleteMovie(int movieId)
         {
             if (!_context.movies.Any(x => x.MovieId == movieId))
             {
@@ -196,12 +236,13 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.movies.Remove(_context.movies.Where(x => x.MovieId == movieId).First());
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
+            await Task.CompletedTask;
         }
 
-        public void DeleteScreening(int screeningId)
+        public async Task DeleteScreening(int screeningId)
         {
             if (!_context.filmScreenings.Any(x => x.FilmScreeningId == screeningId))
             {
@@ -210,13 +251,27 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.filmScreenings.Remove(_context.filmScreenings.Where(x => x.FilmScreeningId == screeningId).First());
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
 
         }
 
-        public void DeleteReservation(int reservationId)
+        public async Task DeleteRoom(int roomId)
+        {
+            if (!_context.rooms.Any(x => x.RoomId == roomId))
+            {
+                throw new InvalidOperationException("Room not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.rooms.Remove(_context.rooms.Where(x => x.RoomId == roomId).First());
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+        }
+
+        public async Task DeleteReservation(int reservationId)
         {
             if (!_context.paymentReservations.Any(x => x.PaymentReservationId == reservationId))
             {
@@ -225,12 +280,12 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.paymentReservations.Remove(_context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).First());
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void UploadImage(ImageDto dto)
+        public async Task UploadImage(ImageDto dto)
         {
             using var trx = _context.Database.BeginTransaction();
             {
@@ -239,12 +294,12 @@ namespace CinemaProject.Model
                     ImageContent = dto.ImageContent
                 };
                 _context.images.Add(image);
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
         }
 
-        public void DeleteImage(int imageId)
+        public async Task DeleteImage(int imageId)
         {
             var image = _context.images.FirstOrDefault(x => x.ImageId == imageId);
             if (image == null)
@@ -253,15 +308,31 @@ namespace CinemaProject.Model
             }
             if (_context.movies.Any(m => m.ImageId == imageId))
             {
-                throw new InvalidOperationException("Image is still in use by a movie");
+                throw new InvalidOperationException("Image is already exist");
             }
 
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.images.Remove(image);
-                _context.SaveChanges();
-                trx.Commit();
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
             }
+        }
+
+        public async Task ChangeRole(int userId)
+        {
+            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
+            if (user == null)
+            {
+                throw new InvalidOperationException("User not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                user.Role = "Admin";
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+            await Task.CompletedTask;
         }
     }
 }

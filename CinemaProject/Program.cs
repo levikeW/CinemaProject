@@ -40,12 +40,31 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 var app = builder.Build();
 
+//  Adatbázis létrehozása és seedelés
+/*using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<CinemaDbContext>();
+    var seeder = services.GetRequiredService<DbSeeder>();
+
+    // Létrehozza az adatbázist és a táblákat, ha nem léteznek
+      var databaseCreated = context.Database.EnsureCreated();
+
+    // Seedelés csak, ha üres az adatbázis
+     if (databaseCreated)
+    {
+        seeder.Seed();
+    }
+}*/
+
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 app.UseHttpsRedirection();
 
@@ -55,3 +74,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program() { }

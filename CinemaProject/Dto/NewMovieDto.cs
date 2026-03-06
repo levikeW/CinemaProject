@@ -11,7 +11,6 @@ namespace CinemaProject.Dto
         public string Genre { get; set; }
         public string Director { get; set; }
         public string Description { get; set; }
-        public int RoomId { get; set; }
         public int ImageId { get; set; }
         public MovieStatus Status { get; set; }
     }

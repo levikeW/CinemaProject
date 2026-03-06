@@ -2,12 +2,13 @@
 xmlns="https://github.com/avaloniaui"
 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:dto="using:Cinema.Dto"
 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 xmlns:vm="using:CinemaProject_Avalonia.ViewModels"
 mc:Ignorable="d"
 d:DesignWidth="800"
 d:DesignHeight="450"
-x:DataType="vm:MovieViewModel"
+x:DataType="vm:ScreeningsViewModel"
 x:Class="CinemaProject_Avalonia.Views.MovieCard">
 	<Border CornerRadius="8" Padding="10" Margin="6" BoxShadow="0 2 6 #40000000">
 
@@ -17,8 +18,8 @@ x:Class="CinemaProject_Avalonia.Views.MovieCard">
 					   FontSize="16"
 					   FontWeight="Bold"/>
 
-			<TextBlock Text="{Binding Category}"/>
-			<TextBlock Text="{Binding SelectedDate}" IsVisible="False"/>
+			<TextBlock Text="{Binding Room}"/>
+			<TextBlock Text="{Binding ShowTimes}" IsVisible="False"/>
 			<ItemsControl ItemsSource="{Binding ShowTimes}">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>

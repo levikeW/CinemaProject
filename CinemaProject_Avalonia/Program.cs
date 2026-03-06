@@ -1,5 +1,7 @@
 ﻿using System;
 using Avalonia;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CinemaProject_Avalonia
 {
@@ -18,5 +20,22 @@ namespace CinemaProject_Avalonia
                 .UsePlatformDetect()
                 .WithInterFont()
                 .LogToTrace();
+
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll",
+                    builder => builder
+                        .AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+            });
+        }
+
+        public void Configure(IApplicationBuilder app)
+        {
+            app.UseCors("AllowAll");
+        }
     }
 }

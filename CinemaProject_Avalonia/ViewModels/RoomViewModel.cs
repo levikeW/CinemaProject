@@ -1,29 +1,30 @@
-﻿using CommunityToolkit.Mvvm.Input;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Input;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
-    public class PriceViewModel : ViewModelBase
+    public class RoomViewModel : ViewModelBase
     {
         public MainWindowViewModel _viewModel;
 
+        private int _roomId;
         private string _name;
-        private decimal _amount;
 
-        public event EventHandler? PriceDeleted;
+        public event EventHandler? RoomDeleted;
 
         public RelayCommand OpenEditPanelCommand { get; }
         public RelayCommand DeleteCommand { get; }
-        public decimal Amount
+
+        public int RoomId
         {
-            get => _amount;
+            get => _roomId;
             set
             {
-                _amount = value;
+                _roomId = value;
                 OnPropertyChanged();
             }
         }
@@ -38,23 +39,25 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public PriceViewModel(MainWindowViewModel viewModel)
+        public RoomViewModel(MainWindowViewModel viewModel)
         {
             _viewModel = viewModel;
-            _amount = Amount;
+
+            _name = Name;
+
             OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
             DeleteCommand = new RelayCommand(Delete);
         }
 
         private void OpenEditPanel()
         {
-            _viewModel.SelectedPriceItem = this;
-            _viewModel.IsEditPanelOpen = true;
+            _viewModel.SelectedRoomItem = this;
+            _viewModel.IsScreeningEditPanelOpen = true;
         }
 
         private void Delete()
         {
-            PriceDeleted?.Invoke(this, EventArgs.Empty);
+            RoomDeleted?.Invoke(this, EventArgs.Empty);
         }
     }
 }

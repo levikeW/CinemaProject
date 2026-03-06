@@ -1,8 +1,11 @@
+using CinemaProject.Dto;
 using CinemaProject.Model;
 using CinemaProject.Persistence;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Cinema_Test
 {
@@ -14,6 +17,7 @@ namespace Cinema_Test
         public UserModelTest()
         {
             _context = DbContextFactory.Create();
+            DbSeeder.Seed(_context);
             _userModel = new UserModel(_context);
         }
         private string HashPass(string password)
@@ -24,52 +28,176 @@ namespace Cinema_Test
             return Convert.ToBase64String(hash);
         }
 
+
+        // ValidateUser
         [Fact]
-        public void ValidatePass()
+        public async Task ValidateUser()
         {
-            var user = _userModel.ValidateUser("admin@cinema.hu", HashPass("admin123"));
+            var dto = new LoginDto { email = "user@cinema.hu", password = "user123" };
+            var user = await Task.Run(() => _userModel.ValidateUser(dto));
 
             Assert.NotNull(user);
-            Assert.Equal("Admin User", user.FullName);
-            Assert.Equal("Admin", user.Role);
+            Assert.Equal("Test User", user.FullName);
+            Assert.Equal("User", user.Role);
+        }
+        [Fact]
+        public async Task ValidateUser_WrongPassword()
+        {
+            var dto = new LoginDto { email = "user@cinema.hu", password = "wrongpassword" };
+            var hash = HashPass(dto.password);
+            var user = await Task.Run(() => _userModel.ValidateUser(new LoginDto { email = dto.email, password = hash }));
+
+            Assert.Null(user);
+        }
+        [Fact]
+        public async Task ValidateUser_WrongEmail()
+        {
+            var dto = new LoginDto { email = "wrong@cinema.hu", password = "user123" };
+            var hash = HashPass(dto.password);
+            var user = await Task.Run(() => _userModel.ValidateUser(new LoginDto { email = dto.email, password = hash }));
+
+            Assert.Null(user);
+        }
+
+        // Regist
+        [Fact]
+        public async Task RegistValidate()
+        {
+            var dto = new RegistDto
+            {
+                Email = "asd@gmail.com",
+                Password = "regist123",
+                FullName = "Asd Elek"
+            };
+
+            await _userModel.Regist(dto);
+
+            var user = _context.users.FirstOrDefault(x => x.Email == "asd@gmail.com");
+
+            Assert.NotNull(user);
+            Assert.Equal("asd@gmail.com", user.Email);
+            Assert.Equal(HashPass("regist123"), user.Password);
         }
 
         [Fact]
-        public void RegistValidate()
+        public async Task RegistValidate_Wrong()
         {
-            _userModel.Regist("ok@gmail.com", "ok123");
+            var dto1 = new RegistDto
+            {
+                Email = "asd@gmail.com",
+                Password = "regist123",
+                FullName = "Asd Elek"
+            };
 
-            var user = _context.users.FirstOrDefault(x => x.Email == "ok@gmail.com");
+            await _userModel.Regist(dto1);
 
-            Assert.NotNull(user);
-            Assert.Equal("ok@gmai.com", user.Email);
-            Assert.Equal("ok123", user.Password);
+            var dto2 = new RegistDto
+            {
+                Email = "asd@gmail.com",
+                Password = "anotherPass",
+                FullName = "Duplicate User"
+            };
+
+            var ex = await Record.ExceptionAsync(async () =>
+            {
+                await _userModel.Regist(dto2);
+            });
+
+            Assert.NotNull(ex);
+            Assert.IsType<InvalidOperationException>(ex);
         }
 
+        // ViewProfile
         [Fact]
-        public void ViewProfile()
+        public async Task ViewProfile()
         {
             var user = _context.users.First(x => x.Email == "admin@cinema.hu");
 
-            var dto = _userModel.ViewProfile(user.UserId);
+            var dto = await Task.Run(() => _userModel.ViewProfile(user.UserId));
 
             Assert.NotNull(dto);
             Assert.Equal(user.UserId, dto.UserId);
             Assert.Equal("admin@cinema.hu", dto.Email);
             Assert.Equal("Admin User", dto.FullName);
-
+        }
+        [Fact]
+        public async Task ViewProfile_Wrong()
+        {
+            var dto = await _userModel.ViewProfile(99999);
+            Assert.Null(dto);
         }
 
+        // DeleteProfile
         [Fact]
-        public void Delete()
+        public async Task Delete()
         {
-            _userModel.Regist("delete@cinema.hu", "1234");
+            _userModel.DeleteProfile(1);
 
-            var user = _context.users.First(x => x.Email == "delete@cinema.hu");
+            Assert.False(_context.users.Any(x => x.UserId == 1));
+        }
+        [Fact]
+        public async Task Delete_Wrong()
+        {
+            var ex = await Record.ExceptionAsync(async () =>
+            {
+                await Task.Run(() => _userModel.DeleteProfile(99999));
+            });
 
-            _userModel.DeleteProfile(user.UserId);
+            Assert.NotNull(ex);
+            Assert.IsType<InvalidOperationException>(ex);
+        }
 
-            Assert.False(_context.users.Any(x => x.Email == "delete@cinema.hu"));
+        // UpdateProfile
+        [Fact]
+        public async Task Update()
+        {
+            var updatedUser = _context.users.FirstOrDefault(x => x.UserId == 1);
+            await _userModel.UpdateProfile(new CinemaProject.Dto.UpdateUserDto { Email = "admin2@cinema.hu",UserId =  updatedUser.UserId, FullName = "Admin User2", BillingAddress = "Budapest 2." });
+            var user = _context.users.FirstOrDefault(x => x.UserId == 1);
+            Assert.Equal("admin2@cinema.hu", user.Email);
+            Assert.Equal("Admin User2", user.FullName);
+            Assert.Equal("Budapest 2.", user.BillingAddress);
+        }
+        [Fact]
+        public async Task Update_Wrong()
+        {
+            var ex = await Record.ExceptionAsync(async () =>
+            {
+                await _userModel.UpdateProfile(new UpdateUserDto { UserId = 99999, Email = "wrong@cinema.hu", FullName = "Wrong User" });
+            });
+            Assert.NotNull(ex);
+            Assert.IsType<InvalidOperationException>(ex);
+        }
+
+        // ChangePassword
+        [Fact]
+        public async Task ChangePass()
+        {
+            var newpass = _context.users.First(x => x.UserId == 1);
+            await _userModel.ChangePassword(newpass.UserId, "admin123", "newPass");
+            Assert.NotNull(newpass);
+            Assert.Equal(HashPass("newPass"), _context.users.First(x => x.UserId == 1).Password);
+        }
+        [Fact]
+        public async Task ChangePass_WrongUser()
+        {
+            var ex = await Record.ExceptionAsync(async () =>
+            {
+                await _userModel.ChangePassword(99999, "anyPass", "newpass");
+            });
+            Assert.NotNull(ex);
+            Assert.IsType<InvalidOperationException>(ex);
+        }
+        [Fact]
+        public async Task ChangePass_WrongOld()
+        {
+            var user = _context.users.First(x => x.Email == "user@cinema.hu");
+            var ex = await Record.ExceptionAsync(async () =>
+            {
+                await _userModel.ChangePassword(user.UserId, "wrongOldPass", "newpass");
+            });
+            Assert.NotNull(ex);
+            Assert.IsType<InvalidOperationException>(ex);
         }
 
     }

@@ -1,92 +1,163 @@
-﻿using CinemaProject_Avalonia.Models;
-using CommunityToolkit.Mvvm.Input;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Input;
+using CinemaProject.Dto;
+using CinemaProject.Persistence;
+using CinemaProject_Avalonia.Models;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using NpgsqlTypes;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
     public class MovieViewModel : ViewModelBase
     {
-        public MainWindowViewModel _viewModel;
+        private readonly MainWindowModel _model;
 
-        private string _title;
-        private string _category;
-        private DateTimeOffset _selectedDate;
+        private string _movieTitle;
+        private int _duration;
+        private string _genre;
+        private string _director;
+        private string _description;
+        private int _imageId;
+        private MovieStatus _status;
 
-        public event EventHandler? MovieDeleted;
-        public event EventHandler? MovieEdit;
+        private string _errorMessage;
 
-        public ObservableCollection<DateTimeOffset> ShowTimes { get; set; } = new();
+        public event EventHandler? MovieSaved;
 
-        public RelayCommand EditCommand { get; }
-        public RelayCommand OpenEditPanelCommand { get; set; }
-        public RelayCommand DeleteCommand { get; }
-        public RelayCommand<DateTimeOffset> DeleteDateCommand { get; }
-
-
-        public string Title
+        public string MovieTitle
         {
-            get => _title;
+            get => _movieTitle;
             set
             {
-                _title = value;
+                _movieTitle = value;
                 OnPropertyChanged();
             }
         }
 
-        public string Category
+        public int Duration
         {
-            get => _category;
+            get => _duration;
             set
             {
-                _category = value;
-                OnPropertyChanged();
-            }
-        }
-        public DateTimeOffset SelectedDate
-        {
-            get => _selectedDate;
-            set
-            {
-                _selectedDate = value;
+                _duration = value;
                 OnPropertyChanged();
             }
         }
 
-        public MovieViewModel(MainWindowViewModel viewModel)
+        public string Genre
         {
-            _viewModel = viewModel;
-            EditCommand = new RelayCommand(Edit);
-            OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
-            DeleteCommand = new RelayCommand(Delete);
-            DeleteDateCommand = new RelayCommand<DateTimeOffset>(DeleteDate);
+            get => _genre;
+            set
+            {
+                _genre = value;
+                OnPropertyChanged();
+            }
         }
 
-        private void Edit()
+        public string Director
         {
-            MovieEdit?.Invoke(this, EventArgs.Empty);
+            get => _director;
+            set
+            {
+                _director = value;
+                OnPropertyChanged();
+            }
         }
 
-        private void OpenEditPanel()
+        public string Description
         {
-            System.Diagnostics.Debug.WriteLine("KATTINTÁS OK");
-            _viewModel.SelectedMovie = this;
-            _viewModel.IsEditPanelOpen = true;
+            get => _description;
+            set
+            {
+                _description = value;
+                OnPropertyChanged();
+            }
         }
 
-        private void Delete()
+        public int ImageId
         {
-            MovieDeleted?.Invoke(this, EventArgs.Empty);
+            get => _imageId;
+            set
+            {
+                _imageId = value;
+                OnPropertyChanged();
+            }
         }
-        private void DeleteDate(DateTimeOffset date)
+
+        public MovieStatus Status
         {
-            ShowTimes.Remove(date);
+            get => _status;
+            set
+            {
+                _status = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set
+            {
+                _errorMessage = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public IEnumerable<MovieStatus> MovieStatuses
+        {
+            get
+            {
+                // Enum.GetValues visszaadja az összes értéket object[] tömbben
+                var values = Enum.GetValues(typeof(MovieStatus));
+
+                // Cast segítségével konvertáljuk MovieStatus típusra, majd IEnumerable-ként adjuk vissza
+                return values.Cast<MovieStatus>();
+            }
+        }
+
+        public AsyncRelayCommand SaveMovieCommand { get; }
+
+        public MovieViewModel(MainWindowModel model)
+        {
+            _model = model;
+
+            SaveMovieCommand = new AsyncRelayCommand(SaveMovie);
+        }
+
+        public async Task SaveMovie()
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(MovieTitle))
+                {
+                    ErrorMessage = "A film címét kötelező megadni.";
+                    return;
+                }
+
+                var dto = new NewMovieDto
+                {
+                    MovieTitle = MovieTitle,
+                    Duration = Duration,
+                    Genre = Genre,
+                    Director = Director,
+                    Description = Description,
+                    ImageId = ImageId,
+                    Status = Status
+                };
+
+                await _model.NewMovie(dto);
+
+                MovieSaved?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a film mentésekor: " + ex.Message;
+            }
         }
     }
 }

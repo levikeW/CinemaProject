@@ -21,8 +21,10 @@
 		to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
 		<vm:MainWindowViewModel/>
 	</Design.DataContext>
+
 	<Grid Background="LightBlue">
 		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
@@ -38,55 +40,54 @@
 			</Grid.ColumnDefinitions>
 
 			<!-- ================= HEADER ================= -->
-			<TextBlock Grid.Column="0" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="5"/>
-
-			<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Width="300">
-				<Label Content="Keresés: " HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
-				<TextBox Text="{Binding SearchText, Mode=TwoWay}" Width="100" Height="26" VerticalContentAlignment="Center" Margin="0 0 10 0" Background="White"/>
-			</StackPanel>
+			<TextBlock Grid.Column="0" Text="Cinemánia" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left" Padding="5"/>
 
 			<Button Content="☰" Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12" Background="GhostWhite" Command="{Binding ToggleMenuCommand}"/>
 		</Grid>
 
 		<!-- ================= FILTERS ================= -->
+		<StackPanel Grid.Row="2" Margin="10" Spacing="3">
+			<Label Content="🔍 Keresés: " FontSize="14"/>
+			<TextBox Text="{Binding SearchText, Mode=TwoWay}" HorizontalAlignment="Stretch" Margin="0 0 10 0" Background="WhiteSmoke"/>
 
+			<Label Content=" Termek:" FontSize="13"/>
+			<ComboBox ItemsSource="{Binding Rooms}" SelectedItem="{Binding SelectedRoom}" PlaceholderText="Terem" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
 
-		<StackPanel Grid.Row="1" Margin="10" Spacing="3">
-			<Label Content="Kategóriák:" FontSize="13"/>
-			<ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" PlaceholderText="Kategória" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
+			<Label Content=" Filmek:" FontSize="13"/>
+			<ComboBox ItemsSource="{Binding Movies}" SelectedItem="{Binding SelectedMovie}" PlaceholderText="Film" Background="WhiteSmoke" HorizontalAlignment="Stretch">
+				<ComboBox.ItemTemplate>
+					<DataTemplate>
+						<TextBlock Text="{Binding MovieTitle}" />
+					</DataTemplate>
+				</ComboBox.ItemTemplate>
+			</ComboBox>
 
 			<CheckBox Content="Szűrés dátumra" IsChecked="{Binding IsDateFilterActive}"/>
 			<DatePicker SelectedDate="{Binding SelectedDate}" IsEnabled="{Binding IsDateFilterActive}" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
 
-			<TextBlock Text="{Binding ErrorMessage}"
-					   Foreground="Red"
-					   FontWeight="Bold"
-					   HorizontalAlignment="Center"
-					   IsVisible="{Binding HasError}"/>
+			<Button Content="Szűrések törlése" Command="{Binding ClearFiltersCommand}" Width="140" HorizontalAlignment="Right" Background="WhiteSmoke"/>
+
+			<TextBlock Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" IsVisible="{Binding HasError}"/>
 		</StackPanel>
 
 		<!-- ================= CONTENT ================= -->
-		<ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-			<ItemsControl ItemsSource="{Binding FilteredMovies}">
+		<ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+			<ItemsControl ItemsSource="{Binding FilteredScreenings}">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>
-						<local:MovieCard/>
+						<local:MovieCard DataContext="{Binding}"/>
 					</DataTemplate>
 				</ItemsControl.ItemTemplate>
 			</ItemsControl>
 		</ScrollViewer>
 
 		<!-- ================= FOOTER ================= -->
-		<Border Grid.Row="3" Background="#333" Padding="10">
+		<Border Grid.Row="4" Background="#333" Padding="10">
 			<TextBlock Text="© 2025 Filmes oldal" Foreground="White" HorizontalAlignment="Center"/>
 		</Border>
 
 		<!-- ================= MENU (OVERLAY) ================= -->
-		<Border Grid.RowSpan="4"
-				Background="#AA000000"
-				ZIndex="50"
-				IsVisible="{Binding IsMenuOpen}"
-				PointerPressed="Overlay_PointerPressed">
+		<Border Grid.RowSpan="4" Background="#AA000000"	ZIndex="50"	IsVisible="{Binding IsMenuOpen}" PointerPressed="Overlay_PointerPressed">
 
 			<Border Width="240"
 					Background="White"
@@ -94,77 +95,129 @@
 					PointerPressed="Menu_PointerPressed">
 
 				<StackPanel Margin="16" Spacing="12">
-					<Button Content="Főoldal"/>
-					<Button Content="Új film hozzáadása" Command="{Binding AddMovieCommand}"/>
-					<Button Content="Árak" Command="{Binding OpenPricesPageCommand}"/>
-					<Button Content="Kategóriák" Command="{Binding OpenCategoriesPageCommand}"/>
-					<Button Content="Rólunk"/>
-					<Button Content="Bejelentkezés"/>
+					<Button Content="Új Film létrehozása" Command="{Binding AddNewMovieCommand}"/>
+					<Button Content="Új Vetítés létrehozása" Command="{Binding AddNewScreeningCommand}"/>
+					<Button Content="Felhasználók" Command="{Binding OpenUsersPageCommand}"/>
+					<Button Content="Jegyek" Command="{Binding OpenTicketsPageCommand}"/>
+					<Button Content="Termek" Command="{Binding OpenRoomPageCommand}"/>
+					<Button Content="Foglalások" Command="{Binding OpenReservationCommand}"/>
+					<Button Content="Kijelentkezés" Command="{Binding Logout}"/>
 				</StackPanel>
 			</Border>
 		</Border>
 
-		<!-- ================= EDITPANEL (OVERLAY) ================= -->
-		<Border Grid.RowSpan="4"
-				Background="#AA000000"
-				ZIndex="100"
-				IsVisible="{Binding IsEditPanelOpen}"
-				IsHitTestVisible="{Binding IsEditPanelOpen}">
+		<!-- ================= SCREENING EDITPANEL (OVERLAY) ================= -->
+		<Border Grid.RowSpan="4" Background="#AA000000" ZIndex="100" IsVisible="{Binding IsScreeningEditPanelOpen}" IsHitTestVisible="{Binding IsScreeningEditPanelOpen}">
 
-			<Border Width="300"
-					Background="White"
-					CornerRadius="8"
-					Padding="16"
-					HorizontalAlignment="Center"
-					VerticalAlignment="Center">
-
+			<Border Width="300"	Background="White" CornerRadius="8"	Padding="16" HorizontalAlignment="Center" VerticalAlignment="Center">
 				<StackPanel Spacing="10">
-
 					<TextBlock Text="Film szerkesztése"
 							   FontSize="18"
 							   FontWeight="Bold"/>
 
-					<TextBox Text="{Binding SelectedMovie.Title, Mode=TwoWay}" />
-					<ComboBox ItemsSource="{Binding Categories}"
-							  SelectedItem="{Binding SelectedMovie.Category, Mode=TwoWay}" />
+					<ComboBox ItemsSource="{Binding Movies}" SelectedItem="{Binding SelectedScreening.Title}" PlaceholderText="Film" Background="WhiteSmoke" HorizontalAlignment="Stretch">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding MovieTitle}" />
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
 
+					<ComboBox ItemsSource="{Binding Rooms}"
+							  SelectedItem="{Binding SelectedScreening.Room, Mode=TwoWay, FallbackValue=''}" PlaceholderText="Terem" Background="WhiteSmoke" HorizontalAlignment="Stretch" />
 
 					<TextBlock Text="Vetítési időpontok:" FontWeight="SemiBold"/>
-					<ItemsControl ItemsSource="{Binding SelectedMovie.ShowTimes}">
+					<ItemsControl ItemsSource="{Binding SelectedScreening.ShowTimes}">
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<Grid ColumnDefinitions="*, Auto" Margin="0,2">
 									<TextBlock Text="{Binding StringFormat='{}{0:yyyy.MM.dd}'}" VerticalAlignment="Center"/>
 
-									<Button Grid.Column="1"
-											Content="X"
-											Command="{Binding ((vm:MovieViewModel)DataContext).DeleteDateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-											CommandParameter="{Binding}"
-											Foreground="Red"/>
+									<Button Grid.Column="1" Content="X" Command="{Binding ((vm:MainWindowViewModel)DataContext).DeleteDateSelectedMovieCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" Foreground="Red"/>
 								</Grid>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
-					<Button Content="+ Időpont hozzáadása"
-							Command="{Binding AddDateToSelectedMovieCommand}"
-							HorizontalAlignment="Stretch"/>
+					<DatePicker SelectedDate="{Binding SelectedDate, Mode=TwoWay}" HorizontalAlignment="Stretch" Width="290" Margin="1"/>
+					<Button Content="+ Időpont hozzáadása" Command="{Binding AddDateToSelectedMovieCommand}" HorizontalAlignment="Stretch"/>
 
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
 
-					<StackPanel Orientation="Horizontal"
-								HorizontalAlignment="Right"
-								Spacing="8">
-
-						<Button Content="Mentés és Bezárás"
-								Background="#C8E6C9"
-								Command="{Binding CloseEditPanelCommand}" />
+						<Button Content="Mentés és Bezárás" Background="#C8E6C9" Command="{Binding CloseEditPanelCommand}" />
 					</StackPanel>
 				</StackPanel>
 			</Border>
 		</Border>
-		<!-- ================= PRICEPANEL (OVERLAY) ================= -->
-		<Border Grid.RowSpan="4" Background="White" ZIndex="150" IsVisible="{Binding IsPricesPageOpen}">
+		<!-- ================= MOVIE EDITPANEL (OVERLAY) ================= -->
+		<Border Grid.RowSpan="4" Background="#AA000000" ZIndex="100" IsVisible="{Binding IsMovieEditPanelOpen}">
+
+			<Border Width="320" Background="White" CornerRadius="8" Padding="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+				<StackPanel Spacing="10" DataContext="{Binding SelectedMovieEdit}">
+
+					<TextBlock Text="Új film hozzáadása" FontSize="18" FontWeight="Bold"/>
+
+					<TextBox Text="{Binding MovieTitle}" Watermark="Film címe" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding Duration}" Watermark="Hossz (perc)" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding Genre}" Watermark="Műfaj" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding Director}" Watermark="Rendező" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding Description}" Watermark="Leírás" AcceptsReturn="True" Height="60" Background="WhiteSmoke"/>
+
+					<TextBox Text="{Binding ImageId}" Watermark="Image ID" Background="WhiteSmoke"/>
+
+					<ComboBox ItemsSource="{Binding MovieStatuses}" SelectedItem="{Binding Status}">
+						<ComboBox.ItemTemplate>
+							<DataTemplate>
+								<TextBlock Text="{Binding}" />
+							</DataTemplate>
+						</ComboBox.ItemTemplate>
+					</ComboBox>
+
+					<TextBlock Text="{Binding ErrorMessage}" Foreground="Red"/>
+
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+
+						<Button Content="Mentés" Background="#C8E6C9" Command="{Binding SaveMovieCommand}"/>
+
+						<Button Content="Bezárás" Background="#FFCDD2" Command="{Binding ((vm:MainWindowViewModel)DataContext).CloseMovieEditPanelCommand, RelativeSource={RelativeSource AncestorType=Border}}"/>
+					</StackPanel>
+				</StackPanel>
+			</Border>
+		</Border>
+		<!-- ================= USERSPANEL (OVERLAY) ================= -->
+		<Border Grid.RowSpan="4" Background="White" ZIndex="200" IsVisible="{Binding IsUsersPageOpen}">
 			<Grid RowDefinitions="Auto, *, Auto" Margin="20">
-				<TextBlock Grid.Row="0" Text="Jegyárak" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+				<TextBlock Grid.Row="0" Text="Felhasználók" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+
+				<ScrollViewer Grid.Row="1">
+					<ItemsControl ItemsSource="{Binding Users}">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<StackPanel Orientation="Horizontal" Spacing="20" Margin="0,10">
+									<TextBlock Text="{Binding Name}" Width="120"/>
+									<TextBlock Text="{Binding Email}" Width="150"/>
+									<Button Content="Törlés" Foreground="Red" Command="{Binding DeleteCommand}"/>
+								</StackPanel>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</ScrollViewer>
+				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
+
+					<!--<Button Content="Mentés" Background="#C8E6C9" Command="{Binding SaveUsersCommand}"/>-->
+
+					<Button Content="Vissza a főoldalra" Command="{Binding CloseUsersPageCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
+				</StackPanel>
+			</Grid>
+		</Border>
+		<!-- ================= PRICEPANEL (OVERLAY) ================= -->
+		<Border Grid.RowSpan="4" Background="White" ZIndex="150" IsVisible="{Binding IsTicketsPageOpen}">
+			<Grid RowDefinitions="Auto, *, Auto" Margin="20">
+				<TextBlock Grid.Row="0" Text="Jegyek" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
 
 
 				<ScrollViewer Grid.Row="1">
@@ -182,19 +235,19 @@
 				</ScrollViewer>
 
 				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
-					<Button Content="+ Új ár hozzáadása" Command="{Binding AddPriceCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-					<Button Content="Vissza a főoldalra" Command="{Binding ClosePriceEditCommand}"  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
+					<!-- <Button Content="Ticket modify/save" Command="{Binding AddPriceCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/> -->
+					<Button Content="Vissza a főoldalra" Command="{Binding CloseTicketPageCommand}"  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
 				</StackPanel>
 			</Grid>
 		</Border>
-		<!-- ================= CATEGORYPANEL (OVERLAY) ================= -->
-		<Border Grid.RowSpan="4" Background="White" ZIndex="150" IsVisible="{Binding IsCategoriesPageOpen}">
+		<!-- ================= ROOMPANEL (OVERLAY) ================= -->
+		<Border Grid.RowSpan="4" Background="White" ZIndex="150" IsVisible="{Binding IsRoomPageOpen}">
 			<Grid RowDefinitions="Auto, *, Auto" Margin="20">
-				<TextBlock Grid.Row="0" Text="Kategóriák" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+				<TextBlock Grid.Row="0" Text="Termek" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
 
 
 				<ScrollViewer Grid.Row="1">
-					<ItemsControl ItemsSource="{Binding Category}">
+					<ItemsControl ItemsSource="{Binding Room}">
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
 								<StackPanel Orientation="Horizontal" Spacing="20" Margin="0,10">
@@ -207,11 +260,38 @@
 				</ScrollViewer>
 
 				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
-					<Button Content="+ Új kategória hozzáadása" Command="{Binding AddCategoryCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-					<Button Content="Vissza a főoldalra" Command="{Binding CloseCategoryEditCommand}"  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
+					<!-- <Button Content="+ Új terem hozzáadása" Command="{Binding AddRoomCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/> -->
+					<Button Content="Vissza a főoldalra" Command="{Binding CloseRoomPageCommand}"  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
 				</StackPanel>
 			</Grid>
 		</Border>
-
+		<!--================= RESERVATIONS PANEL (OVERLAY) ================= -->
+		<Border Grid.RowSpan="4" Background="White" ZIndex="200" IsVisible="{Binding IsReservationPageOpen}">
+			<Grid RowDefinitions="Auto, *, Auto" Margin="20">
+				<TextBlock Grid.Row="0" Text="Foglalások" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+				<ScrollViewer Grid.Row="1">
+					<ItemsControl ItemsSource="{Binding Reservations}">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<StackPanel Orientation="Horizontal" Spacing="20" Margin="0,10">
+									<TextBox Text="{Binding Date}" Width="120"/>
+									<TextBox Text="{Binding IsPaid}" Width="120"/>
+									<TextBox Text="{Binding ScreeningId}" Width="120"/>
+									<TextBox Text="{Binding Amount}" Width="120"/>
+									<TextBox Text="{Binding Price}" Width="120"/>
+									<TextBox Text="{Binding UserId}" Width="120"/>
+									<TextBox Text="{Binding UserId}" Width="120"/>
+									<Button Content="Törlés" Foreground="Red" Command="{Binding DeleteCommand}"/>
+								</StackPanel>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</ScrollViewer>
+				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
+					<!--<Button Content="Mentés" Background="#C8E6C9" Command="{Binding SaveReservationCommand}"/>-->
+					<Button Content="Vissza a főoldalra" Command="{Binding CloseReservationPageCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
+				</StackPanel>
+			</Grid>
+		</Border>
 	</Grid>
 </Window>

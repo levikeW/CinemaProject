@@ -1,6 +1,10 @@
-﻿using CinemaProject.Persistence;
+﻿using Cinema.Dto;
+using CinemaProject.Dto;
+using CinemaProject.Persistence;
 using CinemaProject_Avalonia.Models;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,82 +16,120 @@ namespace CinemaProject_Avalonia.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelBase
     {
+
         private readonly MainWindowModel _mainWindowModel;
 
-        public ObservableCollection<MovieViewModel> Movies { get; set; }
-        public ObservableCollection<string> Categories { get; set; }
-        public ObservableCollection<PriceViewModel> Prices { get; set; }
-        public ObservableCollection<CategoryViewModel> Category { get; set; }
-        private CategoryViewModel? _selectedCategoryItem { get; set; }
-        private PriceViewModel? _selectedPriceItem { get; set; }
+        public ObservableCollection<MovieDto> Movies { get; set; } = new();
+        public ObservableCollection<ScreeningsViewModel> Screenings { get; set; } = new();
+        public ObservableCollection<ScreeningsViewModel> FilteredScreenings { get; set; } = new();
+        public ObservableCollection<TicketViewModel> Prices { get; set; } = new();
+        public ObservableCollection<UserViewModel> Users { get; set; } = new();
+        public ObservableCollection<RoomViewModel> Room { get; set; } = new();
+        public ObservableCollection<ReservationViewModel> Reservations { get; set; } = new();
 
-        private string _selectedCategory;
-        private MovieViewModel? _selectedMovie;
+        public ObservableCollection<string> Rooms { get; set; } = new();
+
+        private ScreeningsViewModel? _selectedScreening;
+        private MovieDto? _selectedMovie;
+        private UserViewModel? _selectedUserItem { get; set; }
+        private TicketViewModel? _selectedPriceItem { get; set; }
+        private RoomViewModel? _selectedRoomItem { get; set; }
+        private ReservationViewModel? _selectedReservationItem { get; set; }
+        private MovieViewModel? _selectedMovieEdit { get; set; }
+
+        private string _selectedRoom;
         private DateTimeOffset _selectedDate = DateTime.Today;
         private string _searchText = "";
         private string _errorMessage;
 
-        public bool HasError { get => !string.IsNullOrEmpty(ErrorMessage); }
 
         private bool _isMenuOpen;
-        private bool _isEditPanelOpen;
-        private bool _isPricesPageOpen;
-        private bool _isCategoriesPageOpen;
+        private bool _isScreeningEditPanelOpen;
+        private bool _isMovieEditPanelOpen;
+        private bool _isTicketsPageOpen;
+        private bool _isUsersPageOpen;
+        private bool _isRoomPageOpen;
+        private bool _isReservationPageOpen;
         private bool _isDateFilterActive = false;
+
 
         public RelayCommand ToggleMenuCommand { get; set; }
         public RelayCommand BlockPointerCommand { get; set; }
-        public RelayCommand AddMovieCommand { get; set; }
-        public RelayCommand CloseEditPanelCommand { get; set; }
-        public RelayCommand OpenPricesPageCommand { get; set; }
-        public RelayCommand OpenCategoriesPageCommand { get; set; }
-        public RelayCommand ClosePriceEditCommand { get; set; }
-        public RelayCommand CloseCategoryEditCommand { get; set; }
+
+        public RelayCommand AddNewMovieCommand { get; set; }
+        public AsyncRelayCommand AddNewScreeningCommand { get; set; }
         public RelayCommand AddPriceCommand { get; set; }
-        public RelayCommand AddCategoryCommand { get; set; }
         public RelayCommand AddDateToSelectedMovieCommand { get; set; }
 
-        public ObservableCollection<MovieViewModel> FilteredMovies { get; set; } = new();
+        public RelayCommand OpenTicketsPageCommand { get; set; }
+        public RelayCommand OpenUsersPageCommand { get; set; }
+        public RelayCommand OpenRoomPageCommand { get; set; }
+        public RelayCommand OpenReservationCommand { get; set; }
 
-        public string SelectedCategory
+        public RelayCommand CloseEditPanelCommand { get; set; }
+        public RelayCommand CloseMovieEditPanelCommand { get; set; }
+        public RelayCommand CloseTicketPageCommand { get; set; }
+        public RelayCommand CloseUsersPageCommand { get; set; }
+        public RelayCommand CloseRoomPageCommand { get; set; }
+        public RelayCommand CloseReservationPageCommand { get; set; }
+
+        public RelayCommand<DateTimeOffset> DeleteDateSelectedMovieCommand { get; set; }
+
+        public RelayCommand ClearFiltersCommand { get; set; }
+
+        public AsyncRelayCommand Logout { get; set; }
+
+
+        public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
+
+        public event EventHandler? ExitToNavigationRequest;
+
+        private bool _isAdmin;
+        public bool IsAdmin
         {
-            get => _selectedCategory;
+            get => _mainWindowModel._session.IsAdmin;
             set
             {
-                _selectedCategory = value;
+                _isAdmin = value;
                 OnPropertyChanged();
-                if (SelectedMovie != null)
-                {
-                    if (value == "Mind" || SelectedMovie.Category == value)
-                    {
-                        ErrorMessage = "";
-                    }
-                }
+            }
+        }
+
+        public string SelectedRoom
+        {
+            get => _selectedRoom;
+            set
+            {
+                _selectedRoom = value;
+                OnPropertyChanged();
                 ApplyFilters();
             }
         }
-        public MovieViewModel? SelectedMovie
+
+        public ScreeningsViewModel? SelectedScreening
+        {
+            get => _selectedScreening ??= new ScreeningsViewModel(this)
+            {
+                Title = string.Empty,
+                Room = string.Empty,
+                ShowTimes = new ObservableCollection<DateTimeOffset>()
+            };
+            set
+            {
+                _selectedScreening = value;
+                OnPropertyChanged(nameof(SelectedScreening));
+                ApplyFilters();
+            }
+        }
+
+        public MovieDto? SelectedMovie
         {
             get => _selectedMovie;
             set
             {
                 _selectedMovie = value;
                 OnPropertyChanged();
-
-                if (value != null && !IsPricesPageOpen && !IsCategoriesPageOpen)
-                {
-                    if (SelectedCategory == "Mind" || value.Category == SelectedCategory)
-                    {
-                        ErrorMessage = "";
-                        IsEditPanelOpen = false;
-                    }
-                    else
-                    {
-                        IsEditPanelOpen = false;
-                        ErrorMessage = $"Hiba: A(z) '{value.Title}' nem '{SelectedCategory}' kategóriájú!";
-                    }
-                    ApplyFilters();
-                }
+                ApplyFilters();
             }
         }
 
@@ -112,6 +154,7 @@ namespace CinemaProject_Avalonia.ViewModels
                 ApplyFilters();
             }
         }
+
         public string ErrorMessage
         {
             get => _errorMessage;
@@ -123,7 +166,6 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-
         public bool IsMenuOpen
         {
             get => _isMenuOpen;
@@ -133,53 +175,61 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
-
-        public bool IsEditPanelOpen
+        public bool IsScreeningEditPanelOpen
         {
-            get => _isEditPanelOpen;
+            get => _isScreeningEditPanelOpen;
             set
             {
-                _isEditPanelOpen = value;
-                OnPropertyChanged(nameof(IsEditPanelOpen));
-            }
-        }
-
-        public PriceViewModel? SelectedPriceItem
-        {
-            get => _selectedPriceItem;
-            set
-            {
-                _selectedPriceItem = value;
+                _isScreeningEditPanelOpen = value;
                 OnPropertyChanged();
             }
         }
 
-        public CategoryViewModel? SelectedCategoryItem
+        public bool IsMovieEditPanelOpen
         {
-            get => _selectedCategoryItem;
+            get => _isMovieEditPanelOpen;
             set
             {
-                _selectedCategoryItem = value;
+                _isMovieEditPanelOpen = value;
                 OnPropertyChanged();
             }
         }
 
-        public bool IsPricesPageOpen
+        public bool IsTicketsPageOpen
         {
-            get => _isPricesPageOpen;
+            get => _isTicketsPageOpen;
             set
             {
-                _isPricesPageOpen = value;
+                _isTicketsPageOpen = value;
+                OnPropertyChanged();
+            }
+        }
+        public bool IsUsersPageOpen
+        {
+            get => _isUsersPageOpen;
+            set
+            {
+                _isUsersPageOpen = value;
                 OnPropertyChanged();
             }
         }
 
-        public bool IsCategoriesPageOpen
+        public bool IsRoomPageOpen
         {
-            get => _isCategoriesPageOpen;
+            get => _isRoomPageOpen;
             set
             {
-                _isCategoriesPageOpen = value;
+                _isRoomPageOpen = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsReservationPageOpen
+        {
+            get => _isReservationPageOpen;
+            set
+            {
+                _isReservationPageOpen = value;
                 OnPropertyChanged();
             }
         }
@@ -194,219 +244,710 @@ namespace CinemaProject_Avalonia.ViewModels
                 ApplyFilters();
             }
         }
-
-        public MainWindowViewModel()
+        public TicketViewModel? SelectedPriceItem
         {
+            get => _selectedPriceItem;
+            set
+            {
+                _selectedPriceItem = value;
+                OnPropertyChanged();
+            }
+        }
+        public UserViewModel? SelectedUserItem
+        {
+            get => _selectedUserItem;
+            set
+            {
+                _selectedUserItem = value;
+                OnPropertyChanged();
+            }
+        }
 
-            _mainWindowModel = new MainWindowModel("https://localhost:7199");
-            Movies = new ObservableCollection<MovieViewModel>();
-            Categories = new ObservableCollection<string>();
-            Prices = new ObservableCollection<PriceViewModel>();
-            Category = new ObservableCollection<CategoryViewModel>();
+        public RoomViewModel? SelectedRoomItem
+        {
+            get => _selectedRoomItem;
+            set
+            {
+                _selectedRoomItem = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ReservationViewModel? SelectedReservationItem
+        {
+            get => _selectedReservationItem;
+            set
+            {
+                _selectedReservationItem = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public MovieViewModel? SelectedMovieEdit
+        {
+            get => _selectedMovieEdit;
+            set
+            {
+                _selectedMovieEdit = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public MainWindowViewModel(MainWindowModel model)
+        {
+            _mainWindowModel = model;
+
+            Prices = new ObservableCollection<TicketViewModel>();
+            Users = new ObservableCollection<UserViewModel>();
+            Room = new ObservableCollection<RoomViewModel>();
+            Reservations = new ObservableCollection<ReservationViewModel>();
+
+
+            Rooms = new ObservableCollection<string>();
+
+            SelectedScreening = new ScreeningsViewModel(this)
+            {
+                ShowTimes = new ObservableCollection<DateTimeOffset>()
+            };
 
             ToggleMenuCommand = new RelayCommand(ToggleMenu);
             BlockPointerCommand = new RelayCommand(() => { });
-            AddMovieCommand = new RelayCommand(AddMovie);
-            CloseEditPanelCommand = new RelayCommand(CloseEditPanel);
+
+            AddNewMovieCommand = new RelayCommand(AddNewMovie);
+            AddNewScreeningCommand = new AsyncRelayCommand(AddNewScreening);
             AddDateToSelectedMovieCommand = new RelayCommand(AddDateToSelectedMovie);
 
-            OpenPricesPageCommand = new RelayCommand(OpenPricesPage);
-            OpenCategoriesPageCommand = new RelayCommand(OpenCategoriesPage);
-            ClosePriceEditCommand = new RelayCommand(ClosePriceEdit);
+            OpenTicketsPageCommand = new RelayCommand(OpenTicketPage);
+            OpenUsersPageCommand = new RelayCommand(OpenUserPage);
+            OpenRoomPageCommand = new RelayCommand(OpenRoomPage);
+            OpenReservationCommand = new RelayCommand(OpenReservationPage);
 
-            CloseCategoryEditCommand = new RelayCommand(CloseCategoryEdit);
-            AddPriceCommand = new RelayCommand(AddPrice);
-            AddCategoryCommand = new RelayCommand(AddCategory);
+            CloseEditPanelCommand = new RelayCommand(CloseEditPanel);
+            CloseMovieEditPanelCommand = new RelayCommand(CloseMovieEditPanel);
+            CloseTicketPageCommand = new RelayCommand(CloseTicketPage);
+            CloseUsersPageCommand = new RelayCommand(CloseUserPage);
+            CloseRoomPageCommand = new RelayCommand(CloseRoomPage);
+            CloseReservationPageCommand = new RelayCommand(CloseReservationPage);
 
-            AddMovie();
+            DeleteDateSelectedMovieCommand = new RelayCommand<DateTimeOffset>(DeleteDateSelectedMovie);
 
-            Prices.Add(new PriceViewModel(this) { Name = "Normál", Amount = 3000 });
-            Prices.Add(new PriceViewModel(this) { Name = "Kedvezményes(Diák)", Amount = 2500 });
-            Prices.Add(new PriceViewModel(this) { Name = "Kedvezményes(Nyugdíjas)", Amount = 2500 });
-            Prices.Add(new PriceViewModel(this) { Name = "Családi", Amount = 10000 });
-            Prices.Add(new PriceViewModel(this) { Name = "Gyermek", Amount = 2500 });
-            Prices.Add(new PriceViewModel(this) { Name = "Mozgássérült", Amount = 2000 });
+            ClearFiltersCommand = new RelayCommand(ClearFilters);
 
+            Logout = new AsyncRelayCommand(LogOut);
 
-            var alapKategoriak = new List<string> {"Sci-Fi", "Akció", "Dráma", "Romantikus", "Thriller", "Horror", "Vígjáték", "Animációs" };
+        }
+        public async Task InitializeAfterLoginAsync()
+        {
+            await LoadAllDataAsync();
+        }
+        public async Task LoadAllDataAsync()
+        {
+            await LoadRoomsAsync();
+            await LoadTicketsAsync();
+            await LoadMoviesAsync();
+            await LoadScreeningsAsync();
 
-            foreach (var nev in alapKategoriak)
+            if (IsAdmin)
             {
-                var catVM = new CategoryViewModel(this) { Name = nev };
-                Category.Add(catVM);
-                Categories.Add(nev);
-            };
-
-            _selectedCategory = "Mind";
-            SearchText = "";
-
-            IsMenuOpen = false;
-            IsEditPanelOpen = false;
-        }
-
-        public void ToggleMenu()
-        {
-            System.Diagnostics.Debug.WriteLine("KATTINTÁS OK");
-            IsMenuOpen = !IsMenuOpen;
-        }
-
-        private void AddMovie()
-        {
-            var movie = new MovieViewModel(this)
-            {
-                Title = "Új film címe...",
-                Category = Categories.Count > 1 ? Categories[1] : "Sci-Fi"
-            };
-
-            movie.ShowTimes.Add(DateTimeOffset.Now.AddDays(1));
-
-            RegisterMovie(movie);
-            Movies.Add(movie);
-
-            IsMenuOpen = false;
-            SelectedMovie = movie;
-        }
-
-        private void OnMovieDeleted(object? sender, EventArgs e)
-        {
-            if (sender is MovieViewModel movie)
-                Movies.Remove(movie);
-            ApplyFilters();
-        }
-
-        private void OnMovieEdit(object? sender, EventArgs e)
-        {
-
-            if (sender is MovieViewModel movie)
-            {
-                SelectedMovie = movie;
-                IsEditPanelOpen = true;
+                await LoadUsersAsync();
+                await LoadReservationAsync();
             }
+        }
+
+        // ===================== MOVIES =====================
+
+        public async Task LoadMoviesAsync()
+        {
+            try
+            {
+                var movies = await _mainWindowModel.GetAllMovies();
+                Movies.Clear();
+
+                foreach (var movie in movies)
+                {
+                    Movies.Add(movie);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a filmek betöltésekor: " + ex.Message;
+            }
+        }
+
+        private void AddNewMovie()
+        {
+            try
+            {
+                SelectedMovieEdit = new MovieViewModel(_mainWindowModel);
+
+                SelectedMovieEdit.MovieSaved += async (s, e) =>
+                {
+                    await LoadMoviesAsync();
+                    SelectedMovieEdit = null;
+                    IsMovieEditPanelOpen = false;
+                };
+
+                IsMovieEditPanelOpen = true;
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba az új film szerkesztő megnyitásakor: " + ex.Message;
+            }
+        }
+        public async Task UpdateMovieAsync(MovieDto movie)
+        {
+            try
+            {
+                await _mainWindowModel.ModifyMovie(movie, movie.MovieId);
+                await LoadMoviesAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba film módosításakor: " + ex.Message;
+            }
+        }
+
+        public async Task DeleteMovieAsync(int movieId)
+        {
+            try
+            {
+                await _mainWindowModel.DeleteMovie(movieId);
+                await LoadMoviesAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba film törlésekor: " + ex.Message;
+            }
+        }
+
+        // ===================== SCREENINGS =====================
+
+        public async Task LoadScreeningsAsync()
+        {
+            try
+            {
+                Screenings.Clear();
+
+                var screenings = await _mainWindowModel.GetAllScreenings();
+                var movies = await _mainWindowModel.GetAllMovies();
+                var rooms = await _mainWindowModel.GetAllRooms();
+
+                foreach (var screeningDto in screenings)
+                {
+                    var movie = movies.FirstOrDefault(m => m.MovieId == screeningDto.MovieId);
+                    var room = rooms.FirstOrDefault(r => r.RoomId == screeningDto.RoomId);
+
+                    if (movie == null || room == null)
+                        continue;
+
+                    var screeningVm = new ScreeningsViewModel(this)
+                    {
+                        FilmScreeningId = screeningDto.FilmScreeningId,
+                        MovieId = screeningDto.MovieId,
+                        RoomId = screeningDto.RoomId,
+                        Title = movie.MovieTitle,
+                        Room = room.RoomName
+                    };
+
+                    screeningVm.ShowTimes.Add(screeningDto.Date);
+
+                    RegisterScreening(screeningVm);
+                    Screenings.Add(screeningVm);
+                }
+
+                SelectedScreening = Screenings.FirstOrDefault();
+                ApplyFilters();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a vetítések betöltésekor: " + ex.Message;
+            }
+        }
+
+        private async Task AddNewScreening()
+        {
+            try
+            {
+                if (SelectedMovie == null || string.IsNullOrEmpty(SelectedRoom))
+                {
+                    ErrorMessage = "Válassz filmet és termet!";
+                    return;
+                }
+
+                var room = Room.FirstOrDefault(r => r.Name == SelectedRoom);
+
+                if (room == null)
+                {
+                    ErrorMessage = "A terem nem található!";
+                    return;
+                }
+
+                var newScreening = new NewScreeningDto
+                {
+                    MovieId = SelectedMovie.MovieId,
+                    MovieTitle = SelectedMovie.MovieTitle,
+                    RoomId = room.RoomId,
+                    RoomName = SelectedRoom,
+                    Date = SelectedDate
+                };
+
+                await _mainWindowModel.NewScreening(newScreening);
+
+                await LoadScreeningsAsync();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a vetítés létrehozásakor: " + ex.Message;
+            }
+        }
+
+        public async Task UpdateScreeningAsync(FilmScreeningDto screening)
+        {
+            try
+            {
+                await _mainWindowModel.ModifyFilmScreening(screening, screening.FilmScreeningId);
+                await LoadMoviesAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba vetítés módosításakor: " + ex.Message;
+            }
+        }
+
+        public async Task DeleteScreeningAsync(int screeningId)
+        {
+            try
+            {
+                await _mainWindowModel.DeleteScreening(screeningId);
+                await LoadMoviesAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba vetítés törlésekor: " + ex.Message;
+            }
+        }
+
+        private void RegisterScreening(ScreeningsViewModel screening)
+        {
+            screening.ScreeningDeleted += (s, e) => { Screenings.Remove(screening); ApplyFilters(); };
+            screening.ScreeningEdit += (s, e) => { SelectedScreening = screening; IsScreeningEditPanelOpen = true; };
+        }
+
+        // ===================== TICKETS =====================
+
+        private async Task LoadTicketsAsync()
+        {
+            try
+            {
+                Prices.Clear();
+
+                var tickets = await _mainWindowModel.GetAllTickets();
+
+                foreach (var ticket in tickets)
+                {
+                    Prices.Add(new TicketViewModel(this)
+                    {
+                        Name = ticket.TicketType,
+                        Amount = ticket.TicketPrice
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a jegyárak betöltésekor: " + ex.Message;
+            }
+        }
+
+        public async Task UpdateTicketAsync(TicketDto ticket)
+        {
+            try
+            {
+                await _mainWindowModel.ModifyTicket(ticket, ticket.TicketId);
+                await LoadTicketsAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba jegy módosításakor: " + ex.Message;
+            }
+        }
+
+        // ==================== ROOMS ====================
+
+        private async Task LoadRoomsAsync()
+        {
+            try
+            {
+                Room.Clear();
+
+                var termek = await _mainWindowModel.GetAllRooms();
+
+                foreach (var terem in termek)
+                {
+                    Room.Add(new RoomViewModel(this)
+                    {
+                        Name = terem.RoomName
+                    });
+                    Rooms.Add(terem.RoomName);
+                }
+                IsAdmin = true;
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a termek betöltésekor: " + ex.Message;
+            }
+        }
+
+        public async Task AddNewRoomAsync(NewRoomDto newRoom)
+        {
+            try
+            {
+                await _mainWindowModel.NewRoom(newRoom);
+                await LoadRoomsAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba új terem hozzáadásakor: " + ex.Message;
+            }
+        }
+
+        public async Task UpdateRoomAsync(RoomDto room)
+        {
+            try
+            {
+                await _mainWindowModel.ModifyRoom(room, room.RoomId);
+                await LoadRoomsAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba terem módosításakor: " + ex.Message;
+            }
+        }
+
+        public async Task DeleteRoomAsync(int roomId)
+        {
+            try
+            {
+                await _mainWindowModel.DeleteRoom(roomId);
+                await LoadRoomsAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba terem törlésekor: " + ex.Message;
+            }
+        }
+
+        // ===================== USERS =====================
+
+        private async Task LoadUsersAsync()
+        {
+            try
+            {
+                Users.Clear();
+
+                var felhasz = await _mainWindowModel.GetAllUsers();
+                foreach (var ember in felhasz)
+                {
+                    Users.Add(new UserViewModel(this)
+                    {
+                        Email = ember.Email,
+                        Name = ember.FullName,
+                        Role = ember.Role
+                    });
+                }
+                Console.WriteLine($"Users: {Users.Count}");
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a felhasználók betöltésekor: " + ex.Message;
+            }
+        }
+
+        public async Task DeleteUserAsync(int userId)
+        {
+            try
+            {
+                await _mainWindowModel.DeleteUser(userId);
+                await LoadUsersAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba felhasználó törlésekor: " + ex.Message;
+            }
+        }
+
+        public async Task ChangeUserRoleAsync(int userId)
+        {
+            try
+            {
+                await _mainWindowModel.ChangeRole(userId);
+                await LoadUsersAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba szerepkör módosításakor: " + ex.Message;
+            }
+        }
+
+        // ===================== RESERVATIONS =====================
+
+        private async Task LoadReservationAsync()
+        {
+
+            try
+            {
+                Reservations.Clear();
+
+                var foglalasok = await _mainWindowModel.GetAllReservations();
+                foreach (var foglalas in foglalasok)
+                {
+                    Reservations.Add(new ReservationViewModel(this, _mainWindowModel)
+                    {   
+                        ReservationId = foglalas.PaymentReservationId,
+                        Date = foglalas.Date,
+                        IsPaid = foglalas.IsPaid,
+                        ScreeningId = foglalas.FilmScreeningId,
+                        Amount = foglalas.Amount,
+                        Price = foglalas.Price,
+                        UserId = foglalas.UserId,
+                        Seats = foglalas.Seats,
+                    });
+                }
+                Console.WriteLine($"Reser: {Reservations.Count}");
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a foglalások betöltésekor: " + ex.Message;
+            }
+        }
+
+        public async Task UpdateReservationAsync(PaymentReservationDto reservation)
+        {
+            try
+            {
+                SelectedReservationItem = new ReservationViewModel(this, _mainWindowModel);
+
+                SelectedReservationItem.ReservationSaved += async (s, e) =>
+                {
+                    await LoadReservationAsync();
+                    SelectedReservationItem = null;
+                };
+
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a foglalás módosításakor: " + ex.Message;
+            }
+        }
+
+        public async Task DeleteReservationAsync(int reservationId)
+        {
+            try
+            {
+                await _mainWindowModel.DeleteReservation(reservationId);
+                await LoadReservationAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba foglalás törlésekor: " + ex.Message;
+            }
+        }
+
+        // ===================== IMAGE =====================
+
+        public async Task UploadImageAsync(ImageDto image)
+        {
+            try
+            {
+                await _mainWindowModel.UploadImage(image);
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba kép feltöltésekor: " + ex.Message;
+            }
+        }
+
+        public async Task DeleteImageAsync(int imageId)
+        {
+            try
+            {
+                await _mainWindowModel.DeleteImage(imageId);
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba kép törlésekor: " + ex.Message;
+            }
+        }
+
+        public async Task<ImageDto> GetImageAsync(int movieId)
+        {
+            try
+            {
+                var image = await _mainWindowModel.GetImage(movieId);
+                ErrorMessage = "";
+                return image;
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba kép betöltésekor: " + ex.Message;
+                return null!;
+            }
+        }
+
+        // ===================== DATE =====================
+
+        private void AddDateToSelectedMovie()
+        {
+            if (SelectedScreening != null)
+            {
+                SelectedScreening.ShowTimes.Add(SelectedDate);
+            }
+        }
+
+        private void DeleteDateSelectedMovie(DateTimeOffset date)
+        {
+            if (SelectedScreening != null)
+            {
+                SelectedScreening.ShowTimes.Remove(date);
+            }
+        }
+
+        // ===================== MENU & EDIT PANELS =====================
+
+        private void ToggleMenu()
+        {
+            IsMenuOpen = !IsMenuOpen;
         }
 
         private void CloseEditPanel()
         {
-            IsEditPanelOpen = false;
-            SelectedMovie = null;
+            IsScreeningEditPanelOpen = false;
+            SelectedScreening = null;
             ErrorMessage = "";
             ApplyFilters();
         }
-        private void RegisterMovie(MovieViewModel movie)
+
+        private void CloseMovieEditPanel()
         {
-            movie.MovieDeleted += OnMovieDeleted;
-            movie.MovieEdit += OnMovieEdit;
+            IsMovieEditPanelOpen = false;
+            ErrorMessage = "";
             ApplyFilters();
         }
 
-        private void OpenPricesPage()
+        private void OpenTicketPage()
         {
             IsMenuOpen = false;
-            IsPricesPageOpen = true;
-            Debug.WriteLine("Árak oldal megnyitva");
+            IsTicketsPageOpen = true;
         }
 
-        private void ClosePriceEdit()
+        private void CloseTicketPage()
         {
-            IsPricesPageOpen = false;
-            IsEditPanelOpen = false;
+            IsTicketsPageOpen = false;
+            IsScreeningEditPanelOpen = false;
             SelectedPriceItem = null;
-            SelectedMovie = null;
+            SelectedScreening = null;
         }
-        private void AddPrice()
-        {
-            var newPrice = new PriceViewModel(this)
-            {
-                Name = "Új ár",
-                Amount = 0
-            };
-            newPrice.PriceDeleted += (s, e) => Prices.Remove(newPrice);
 
-            Prices.Add(newPrice);
-            SelectedPriceItem = newPrice;
-            IsEditPanelOpen = true;
-        }
-        private void OpenCategoriesPage()
+        private void OpenUserPage()
         {
             IsMenuOpen = false;
-            IsCategoriesPageOpen = true;
-            Debug.WriteLine("Kategóriák oldal megnyitva");
+            IsUsersPageOpen = true;
         }
 
-        private void CloseCategoryEdit()
+        private void CloseUserPage()
         {
-            IsCategoriesPageOpen = false;
-            IsEditPanelOpen = false;
-            SelectedCategoryItem = null;
-            SelectedMovie = null;
+            IsUsersPageOpen = false;
+            IsScreeningEditPanelOpen = false;
+            SelectedUserItem = null;
+            SelectedScreening = null;
         }
 
-        private void AddCategory()
+        private void OpenRoomPage()
         {
-            var newCategory = new CategoryViewModel(this)
-            {
-                Name = "Új kategória"
-            };
-            newCategory.CategoryDeleted += (s, e) =>
-            {
-                Categories.Remove(newCategory.Name);
-                Category.Remove(newCategory);
-            };
-
-            Category.Add(newCategory);
-            Categories.Add(newCategory.Name);
-
-            SelectedCategoryItem = newCategory;
             IsMenuOpen = false;
-            IsCategoriesPageOpen = true;
+            IsRoomPageOpen = true;
         }
 
+        private void CloseRoomPage()
+        {
+            IsRoomPageOpen = false;
+            IsScreeningEditPanelOpen = false;
+            SelectedRoomItem = null;
+            SelectedScreening = null;
+        }
+
+        private void OpenReservationPage()
+        {
+            IsMenuOpen = false;
+            IsReservationPageOpen = true;
+        }
+
+        private void CloseReservationPage()
+        {
+            IsReservationPageOpen = false;
+            IsScreeningEditPanelOpen = false;
+            SelectedReservationItem = null;
+            SelectedScreening = null;
+        }
+
+        // ===================== FILTERS =====================
         private void ApplyFilters()
         {
-            ErrorMessage = "";
-            FilteredMovies.Clear();
+            FilteredScreenings.Clear();
 
-            if (SelectedMovie != null && SelectedCategory != "Mind" && SelectedMovie.Category != SelectedCategory)
+            foreach (var screening in Screenings)
             {
-                ErrorMessage = $"Hiba: A(z) '{SelectedMovie.Title}' nem '{SelectedCategory}' kategóriájú film!";
-                return;
-            }
+                bool matchesDate = !IsDateFilterActive || screening.ShowTimes.Any(d => d.DateTime.Date == SelectedDate.Date);
+                bool matchesSearch = string.IsNullOrWhiteSpace(SearchText) || screening.Title.ToLower().Contains(SearchText.ToLower());
+                bool matchesRoom = string.IsNullOrEmpty(SelectedRoom) || screening.Room == SelectedRoom;
+                bool matchesMovie = SelectedMovie == null || screening.MovieId == SelectedMovie.MovieId;
 
-            foreach (var movie in Movies)
-            {
-                bool matchesSearch = string.IsNullOrWhiteSpace(SearchText) || movie.Title.ToLower().Contains(SearchText.ToLower());
-                bool matchesCategory = string.IsNullOrEmpty(SelectedCategory) || SelectedCategory == "Mind" || movie.Category == SelectedCategory;
-                bool matchesDate = !IsDateFilterActive || movie.ShowTimes.Any(d => d.Date == SelectedDate.Date);
-                bool matchesOtherFilters = matchesSearch && matchesCategory;
-
-                if (matchesOtherFilters && matchesDate)
-                {
-                    FilteredMovies.Add(movie);
-                }
+                if (matchesSearch && matchesRoom && matchesDate && matchesMovie)
+                    FilteredScreenings.Add(screening);
             }
         }
 
-        private void AddDateToSelectedMovie()
+        private void ClearFilters()
         {
-            if (SelectedMovie != null)
-            {
-                SelectedMovie.ShowTimes.Add(SelectedDate);
-            }
+            SelectedMovie = null;
+            SelectedRoom = "";
+            SelectedDate = DateTime.Today;
+            SearchText = "";
+            ApplyFilters();
         }
 
-        private async Task GetMoviesAsync()
+        // ===================== LOGOUT =====================
+
+        private async Task LogOut()
         {
+            try
+            {
+                var res = await _mainWindowModel._session.Client.PostAsync("api/user/logout", null);
 
-            List<Cinema.Dto.MovieDto> movies = await _mainWindowModel.GetMovies();
-            foreach (var movie in movies) {
+                res.EnsureSuccessStatusCode();
+                _mainWindowModel._session.Userid = 0;
+                _mainWindowModel._session.Username = "";
+                _mainWindowModel._session.Role = "";
 
-                var movie1 = new MovieViewModel(this) { Title = movie.MovieTitle, Category = movie.Genre,  };
-                foreach (var item in movie.Screenings)
-                {
-                    movie1.ShowTimes.Add(item.Date);
-                }   
-
-                RegisterMovie(movie1);
-                Movies.Add(movie1);
+                ExitToNavigationRequest?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba kijelentkezéskor: " + ex.Message;
             }
         }
     }

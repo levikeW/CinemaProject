@@ -7,16 +7,27 @@ using System.Threading.Tasks;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
-    public class CategoryViewModel : ViewModelBase
+    public class TicketViewModel : ViewModelBase
     {
         public MainWindowViewModel _viewModel;
 
         private string _name;
+        private decimal _amount;
 
-        public event EventHandler? CategoryDeleted;
+        public event EventHandler? PriceDeleted;
 
         public RelayCommand OpenEditPanelCommand { get; }
         public RelayCommand DeleteCommand { get; }
+        public decimal Amount
+        {
+            get => _amount;
+            set
+            {
+                _amount = value;
+                OnPropertyChanged();
+            }
+        }
+
         public string Name
         {
             get => _name;
@@ -26,23 +37,27 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
-        public CategoryViewModel(MainWindowViewModel viewModel)
+
+        public TicketViewModel(MainWindowViewModel viewModel)
         {
             _viewModel = viewModel;
+
+            _amount = Amount;
             _name = Name;
+
             OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
             DeleteCommand = new RelayCommand(Delete);
         }
 
         private void OpenEditPanel()
         {
-            _viewModel.SelectedCategoryItem = this;
-            _viewModel.IsEditPanelOpen = true;
+           _viewModel.SelectedPriceItem = this;
+            _viewModel.IsScreeningEditPanelOpen = true;
         }
 
         private void Delete()
         {
-            CategoryDeleted?.Invoke(this, EventArgs.Empty);
+            PriceDeleted?.Invoke(this, EventArgs.Empty);
         }
     }
 }

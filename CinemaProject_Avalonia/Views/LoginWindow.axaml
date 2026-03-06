@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:viewmodels="using:CinemaProject_Avalonia.ViewModels"
+			 mc:Ignorable="d" d:DesignWidth="360" d:DesignHeight="740"
+			 x:Class="CinemaProject_Avalonia.LoginWindow"
+			 x:DataType="viewmodels:LoginViewModel"
+			 Width="360"
+			 Height="740"
+			 MinWidth="360"
+			 MinHeight="740">
+	<Grid Background="LightBlue">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+
+		<!-- ================= HEADER ================= -->
+		<TextBlock Grid.ColumnSpan="3" Text="Logó" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Stretch" Padding="5" Background="#333"/>
+
+		<!-- ================= CONTENT ================= -->
+		<Label Grid.Row="1" Grid.ColumnSpan="2" Content="👤 Admin Login:" FontSize="22" FontWeight="Bold" Foreground="#333" HorizontalAlignment="Left" Margin="10"/>
+		<!-- ================= LOGIN ================= -->
+		<TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" Margin="10 10 0 0" Text="📧 Email:" FontSize="18" Foreground="#333" />
+		<TextBox Grid.Row="3" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10 0 0 10" Text="{Binding Email, Mode=TwoWay}" />
+
+		<TextBlock Grid.Row="4" Grid.Column="0" HorizontalAlignment="Left" Margin="10 10 0 0" Text="🔒 Password:" FontSize="18" Foreground="#333"/>
+		<TextBox Grid.Row="5" Grid.Column="0" Height="30" Width="250" HorizontalAlignment="Left" Margin="10 0 0 10" Text="{Binding Password, Mode=TwoWay}" PasswordChar="*"/>
+
+		<Button Grid.Row="6" Grid.ColumnSpan="2" Grid.Column="0"  Content="Login" FontSize="18" Foreground="#333" Command="{Binding LoginCommand}" Margin="10"/>
+
+		<TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Left" Margin="10" IsVisible="{Binding HasError}"/>
+	</Grid>
+</Window>

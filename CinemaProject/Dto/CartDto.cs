@@ -10,6 +10,6 @@ namespace Cinema.Dto
         public int TicketId { get; set; }
         public int Amount { get; set; }
         public int TotalPrice { get; set; }
-        public List<Seat> Seats { get; set; } = new List<Seat>();
+        public List<SeatDto> Seats { get; set; } = new List<SeatDto>();
     }
 }

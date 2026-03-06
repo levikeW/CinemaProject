@@ -1,9 +1,11 @@
 ﻿using Cinema.Dto;
+using CinemaProject.Dto;
 using CinemaProject.Model;
 using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using System.Threading.Tasks;
 
 namespace CinemaProject.Controllers
 {
@@ -17,12 +19,12 @@ namespace CinemaProject.Controllers
             _cartModel = cartModel;
         }
 
-        [HttpGet("/getcart")]
-        public ActionResult<IEnumerable<CartDto>> GetCart(CartDto dto, int userId)
+        [HttpGet("getcart")]
+        public async Task<ActionResult<IEnumerable<CartDto>>> GetCart([FromBody] CartDto dto, [FromQuery] int userId)
         {
             try
             {
-                return Ok(_cartModel.GetCart(dto, userId));
+                return Ok(await _cartModel.GetCart(dto, userId));
             }
             catch (InvalidOperationException e)
             {
@@ -34,12 +36,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPut("/addtocart")]
-        public ActionResult AddToCart(CartDto dto)
+        [HttpPut("addtocart")]
+        public async Task<ActionResult> AddToCart([FromBody] CartDto dto)
         {
             try
             {
-                _cartModel.AddToCart(dto);
+                await _cartModel.AddToCart(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -52,12 +54,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPost("/removefromcart")]
-        public ActionResult RemoveFromCart(int cartId)
+        [HttpPost("removefromcart")]
+        public async Task<ActionResult> RemoveFromCart([FromQuery] int cartId)
         {
             try
             {
-                _cartModel.RemoveFromCart(cartId);
+                await _cartModel.RemoveFromCart(cartId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -70,12 +72,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPut("/updatecart")]
-        public ActionResult UpdateCart(CartDto dto, int cartId)
+        [HttpPut("updatecart")]
+        public async Task<ActionResult> UpdateCart([FromBody] CartDto dto, [FromQuery] int cartId)
         {
             try
             {
-                _cartModel.UpdateCart(dto, cartId);
+                await _cartModel.UpdateCart(dto, cartId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -88,12 +90,13 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPut("/modifycart")]
-        public ActionResult ModifyCart(int cartId, int? newAmount = null, List<int>? newSeatIds = null)
+        [HttpPut("modifycart")]
+        public async Task<ActionResult> ModifyCart([FromBody] ModifyCartDto dto)
+            
         {
             try
             {
-                _cartModel.ModifyCart(cartId, newAmount, newSeatIds);
+                await _cartModel.ModifyCart(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -105,6 +108,26 @@ namespace CinemaProject.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+
+        [HttpDelete("clearcart")]
+        public async Task<ActionResult> ClearCart([FromQuery] int userId)
+        {
+            try
+            {
+                await _cartModel.ClearCart(userId);
+                return Ok();
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
 
         /* [HttpDelete("/deletecart")]
          public ActionResult DeleteCart(int cartId)
@@ -124,23 +147,5 @@ namespace CinemaProject.Controllers
              }
          }
         */
-
-        [HttpDelete("/clearcart")]
-        public ActionResult ClearCart(int userId)
-        {
-            try
-            {
-                _cartModel.ClearCart(userId);
-                return Ok();
-            }
-            catch (InvalidOperationException e)
-            {
-                return BadRequest(e.Message);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
     }
 }

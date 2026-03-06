@@ -4,6 +4,7 @@ using CinemaProject.Model;
 using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CinemaProject.Controllers
@@ -20,12 +21,31 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpGet("/getalluser")]
-        public ActionResult<IEnumerable<UserDto>> GetAllUser()
+        [HttpGet("getalluser")]
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUser()
         {
             try
             {
-                return Ok(_adminModel.GetAllUsers());
+                return Ok(await _adminModel.GetAllUsers());
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("getallreservation")]
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllReservation()
+        {
+            try
+            {
+                return Ok(await _adminModel.GetAllReservations());
             }
             catch (InvalidOperationException e)
             {
@@ -38,12 +58,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpGet("/getallreservation")]
-        public ActionResult<IEnumerable<PaymentReservationDto>> GetAllReservation()
+        [HttpGet("searchuser")]
+        public async Task<ActionResult<IEnumerable<UserDto>>> SearchUser([FromQuery] string item)
         {
             try
             {
-                return Ok(_adminModel.GetAllReservations());
+                return Ok(await _adminModel.SearchUser(item));
             }
             catch (InvalidOperationException e)
             {
@@ -56,30 +76,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpGet("/searchuser")]
-        public ActionResult<IEnumerable<UserDto>> SearchUser(string item)
+        [HttpPost("newmovie")]
+        public async Task<ActionResult> NewMovie([FromBody] NewMovieDto dto)
         {
             try
             {
-                return Ok(_adminModel.SearchUser(item));
-            }
-            catch (InvalidOperationException e)
-            {
-                return BadRequest(e.Message);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [Authorize(Roles = "Admin")]
-        [HttpPost("/newmovie")]
-        public ActionResult NewMovie(NewMovieDto dto)
-        {
-            try
-            {
-                _adminModel.NewMovie(dto);
+                await _adminModel.NewMovie(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -93,12 +95,50 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("/newscreening")]
-        public ActionResult NewScreening(NewScreeningDto dto)
+        [HttpPost("newscreening")]
+        public async Task<ActionResult<NewScreeningDto>> NewScreening([FromBody] NewScreeningDto dto)
         {
             try
             {
-                _adminModel.NewScreening(dto);
+                var result =await _adminModel.NewScreening(dto);
+                return Ok(result);
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("newroom")]
+        public async Task<ActionResult<NewRoomDto>> NewRoom([FromBody] NewRoomDto dto)
+        {
+            try
+            {
+                var result = await _adminModel.NewRoom(dto);
+                return Ok(result);
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("modifymovie")]
+        public async Task<ActionResult> ModifyMovie([FromBody] MovieDto dto)
+        {
+            try
+            {
+                await _adminModel.ModifyMovie(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -112,12 +152,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("/modifymovie")]
-        public ActionResult ModifyMovie(MovieDto dto, int movieId)
+        [HttpPut("modifyfilmscreening")]
+        public async Task<ActionResult> ModifyFilmScreening([FromBody] FilmScreeningDto dto, [FromQuery] int screeningId)
         {
             try
             {
-                _adminModel.ModifyMovie(dto, movieId);
+                await _adminModel.ModifyFilmScreening(dto, screeningId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -131,12 +171,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("/modifyfilmscreening")]
-        public ActionResult ModifyFilmScreening(FilmScreeningDto dto, int screeningId)
+        [HttpPut("modifyreservation")]
+        public async Task<ActionResult> ModifyReservation([FromBody] PaymentReservationDto dto, [FromQuery] int reservationId)
         {
             try
             {
-                _adminModel.ModifyFilmScreening(dto, screeningId);
+                await _adminModel.ModifyReservation(dto, reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -150,12 +190,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("/modifyreservation")]
-        public ActionResult ModifyReservation(PaymentReservationDto dto, int reservationId)
+        [HttpPut("modifyticket")]
+        public async Task<ActionResult> ModifyTicket([FromBody] TicketDto dto, [FromQuery] int ticketId)
         {
             try
             {
-                _adminModel.ModifyReservation(dto, reservationId);
+                await _adminModel.ModifyTicket(dto, ticketId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -169,12 +209,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("/modifyticket")]
-        public ActionResult ModifyTicket(TicketDto dto, int ticketId)
+        [HttpPut("modifyroom")]
+        public async Task<ActionResult> ModifyRoom([FromBody] RoomDto dto, [FromQuery] int roomId)
         {
             try
             {
-                _adminModel.ModifyTicket(dto, ticketId);
+                await _adminModel.ModifyRoom(dto, roomId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -188,12 +228,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deleteuser")]
-        public ActionResult DeleteUser(int userId)
+        [HttpDelete("deleteuser")]
+        public async Task<ActionResult> DeleteUser([FromQuery] int userId)
         {
             try
             {
-                _adminModel.DeleteUser(userId);
+                await _adminModel.DeleteUser(userId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -207,12 +247,31 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deletemovie")]
-        public ActionResult DeleteMovie(int movieId)
+        [HttpDelete("deletemovie")]
+        public async Task<ActionResult> DeleteMovie([FromQuery] int movieId)
         {
             try
             {
-                _adminModel.DeleteMovie(movieId);
+                await _adminModel.DeleteMovie(movieId);
+                return Ok();
+            }
+            catch (InvalidOperationException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("deletescreening")]
+        public async Task<ActionResult> DeleteScreening([FromQuery] int screeningId)
+        {
+            try
+            {
+                await _adminModel.DeleteScreening(screeningId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -226,12 +285,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deletescreening")]
-        public ActionResult DeleteScreening(int screeningId)
+        [HttpDelete("deletereservation")]
+        public async Task<ActionResult> DeleteReservation([FromQuery] int reservationId)
         {
             try
             {
-                _adminModel.DeleteScreening(screeningId);
+                await _adminModel.DeleteReservation(reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -245,12 +304,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deletereservation")]
-        public ActionResult DeleteReservation(int reservationId)
+        [HttpDelete("deleteroom")]
+        public async Task<ActionResult> DeleteRoom([FromQuery] int roomId)
         {
             try
             {
-                _adminModel.DeleteReservation(reservationId);
+                await _adminModel.DeleteRoom(roomId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -264,12 +323,12 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("/uploadimage")]
-        public ActionResult UploadImage(ImageDto dto)
+        [HttpPost("uploadimage")]
+        public async Task<ActionResult> UploadImage([FromBody] ImageDto dto)
         {
             try
             {
-                _adminModel.UploadImage(dto);
+                await _adminModel.UploadImage(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -283,12 +342,31 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("/deleteimage")]
-        public ActionResult DeleteImage(int imageId)
+        [HttpDelete("deleteimage")]
+        public async Task<ActionResult> DeleteImage([FromQuery] int imageId)
         {
             try
             {
-                _adminModel.DeleteImage(imageId);
+                await _adminModel.DeleteImage(imageId);
+                return Ok();
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("changerole")]
+        public async Task<ActionResult> ChangeRole([FromQuery] int userId)
+        {
+            try
+            {
+                await _adminModel.ChangeRole(userId);
                 return Ok();
             }
             catch (InvalidOperationException e)

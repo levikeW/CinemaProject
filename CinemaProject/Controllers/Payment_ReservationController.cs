@@ -16,12 +16,12 @@ namespace CinemaProject.Controllers
             _paymentReservationModel = paymentReservationModel;
         }
 
-        [HttpPost("/createreservation")]
-        public ActionResult CreateReservation(int cartId)
+        [HttpPost("createreservation")]
+        public async Task<ActionResult> CreateReservation([FromQuery] int cartId)
         {
             try
             {
-                _paymentReservationModel.CreateReservation(cartId);
+                await _paymentReservationModel.CreateReservation(cartId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -34,12 +34,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpDelete("/cancelreservation")]
-        public ActionResult CancelReservaton(int reservationId)
+        [HttpDelete("cancelreservation")]
+        public async Task<ActionResult> CancelReservaton([FromQuery] int reservationId)
         {
             try
             {
-                _paymentReservationModel.CancelReservation(reservationId);
+                await _paymentReservationModel.CancelReservation(reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -52,12 +52,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpPut("/payreservation")]
-        public ActionResult PayReservation(int reservationId)
+        [HttpPut("payreservation")]
+        public async Task<ActionResult> PayReservation([FromQuery] int reservationId)
         {
             try
             {
-                _paymentReservationModel.PayReservation(reservationId);
+                await _paymentReservationModel.PayReservation(reservationId);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -70,12 +70,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getreceipt")]
-        public ActionResult<ReceiptDto> GetReceipt(int reservationId)
+        [HttpGet("getreceipt")]
+        public async Task<ActionResult<ReceiptDto>> GetReceipt( [FromQuery] int reservationId)
         {
             try
             {
-                return Ok(_paymentReservationModel.GetReceipt(reservationId));
+                return Ok(await _paymentReservationModel.GetReceipt(reservationId));
             }
             catch (InvalidOperationException e)
             {
@@ -87,12 +87,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/getconfirmation")]
-        public ActionResult<ConfirmationDto> GetConfirmation(int reservationId)
+        [HttpGet("getconfirmation")]
+        public async Task<ActionResult<ConfirmationDto>> GetConfirmation([FromQuery] int reservationId)
         {
             try
             {
-                return Ok(_paymentReservationModel.GetConfirmation(reservationId));
+                return Ok(await _paymentReservationModel.GetConfirmation(reservationId));
             }
             catch (InvalidOperationException e)
             {
@@ -104,12 +104,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/viewupcomingreservation")]
-        public ActionResult<List<PaymentReservationDto>> ViewUpcomingReservation(int userId)
+        [HttpGet("viewupcomingreservation")]
+        public async Task<ActionResult<List<PaymentReservationDto>>> ViewUpcomingReservation([FromQuery] int userId)
         {
             try
             {
-                return Ok(_paymentReservationModel.ViewUpcomigReservations(userId));
+                return Ok(await _paymentReservationModel.ViewUpcomigReservations(userId));
             }
             catch (InvalidOperationException e)
             {
@@ -121,12 +121,12 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("/viewpastreservation")]
-        public ActionResult<List<PaymentReservationDto>> ViewPastReservations(int userId)
+        [HttpGet("viewpastreservation")]
+        public async Task<ActionResult<List<PaymentReservationDto>>> ViewPastReservations([FromQuery] int userId)
         {
             try
             {
-                return Ok(_paymentReservationModel.ViewPastReservations(userId));
+                return Ok(await _paymentReservationModel.ViewPastReservations(userId));
             }
             catch (InvalidOperationException e)
             {
