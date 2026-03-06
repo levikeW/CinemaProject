@@ -180,14 +180,13 @@ footer {
 
 /*Rolunk.html*/
 .Rolunk{
-    background-image: url(cinemaniabackground1.png);
+    background-image: url(Kategbckg.png);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
-    padding-bottom: 150px;
 }
-
-.Rolunkh1{
+    
+    .Rolunkh1{
     border: 2px solid black;
     width: 250px;
     text-align: center;
@@ -195,61 +194,78 @@ footer {
     margin-top: 40px;
     padding: 8px;
 }
-
-.Infocim{
+    
+    .Infocim{
     text-align: center;
     margin-top: 40px;
 }
-
-.Rolunkkeret{
+    
+    .Rolunkkeret{
     width: 70%;
     margin: auto;
     margin-top: 50px;
 }
-
-.Elerhetoseg{
-    text-align: left;
+    
+    .Elerhetoseg{
+    text-align: center;
     padding: 20px;
 }
-
-.kapcsolat{
-    margin-bottom: 15px;
+    
+    .ikonok{
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
 }
-
-.kapcsolat input{
-    width: 200px;
+    
+    .ikon{
+    width: 50px;
+    height: 50px;
+    background-color: #212529;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 22px;
+    text-decoration: none;
+    transition: 0.3s;
 }
-
-.Nyitvatartas{
+    
+    .ikon:hover{
+    background-color: #0d6efd;
+    transform: scale(1.1);
+}
+    
+    .Nyitvatartas{
     text-align: center;
 }
-
-.nyitbox{
+    
+    .nyitbox{
     border: 2px solid lightblue;
     width: 150px;
     margin: auto;
     padding: 20px;
     border-radius: 15px;
 }
-
-.hirlevel{
-    width: 300px;
+    
+    .hirlevel{
+    width: 50px;
     margin: auto;
-    margin-top: 80px;
+    margin-top: 30px;
     text-align: center;
 }
-
-.hirinput{
+    
+    .hirinput{
     margin-top: 10px;
 }
 
 /*Bejelenkezes.html*/
 .Bejelall{
-    background-image: url(cinemaniabackground2.png);
+    background-image: url(Arakbckg.png);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
-    padding-bottom: 100px;
 }
 
 .Bejelkeret{
