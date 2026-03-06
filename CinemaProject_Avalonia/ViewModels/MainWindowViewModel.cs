@@ -25,7 +25,7 @@ namespace CinemaProject_Avalonia.ViewModels
         public ObservableCollection<TicketViewModel> Prices { get; set; } = new();
         public ObservableCollection<UserViewModel> Users { get; set; } = new();
         public ObservableCollection<RoomViewModel> Room { get; set; } = new();
-        public ObservableCollection<ReservationViewModel> Reservations { get; set; } = new();
+        public ObservableCollection<ReservationViewModel> Reservations { get; set; }
 
         public ObservableCollection<string> Rooms { get; set; } = new();
 
@@ -50,6 +50,7 @@ namespace CinemaProject_Avalonia.ViewModels
         private bool _isUsersPageOpen;
         private bool _isRoomPageOpen;
         private bool _isReservationPageOpen;
+        private bool _isReservationEditPanelOpen;
         private bool _isDateFilterActive = false;
 
 
@@ -72,6 +73,8 @@ namespace CinemaProject_Avalonia.ViewModels
         public RelayCommand CloseUsersPageCommand { get; set; }
         public RelayCommand CloseRoomPageCommand { get; set; }
         public RelayCommand CloseReservationPageCommand { get; set; }
+
+        public RelayCommand CloseReservationPanelCommand { get; }
 
         public RelayCommand<DateTimeOffset> DeleteDateSelectedMovieCommand { get; set; }
 
@@ -234,6 +237,16 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
+        public bool IsReservationEditPanelOpen
+        {
+            get => _isReservationEditPanelOpen;
+            set
+            {
+                _isReservationEditPanelOpen = value;
+                OnPropertyChanged();
+            }
+        }
+
         public bool IsDateFilterActive
         {
             get => _isDateFilterActive;
@@ -328,6 +341,8 @@ namespace CinemaProject_Avalonia.ViewModels
             CloseUsersPageCommand = new RelayCommand(CloseUserPage);
             CloseRoomPageCommand = new RelayCommand(CloseRoomPage);
             CloseReservationPageCommand = new RelayCommand(CloseReservationPage);
+
+            CloseReservationPanelCommand = new RelayCommand(CloseReservationPanel);
 
             DeleteDateSelectedMovieCommand = new RelayCommand<DateTimeOffset>(DeleteDateSelectedMovie);
 
@@ -656,7 +671,7 @@ namespace CinemaProject_Avalonia.ViewModels
                 var felhasz = await _mainWindowModel.GetAllUsers();
                 foreach (var ember in felhasz)
                 {
-                    Users.Add(new UserViewModel(this)
+                    Users.Add(new UserViewModel(this, _mainWindowModel)
                     {
                         Email = ember.Email,
                         Name = ember.FullName,
@@ -685,12 +700,15 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public async Task ChangeUserRoleAsync(int userId)
+        //!
+        public async Task ChangeUserRoleAsync(UserViewModel user)
         {
             try
             {
-                await _mainWindowModel.ChangeRole(userId);
+                await _mainWindowModel.ChangeRole(user.UserId, user.Role);
+
                 await LoadUsersAsync();
+                SelectedUserItem = null;
                 ErrorMessage = "";
             }
             catch (Exception ex)
@@ -711,8 +729,8 @@ namespace CinemaProject_Avalonia.ViewModels
                 var foglalasok = await _mainWindowModel.GetAllReservations();
                 foreach (var foglalas in foglalasok)
                 {
-                    Reservations.Add(new ReservationViewModel(this, _mainWindowModel)
-                    {   
+                    var reservationVM = new ReservationViewModel(this, _mainWindowModel)
+                    {
                         ReservationId = foglalas.PaymentReservationId,
                         Date = foglalas.Date,
                         IsPaid = foglalas.IsPaid,
@@ -721,9 +739,20 @@ namespace CinemaProject_Avalonia.ViewModels
                         Price = foglalas.Price,
                         UserId = foglalas.UserId,
                         Seats = foglalas.Seats,
-                    });
+                    };
+
+                    reservationVM.ReservationDeleted += async (s, e) =>
+                    {
+                        await DeleteReservationAsync(reservationVM.ReservationId);
+                    };
+
+                    reservationVM.ReservationSaved += async (s, e) =>
+                    {
+                        await LoadReservationAsync();
+                    };
+
+                    Reservations.Add(reservationVM);
                 }
-                Console.WriteLine($"Reser: {Reservations.Count}");
             }
             catch (Exception ex)
             {
@@ -731,11 +760,11 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public async Task UpdateReservationAsync(PaymentReservationDto reservation)
+        public async Task UpdateReservationAsync(ReservationViewModel reservation)
         {
             try
             {
-                SelectedReservationItem = new ReservationViewModel(this, _mainWindowModel);
+                SelectedReservationItem = reservation;
 
                 SelectedReservationItem.ReservationSaved += async (s, e) =>
                 {
@@ -902,6 +931,12 @@ namespace CinemaProject_Avalonia.ViewModels
             IsScreeningEditPanelOpen = false;
             SelectedReservationItem = null;
             SelectedScreening = null;
+        }
+
+        private void CloseReservationPanel()
+        {
+            IsReservationEditPanelOpen = false;
+            SelectedReservationItem = null;
         }
 
         // ===================== FILTERS =====================

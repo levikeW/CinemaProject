@@ -185,7 +185,7 @@ namespace CinemaProject.Model
 
         public async Task<List<SeatDto>> GetSeats(int roomId, int screeningId)
         {
-            var reservedSeatIds = _context.carts.Where(x => x.FilmScreeningId == screeningId).SelectMany(x => x.Seats.Select(x => x.SeatId)).ToList();
+            var reservedSeatIds = _context.seats.Where(s => s.CartId != null && s.Cart.FilmScreeningId == screeningId).Select(s => s.SeatId).ToList();
             return _context.seats.Where(x => x.RoomId == roomId).Select(x => new SeatDto
             {
                 SeatId = x.SeatId,

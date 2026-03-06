@@ -151,7 +151,9 @@ namespace CinemaProject.Persistence
         public int SeatNumber { get; set; }
         public int RoomId { get; set; }
         public bool IsReserved { get; set; } = false;
+        public int? CartId { get; set; }
         public Room Room { get; set; }
+        public Cart Cart { get; set; }
     }
     public class Receipt
     {

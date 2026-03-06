@@ -141,9 +141,8 @@ namespace CinemaProject.Model
         {
             var now = DateTime.UtcNow;
 
-            return _context.paymentReservations
-                .Include(p => p.Cart)
-                    .ThenInclude(c => c.Ticket)
+            return _context.paymentReservations.Include(p => p.Cart)
+                .ThenInclude(c => c.Ticket)
                 .Include(p => p.Cart)
                     .ThenInclude(c => c.Seats)
                 .Include(p => p.Cart)
@@ -168,8 +167,7 @@ namespace CinemaProject.Model
         {
             var now = DateTime.UtcNow;
 
-            return _context.paymentReservations
-                .Include(p => p.Cart)
+            return _context.paymentReservations.Include(p => p.Cart)
                     .ThenInclude(c => c.Ticket)
                 .Include(p => p.Cart)
                     .ThenInclude(c => c.Seats)

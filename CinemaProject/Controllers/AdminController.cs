@@ -362,11 +362,11 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("changerole")]
-        public async Task<ActionResult> ChangeRole([FromQuery] int userId)
+        public async Task<ActionResult> ChangeRole([FromQuery] int userId, [FromQuery] string newRole)
         {
             try
             {
-                await _adminModel.ChangeRole(userId);
+                await _adminModel.ChangeRole(userId, newRole);
                 return Ok();
             }
             catch (InvalidOperationException e)

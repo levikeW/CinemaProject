@@ -141,9 +141,9 @@ namespace CinemaProject_Avalonia.Models
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task ChangeRole(int userId)
+        public async Task ChangeRole(int userId, string newRole)
         {
-            var response = await _session.Client.PutAsync($"api/admin/changerole?userId={userId}", null);
+            var response = await _session.Client.PutAsync($"api/admin/changerole?userId={userId}&newRole={newRole}", null);
             response.EnsureSuccessStatusCode();
         }
 

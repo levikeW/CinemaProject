@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using System.Resources;
 using Cinema.Dto;
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
@@ -158,28 +159,19 @@ namespace CinemaProject.Model
 
         public async Task ModifyReservation(PaymentReservationDto dto, int reservationId)
         {
-            var reservation = _context.paymentReservations.Include(x => x.Cart).FirstOrDefault(x => x.PaymentReservationId == reservationId);
+            var reservation = await _context.paymentReservations.Include(p => p.Cart).ThenInclude(c => c.Seats).FirstOrDefaultAsync(p => p.PaymentReservationId == reservationId);
+
             if (reservation == null)
-            {
-                throw new InvalidOperationException("Reservation not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
-                var seats = _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToList();
-                reservation.Date = dto.Date;
-                reservation.IsPaid = dto.IsPaid;
-                if (reservation.Cart != null)
-                {
-                    reservation.Cart.Seats = seats;
-                    reservation.Cart.FilmScreeningId = dto.FilmScreeningId;
-                    reservation.Cart.Amount = dto.Amount;
-                    reservation.Cart.TotalPrice = dto.Price * dto.Amount;
-                    reservation.Cart.UserId = dto.UserId;
-                }
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+                throw new Exception("Reservation not found");
+
+            reservation.Cart.Amount = dto.Amount;
+            reservation.Cart.TotalPrice = dto.Price;
+            reservation.IsPaid = dto.IsPaid;
+            reservation.Date = dto.Date;
+
+            reservation.Cart.Seats = dto.Seats;
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task ModifyTicket(TicketDto dto, int ticketId)
@@ -319,19 +311,13 @@ namespace CinemaProject.Model
             }
         }
 
-        public async Task ChangeRole(int userId)
+        public async Task ChangeRole(int userId, string newRole)
         {
-            var user = _context.users.FirstOrDefault(x => x.UserId == userId);
-            if (user == null)
-            {
-                throw new InvalidOperationException("User not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                user.Role = "Admin";
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+            var user = await _context.users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null) throw new Exception("User not found");
+
+            user.Role = newRole;
+            await _context.SaveChangesAsync();
             await Task.CompletedTask;
         }
     }

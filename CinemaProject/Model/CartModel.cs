@@ -124,8 +124,9 @@ namespace CinemaProject.Model
 
                 foreach (var seat in seats)
                 {
-                    cart.Seats.Add(seat);
+                    seat.CartId = cart.CartId;
                     seat.IsReserved = true;
+                    cart.Seats.Add(seat);
                 }
             }
 

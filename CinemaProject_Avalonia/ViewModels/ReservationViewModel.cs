@@ -139,15 +139,6 @@ namespace CinemaProject_Avalonia.ViewModels
             _model = model;
             _viewModel = viewModel;
 
-            _reservationId = ReservationId;
-            _date = Date;
-            _isPaid = IsPaid;
-            _screeningId = ScreeningId;
-            _amount = Amount;
-            _price = Price;
-            _userId = UserId;
-            _seats = Seats;
-
             OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
             SaveReservationCommand = new AsyncRelayCommand(SaveReservation);
             DeleteCommand = new RelayCommand(Delete);
@@ -157,10 +148,10 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             try
             {
-
                 var dto = new PaymentReservationDto
                 {
-                    Date = Date,
+                    PaymentReservationId = ReservationId,
+                    Date = Date.UtcDateTime,
                     IsPaid = IsPaid,
                     FilmScreeningId = ScreeningId,
                     Amount = Amount,
@@ -182,7 +173,7 @@ namespace CinemaProject_Avalonia.ViewModels
         private void OpenEditPanel()
         {
             _viewModel.SelectedReservationItem = this;
-            _viewModel.IsScreeningEditPanelOpen = true;
+            _viewModel.IsReservationEditPanelOpen = true;
         }
 
         private void Delete()
