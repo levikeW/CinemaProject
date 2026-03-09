@@ -5,6 +5,19 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//ADD CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy
+                .AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
 // Add services to the container.
 builder.Services.AddDbContextPool<CinemaDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("CinemaDb")));
 builder.Services.AddTransient<UserModel>();
@@ -40,17 +53,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 var app = builder.Build();
 
-//  Adatbázis létrehozása és seedelés
+//  Adatbï¿½zis lï¿½trehozï¿½sa ï¿½s seedelï¿½s
 /*using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<CinemaDbContext>();
     var seeder = services.GetRequiredService<DbSeeder>();
 
-    // Létrehozza az adatbázist és a táblákat, ha nem léteznek
+    // Lï¿½trehozza az adatbï¿½zist ï¿½s a tï¿½blï¿½kat, ha nem lï¿½teznek
       var databaseCreated = context.Database.EnsureCreated();
 
-    // Seedelés csak, ha üres az adatbázis
+    // Seedelï¿½s csak, ha ï¿½res az adatbï¿½zis
      if (databaseCreated)
     {
         seeder.Seed();
@@ -66,7 +79,9 @@ if (app.Environment.IsDevelopment())
 }
 
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
+//ADD CORS
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

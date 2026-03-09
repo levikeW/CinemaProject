@@ -123,19 +123,9 @@ footer {
     padding-bottom: 36vh;
 }
 
-.Araknev{
+.arak-table tr td{
     margin: auto;
-    text-align: center;
-    margin-right: 50px;
-    padding: 5px;
-}
-
-.Arakar{
     padding: 15px;
-}
-
-.Arakar h4{
-    margin: 8px;
 }
 
 .Arakall{
