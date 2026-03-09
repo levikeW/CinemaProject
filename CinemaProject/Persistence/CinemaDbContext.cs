@@ -78,8 +78,8 @@ namespace CinemaProject.Persistence
         public string TicketType { get; set; }
         [Required]
         public int TicketPrice { get; set; }
-        public int FilmScreeningId { get; set; }
-        public FilmScreening FilmScreening { get; set; }
+        public int? FilmScreeningId { get; set; }
+        public FilmScreening? FilmScreening { get; set; }
     }
 
     public class FilmScreening
