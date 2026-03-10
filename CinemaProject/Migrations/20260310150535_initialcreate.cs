@@ -13,6 +13,20 @@ namespace CinemaProject.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "categoriesForHTML",
+                columns: table => new
+                {
+                    CategoryId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CategoryName = table.Column<string>(type: "text", nullable: false),
+                    CategoryDescription = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_categoriesForHTML", x => x.CategoryId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "images",
                 columns: table => new
                 {
@@ -36,6 +50,20 @@ namespace CinemaProject.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_rooms", x => x.RoomId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ticketsForHTML",
+                columns: table => new
+                {
+                    TicketId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TicketType = table.Column<string>(type: "text", nullable: false),
+                    TicketPrice = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ticketsForHTML", x => x.TicketId);
                 });
 
             migrationBuilder.CreateTable(
@@ -384,7 +412,13 @@ namespace CinemaProject.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "categoriesForHTML");
+
+            migrationBuilder.DropTable(
                 name: "seats");
+
+            migrationBuilder.DropTable(
+                name: "ticketsForHTML");
 
             migrationBuilder.DropTable(
                 name: "receipts");

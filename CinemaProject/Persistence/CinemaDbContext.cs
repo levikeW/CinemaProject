@@ -19,6 +19,10 @@ namespace CinemaProject.Persistence
         public DbSet<Receipt> receipts { get; set; }
         public DbSet<ReservationConfirmation> reservationConfirmations { get; set; }
 
+        // DATAS FOR HTML
+        public DbSet<TicketForHTML> ticketsForHTML { get; set; }
+        public DbSet<CategoriesForHTML> categoriesForHTML { get; set; }
+
         public CinemaDbContext(DbContextOptions<CinemaDbContext> options) : base(options) { }
     }
 
