@@ -1,4 +1,5 @@
 ﻿using Cinema.Dto;
+using CinemaProject.Dto;
 using CinemaProject.Model;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +33,17 @@ namespace Cinema_Test
             var seat = _context.seats.First();
             var dto = new CartDto
             {
-                Seats = new List<Seat> { seat }
+                Seats = new List<SeatDto>
+                {
+                    new SeatDto
+                    {
+                        SeatId = seat.SeatId,
+                        RowNumber = seat.RowNumber,
+                        SeatNumber = seat.SeatNumber,
+                        RoomId = seat.RoomId,
+                        IsReserved = seat.IsReserved
+                    }
+                }
             };
 
             var result = await _cartModel.GetCart(dto, userId);
@@ -57,7 +68,17 @@ namespace Cinema_Test
                 TicketId = ticket.TicketId,
                 Amount = 2,
                 TotalPrice = ticket.TicketPrice,
-                Seats = new List<Seat> { seat }
+                Seats = new List<SeatDto>
+                {
+                    new SeatDto
+                    {
+                        SeatId = seat.SeatId,
+                        RowNumber = seat.RowNumber,
+                        SeatNumber = seat.SeatNumber,
+                        RoomId = seat.RoomId,
+                        IsReserved = seat.IsReserved
+                    }
+                }
             };
 
             await _cartModel.AddToCart(dto);
@@ -103,7 +124,17 @@ namespace Cinema_Test
                 TicketId = cart.TicketId,
                 Amount = 10,
                 TotalPrice = 1500,
-                Seats = new List<Seat> { newSeat }
+                Seats = new List<SeatDto>
+                {
+                    new SeatDto
+                    {
+                        SeatId = newSeat.SeatId,
+                        RowNumber = newSeat.RowNumber,
+                        SeatNumber = newSeat.SeatNumber,
+                        RoomId = newSeat.RoomId,
+                        IsReserved = newSeat.IsReserved
+                    }
+                }
             };
 
             await _cartModel.UpdateCart(dto, cart.CartId);
@@ -116,7 +147,7 @@ namespace Cinema_Test
         [Fact]
         public async Task UpdateCart_Wrong()
         {
-            var dto = new CartDto { Seats = new List<Seat>() };
+            var dto = new CartDto { Seats = new List<SeatDto>() };
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _cartModel.UpdateCart(dto, 99999));
 
@@ -127,22 +158,40 @@ namespace Cinema_Test
         [Fact]
         public async Task ModifyCart()
         {
-            var cart = _context.carts.Include(x => x.Ticket).First();
-            var newSeatIds = new List<int> { _context.seats.First().SeatId };
+            var cart = await _context.carts
+         .Include(c => c.Ticket)
+         .Include(c => c.Seats)
+         .FirstAsync();
 
-            await _cartModel.ModifyCart(cart.CartId, newAmount: 3, newSeatIds: newSeatIds);
+            var newSeatIds = new List<int> { (await _context.seats.FirstAsync()).SeatId };
 
-            var modified = _context.carts.Include(c => c.Seats).First(x => x.CartId == cart.CartId);
+            await _cartModel.ModifyCart(new ModifyCartDto
+            {
+                CartId = cart.CartId,
+                NewAmount = 3,
+                NewSeatIds = newSeatIds
+            });
+
+            var modified = await _context.carts
+                .Include(c => c.Seats)
+                .Include(c => c.Ticket)
+                .FirstAsync(c => c.CartId == cart.CartId);
+
             Assert.Equal(3, modified.Amount);
-            Assert.Equal(cart.Ticket.TicketPrice * 3, modified.TotalPrice);
+            Assert.Equal(modified.Ticket.TicketPrice * 3, modified.TotalPrice);
             Assert.Single(modified.Seats);
+            Assert.Equal(newSeatIds.First(), modified.Seats.First().SeatId);
         }
 
         [Fact]
         public async Task ModifyCart_Wrong()
         {
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-                await _cartModel.ModifyCart(88888, newAmount: 5));
+            await _cartModel.ModifyCart(new ModifyCartDto
+            {
+                CartId = 88888,
+                NewAmount = 5
+            }));
 
             Assert.Equal("Cart not found", ex.Message);
         }

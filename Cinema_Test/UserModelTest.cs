@@ -152,11 +152,11 @@ namespace Cinema_Test
         public async Task Update()
         {
             var updatedUser = _context.users.FirstOrDefault(x => x.UserId == 1);
-            await _userModel.UpdateProfile(new CinemaProject.Dto.UpdateUserDto { Email = "admin2@cinema.hu",UserId =  updatedUser.UserId, FullName = "Admin User2", BillingAddress = "Budapest 2." });
+            await _userModel.UpdateProfile(new CinemaProject.Dto.UpdateUserDto { Email = "admin3@cinema.hu",UserId =  updatedUser.UserId, FullName = "Admin User3", BillingAddress = "Budapest 3." });
             var user = _context.users.FirstOrDefault(x => x.UserId == 1);
-            Assert.Equal("admin2@cinema.hu", user.Email);
-            Assert.Equal("Admin User2", user.FullName);
-            Assert.Equal("Budapest 2.", user.BillingAddress);
+            Assert.Equal("admin3@cinema.hu", user.Email);
+            Assert.Equal("Admin User3", user.FullName);
+            Assert.Equal("Budapest 3.", user.BillingAddress);
         }
         [Fact]
         public async Task Update_Wrong()

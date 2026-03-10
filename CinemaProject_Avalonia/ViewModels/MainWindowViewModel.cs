@@ -410,7 +410,7 @@ namespace CinemaProject_Avalonia.ViewModels
                 ErrorMessage = "Hiba az új film szerkesztő megnyitásakor: " + ex.Message;
             }
         }
-        public async Task UpdateMovieAsync(MovieDto movie)
+        public async Task UpdateMovieAsync(ModifyMovieDto movie)
         {
             try
             {
@@ -519,7 +519,7 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public async Task UpdateScreeningAsync(FilmScreeningDto screening)
+        public async Task UpdateScreeningAsync(ModifyFilmScreeningDto screening)
         {
             try
             {
@@ -578,7 +578,7 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public async Task UpdateTicketAsync(TicketDto ticket)
+        public async Task UpdateTicketAsync(ModifyTicketDto ticket)
         {
             try
             {
@@ -632,7 +632,7 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public async Task UpdateRoomAsync(RoomDto room)
+        public async Task UpdateRoomAsync(ModifyRoomDto room)
         {
             try
             {
@@ -701,7 +701,7 @@ namespace CinemaProject_Avalonia.ViewModels
         }
 
         //!
-        public async Task ChangeUserRoleAsync(UserViewModel user)
+       /* public async Task ChangeUserRoleAsync(UserViewModel user)
         {
             try
             {
@@ -715,7 +715,7 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 ErrorMessage = "Hiba szerepkör módosításakor: " + ex.Message;
             }
-        }
+        }*/
 
         // ===================== RESERVATIONS =====================
 

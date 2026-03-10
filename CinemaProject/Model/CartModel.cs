@@ -15,22 +15,31 @@ namespace CinemaProject.Model
         public async Task<IEnumerable<CartDto>> GetCart(CartDto dto, int userId)
         {
             var seatIds = dto.Seats.Select(x => x.SeatId).ToList();
-            var seatDtos = dto.Seats.Select(s => new SeatDto
-            {
-                SeatId = s.SeatId,
-                RowNumber = s.RowNumber,
-                SeatNumber = s.SeatNumber,
-                RoomId = s.RoomId,
-                IsReserved = s.IsReserved
-            }).ToList(); return _context.carts.Include(x => x.FilmScreening).Include(x => x.Ticket).Where(x => x.UserId == userId).Select(x => new CartDto
-            {
-                CartId = x.CartId,
-                FilmScreeningId = x.FilmScreeningId,
-                Seats = seatDtos,
-                TicketId = x.TicketId,
-                Amount = x.Amount,
-                TotalPrice = x.Ticket.TicketPrice * x.Amount,
-            }).ToList();
+            var SeatsE = await _context.seats.Where(x => seatIds.Contains(x.SeatId)).ToListAsync();
+
+            var cartDtos = await _context.carts
+                .Include(x => x.FilmScreening)
+                .Include(x => x.Ticket).Where(x => x.UserId == userId)
+                .Select(x => new CartDto
+                {
+                    CartId = x.CartId,
+                    UserId = x.UserId,
+                    FilmScreeningId = x.FilmScreeningId,
+                    TicketId = x.TicketId,
+                    Amount = x.Amount,
+                    TotalPrice = x.Ticket.TicketPrice * x.Amount,
+                    Seats = SeatsE.Select(x => new SeatDto
+                    {
+                        SeatId = x.SeatId,
+                        RowNumber = x.RowNumber,
+                        SeatNumber = x.SeatNumber,
+                        RoomId = x.RoomId,
+                        IsReserved = x.IsReserved
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return cartDtos;
         }
 
         public async Task AddToCart(CartDto dto)

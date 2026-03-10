@@ -241,8 +241,6 @@ namespace Cinema_IntegrationTest
         }
         */
 
-
-
         [Fact]
         public async Task ClearCart()
         {
@@ -256,13 +254,5 @@ namespace Cinema_IntegrationTest
             var clearResponse = await _client.DeleteAsync($"api/cart/clearcart?userId={user.UserId}");
             Assert.Equal(HttpStatusCode.OK, clearResponse.StatusCode);
         }
-
-
-
-
-
-
-
-
     }
 }

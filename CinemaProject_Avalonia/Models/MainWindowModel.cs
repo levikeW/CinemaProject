@@ -40,7 +40,7 @@ namespace CinemaProject_Avalonia.Models
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task ModifyMovie(MovieDto dto, int movieId)
+        public async Task ModifyMovie(ModifyMovieDto dto, int movieId)
         {
             var response = await _session.Client.PutAsJsonAsync($"api/admin/modifymovie?movieId={movieId}", dto);
             response.EnsureSuccessStatusCode();
@@ -72,7 +72,7 @@ namespace CinemaProject_Avalonia.Models
             return result!;
         }
 
-        public async Task ModifyFilmScreening(FilmScreeningDto dto, int screeningId)
+        public async Task ModifyFilmScreening(ModifyFilmScreeningDto dto, int screeningId)
         {
             var response = await _session.Client.PutAsJsonAsync($"api/admin/modifyfilmscreening?screeningId={screeningId}", dto);
             response.EnsureSuccessStatusCode();
@@ -91,7 +91,7 @@ namespace CinemaProject_Avalonia.Models
             return await _session.Client.GetFromJsonAsync<List<TicketDto>>("api/cinema/getallticket");
         }
 
-        public async Task ModifyTicket(TicketDto dto, int ticketId)
+        public async Task ModifyTicket(ModifyTicketDto dto, int ticketId)
         {
             var response = await _session.Client.PutAsJsonAsync($"api/admin/modifyticket?ticketId={ticketId}", dto);
             response.EnsureSuccessStatusCode();
@@ -112,7 +112,7 @@ namespace CinemaProject_Avalonia.Models
             return result!;
         }
 
-        public async Task ModifyRoom(RoomDto dto, int roomId)
+        public async Task ModifyRoom(ModifyRoomDto dto, int roomId)
         {
             var response = await _session.Client.PutAsJsonAsync($"api/admin/modifyroom?roomId={roomId}", dto);
             response.EnsureSuccessStatusCode();
@@ -141,9 +141,9 @@ namespace CinemaProject_Avalonia.Models
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task ChangeRole(int userId, string newRole)
+        public async Task ChangeRole(int userId, string newRole, int actAdminId)
         {
-            var response = await _session.Client.PutAsync($"api/admin/changerole?userId={userId}&newRole={newRole}", null);
+            var response = await _session.Client.PutAsync($"api/admin/changerole?userId={userId}&newRole={newRole}&actAdminId={actAdminId}", null);
             response.EnsureSuccessStatusCode();
         }
 
@@ -154,7 +154,7 @@ namespace CinemaProject_Avalonia.Models
             return await _session.Client.GetFromJsonAsync<List<PaymentReservationDto>>("/api/admin/getallreservation");
         }
 
-        public async Task ModifyReservation(PaymentReservationDto dto, int reservationId)
+        public async Task ModifyReservation(ModifyReservationDto dto, int reservationId)
         {
             var response = await _session.Client.PutAsJsonAsync($"api/admin/modifyreservation?reservationId={reservationId}", dto);
             response.EnsureSuccessStatusCode();

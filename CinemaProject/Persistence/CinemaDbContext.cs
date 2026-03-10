@@ -189,4 +189,27 @@ namespace CinemaProject.Persistence
         public string UserEmail { get; set; }
         public PaymentReservation PaymentReservation { get; set; }
     }
+
+    // DATAS FOR HTML
+    public class TicketForHTML
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int TicketId { get; set; }
+        [Required]
+        public string TicketType { get; set; }
+        [Required]
+        public int TicketPrice { get; set; }
+    }
+
+    public class CategoriesForHTML
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int CategoryId { get; set; }
+        [Required]
+        public string CategoryName { get; set; }
+        [Required]
+        public string CategoryDescription { get; set; }
+    }
 }

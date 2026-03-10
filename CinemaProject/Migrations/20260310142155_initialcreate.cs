@@ -117,7 +117,7 @@ namespace CinemaProject.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     TicketType = table.Column<string>(type: "text", nullable: false),
                     TicketPrice = table.Column<int>(type: "integer", nullable: false),
-                    FilmScreeningId = table.Column<int>(type: "integer", nullable: false)
+                    FilmScreeningId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -126,8 +126,7 @@ namespace CinemaProject.Migrations
                         name: "FK_tickets_filmScreenings_FilmScreeningId",
                         column: x => x.FilmScreeningId,
                         principalTable: "filmScreenings",
-                        principalColumn: "FilmScreeningId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "FilmScreeningId");
                 });
 
             migrationBuilder.CreateTable(

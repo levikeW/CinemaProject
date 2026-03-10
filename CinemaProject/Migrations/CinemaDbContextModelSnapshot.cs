@@ -17,7 +17,7 @@ namespace CinemaProject.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.13")
+                .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -338,7 +338,7 @@ namespace CinemaProject.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TicketId"));
 
-                    b.Property<int>("FilmScreeningId")
+                    b.Property<int?>("FilmScreeningId")
                         .HasColumnType("integer");
 
                     b.Property<int>("TicketPrice")
@@ -499,7 +499,7 @@ namespace CinemaProject.Migrations
 
             modelBuilder.Entity("CinemaProject.Persistence.Seat", b =>
                 {
-                    b.HasOne("CinemaProject.Persistence.Cart", null)
+                    b.HasOne("CinemaProject.Persistence.Cart", "Cart")
                         .WithMany("Seats")
                         .HasForeignKey("CartId");
 
@@ -517,6 +517,8 @@ namespace CinemaProject.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Cart");
+
                     b.Navigation("Room");
                 });
 
@@ -524,9 +526,7 @@ namespace CinemaProject.Migrations
                 {
                     b.HasOne("CinemaProject.Persistence.FilmScreening", "FilmScreening")
                         .WithMany()
-                        .HasForeignKey("FilmScreeningId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("FilmScreeningId");
 
                     b.Navigation("FilmScreening");
                 });

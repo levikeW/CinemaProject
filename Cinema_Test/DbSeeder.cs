@@ -153,7 +153,14 @@ namespace Cinema_Test
                     FullName = "Test User",
                     BillingAddress = "Debrecen 5.",
                     Role = "User"
-                }
+                },
+                new User {
+                    Email = "admin2@cinema.hu",
+                    Password = HashPass("admin1234"),
+                    FullName = "Admin User2",
+                    BillingAddress = "Budapest 2.",
+                    Role = "Admin"
+                },
             };
             db.users.AddRange(users);
             db.SaveChanges();

@@ -148,7 +148,7 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             try
             {
-                var dto = new PaymentReservationDto
+                var dto = new ModifyReservationDto
                 {
                     PaymentReservationId = ReservationId,
                     Date = Date.UtcDateTime,

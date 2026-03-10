@@ -26,9 +26,19 @@ namespace Cinema_Test
         public async Task ChangeRole()
         {
             var user = _context.users.FirstOrDefault(x => x.UserId == 2);
-            await _adminModel.ChangeRole(user.UserId);
+            await _adminModel.ChangeRole(user.UserId, "Admin", actAdminId: 1);
             var updated = _context.users.First(u => u.UserId == user.UserId);
             Assert.Equal("Admin", updated.Role);
+        }
+
+        [Fact]
+        public async Task ChangeRoleAsync_Fail()
+        {
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await _adminModel.ChangeRole(1, "User", actAdminId: 1);
+            });
+            Assert.Equal("You cannot change your own role.", ex.Message);
         }
 
         [Fact]
@@ -36,9 +46,19 @@ namespace Cinema_Test
         {
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
-                await _adminModel.ChangeRole(99999);
+                await _adminModel.ChangeRole(99999, "Admin", actAdminId: 1);
             });
             Assert.Equal("User not found", ex.Message);
+        }
+
+        [Fact]
+        public async Task ChangeRoleAsync_Fail2()
+        {
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await _adminModel.ChangeRole(3, "User", actAdminId: 1);
+            });
+            Assert.Equal("You cannot demote another Admin.", ex.Message);
         }
 
         // USER AND RESERVATION
@@ -82,7 +102,7 @@ namespace Cinema_Test
         public async Task ModifyReservation()
         {
             var reservation = _context.paymentReservations.Include(x => x.Cart).First();
-            var dto = new PaymentReservationDto
+            var dto = new ModifyReservationDto
             {
                 PaymentReservationId = reservation.PaymentReservationId,
                 CartId = reservation.CartId,
@@ -162,7 +182,7 @@ namespace Cinema_Test
         public async Task ModifyMovie()
         {
             var movie = _context.movies.First();
-            var dto = new MovieDto
+            var dto = new ModifyMovieDto
             {
                 MovieId = movie.MovieId,
                 MovieTitle = movie.MovieTitle + " Updated",
@@ -209,7 +229,7 @@ namespace Cinema_Test
         public async Task ModifyScreening()
         {
             var screening = _context.filmScreenings.First();
-            var dto = new FilmScreeningDto
+            var dto = new ModifyFilmScreeningDto
             {
                 MovieId = screening.MovieId,
                 MovieTitle = screening.MovieTitle + " Updated",
@@ -236,7 +256,7 @@ namespace Cinema_Test
         public async Task ModifyTicket()
         {
             var ticket = _context.tickets.First();
-            var dto = new TicketDto
+            var dto = new ModifyTicketDto
             {
                 TicketType = ticket.TicketType + " Updated",
                 TicketPrice = ticket.TicketPrice + 10

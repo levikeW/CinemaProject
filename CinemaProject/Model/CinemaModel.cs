@@ -52,7 +52,6 @@ namespace CinemaProject.Model
                 TicketId = x.TicketId,
                 TicketType = x.TicketType,
                 TicketPrice = x.TicketPrice,
-                FilmScreeningId = x.FilmScreeningId
             }).ToList();
         }
 
@@ -221,7 +220,6 @@ namespace CinemaProject.Model
                 TicketId = x.TicketId,
                 TicketType = x.TicketType,
                 TicketPrice = x.TicketPrice,
-                FilmScreeningId = x.FilmScreeningId,
             }).FirstOrDefault();
         }
 
