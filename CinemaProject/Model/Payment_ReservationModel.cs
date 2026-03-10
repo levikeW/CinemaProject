@@ -158,7 +158,14 @@ namespace CinemaProject.Model
                     IsPaid = x.IsPaid,
                     Amount = x.Cart.Amount,
                     Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
-                    Seats = x.Cart.Seats.ToList(),
+                    Seats = x.Cart.Seats.Select(s => new SeatDto
+                    {
+                        SeatId = s.SeatId,
+                        RowNumber = s.RowNumber,
+                        SeatNumber = s.SeatNumber,
+                        RoomId = s.RoomId,
+                        IsReserved = s.IsReserved
+                    }).ToList()
                 })
                 .ToList();
         }
@@ -184,7 +191,14 @@ namespace CinemaProject.Model
                     IsPaid = x.IsPaid,
                     Amount = x.Cart.Amount,
                     Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
-                    Seats = x.Cart.Seats.ToList(),
+                    Seats = x.Cart.Seats.Select(s => new SeatDto
+                    {
+                        SeatId = s.SeatId,
+                        RowNumber = s.RowNumber,
+                        SeatNumber = s.SeatNumber,
+                        RoomId = s.RoomId,
+                        IsReserved = s.IsReserved
+                    }).ToList()
                 })
                 .ToList();
         }

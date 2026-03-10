@@ -1,4 +1,5 @@
-﻿using CinemaProject.Persistence;
+﻿using Cinema.Dto;
+using CinemaProject.Persistence;
 
 namespace CinemaProject.Dto
 {
@@ -12,6 +13,6 @@ namespace CinemaProject.Dto
         public int Amount { get; set; }
         public int Price { get; set; }
         public int UserId { get; set; }
-        public List<Seat> Seats { get; set; } = new List<Seat>();
+        public List<SeatDto> Seats { get; set; } = new();
     }
 }

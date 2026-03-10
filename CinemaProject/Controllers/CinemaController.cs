@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using CinemaProject.Model;
 using Cinema.Dto;
+using CinemaProject.Dto;
 
 namespace CinemaProject.Controllers
 {
@@ -75,6 +76,40 @@ namespace CinemaProject.Controllers
             try
             {
                 return Ok(await _cinemaModel.GetAllRooms());
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet("getalltickettype")]
+        public async Task<ActionResult<IEnumerable<TicketTypeDto>>> GetAllTicketType()
+        {
+            try
+            {
+                return Ok(await _cinemaModel.GetAllTicketType());
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet("getallcateg")]
+        public async Task<ActionResult<IEnumerable<CategoriesDto>>> GetAllCateg()
+        {
+            try
+            {
+                return Ok(await _cinemaModel.GetAllCategories());
             }
             catch (InvalidOperationException e)
             {

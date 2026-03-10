@@ -82,7 +82,7 @@ namespace CinemaProject.Controllers
             return Ok();
         }
 
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "User, Admin")]
         [HttpGet("viewprofile")]
         public async Task<ActionResult<IEnumerable<UserDto>>> ViewProfile([FromQuery] int userId)
         {
@@ -100,7 +100,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "User, Admin")]
         [HttpDelete("deleteprofile")]
         public async Task<ActionResult> DeleteProfile([FromQuery] int userId)
         {
@@ -119,7 +119,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "User, Admin")]
         [HttpPut("updateprofile")]
         public async Task<ActionResult> UpdateProfile([FromBody] UpdateUserDto dto)
         {
@@ -138,7 +138,7 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "User, Admin")]
         [HttpPut("changepass")]
         public async Task<ActionResult> ChangePassword([FromQuery] int userId, [FromQuery] string oldPass, [FromQuery] string newPass)
         {

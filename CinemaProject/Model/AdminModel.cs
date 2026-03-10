@@ -21,6 +21,7 @@ namespace CinemaProject.Model
                 UserId = x.UserId,
                 Email = x.Email,
                 FullName = x.FullName,
+                Role = x.Role
             }).ToList();
         }
 
@@ -34,7 +35,14 @@ namespace CinemaProject.Model
                 IsPaid = x.IsPaid,
                 Amount = x.Cart.Amount,
                 Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
-                Seats = x.Cart.Seats.ToList()
+                Seats = x.Cart.Seats.Select(s => new SeatDto
+                {
+                    SeatId = s.SeatId,
+                    RowNumber = s.RowNumber,
+                    SeatNumber = s.SeatNumber,
+                    RoomId = s.RoomId,
+                    IsReserved = s.IsReserved
+                }).ToList()
             }).ToList();
         }
 
@@ -118,6 +126,46 @@ namespace CinemaProject.Model
             return dto;
         }
 
+        public async Task<NewTicketTypeDto> NewTicketType(NewTicketTypeDto dto)
+        {
+            if (_context.ticketsForHTML.Any(x => x.TicketId == dto.TicketId))
+            {
+                throw new InvalidOperationException("Already exists");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.ticketsForHTML.Add(new Persistence.TicketForHTML
+                {
+                    TicketType = dto.Name,
+                    TicketPrice = dto.Price
+                });
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+            await Task.CompletedTask;
+            return dto;
+        }
+
+        public async Task<NewCategDto> NewCategDto(NewCategDto dto)
+        {
+            if (_context.categoriesForHTML.Any(x => x.CategoryId == dto.CategId))
+            {
+                throw new InvalidOperationException("Already exists");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.categoriesForHTML.Add(new Persistence.CategoriesForHTML
+                {
+                    CategoryName = dto.Name,
+                    CategoryDescription = dto.Description
+                });
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+            await Task.CompletedTask;
+            return dto;
+        }
+
         public async Task ModifyMovie(ModifyMovieDto dto)
         {
             var movie = _context.movies.First(x => x.MovieId == dto.MovieId);
@@ -160,17 +208,40 @@ namespace CinemaProject.Model
 
         public async Task ModifyReservation(ModifyReservationDto dto, int reservationId)
         {
-            var reservation = await _context.paymentReservations.Include(p => p.Cart).ThenInclude(c => c.Seats).FirstOrDefaultAsync(p => p.PaymentReservationId == reservationId);
+            var reservation = await _context.paymentReservations
+                .Include(p => p.Cart)
+                    .ThenInclude(c => c.Seats)
+                .FirstOrDefaultAsync(p => p.PaymentReservationId == reservationId);
 
             if (reservation == null)
                 throw new Exception("Reservation not found");
 
-            reservation.Cart.Amount = dto.Amount;
-            reservation.Cart.TotalPrice = dto.Price;
             reservation.IsPaid = dto.IsPaid;
             reservation.Date = dto.Date;
+            reservation.Cart.Amount = dto.Amount;
 
-            reservation.Cart.Seats = dto.Seats;
+            var ticket = await _context.tickets.FirstAsync(t => t.TicketId == reservation.Cart.TicketId);
+
+            reservation.Cart.TotalPrice = ticket.TicketPrice * dto.Amount;
+
+            var seatIds = dto.Seats.Select(s => s.SeatId).ToList();
+
+            var seats = await _context.seats.Where(s => seatIds.Contains(s.SeatId)).ToListAsync();
+
+            foreach (var oldSeat in reservation.Cart.Seats)
+            {
+                oldSeat.CartId = null;
+                oldSeat.IsReserved = false;
+            }
+
+            reservation.Cart.Seats.Clear();
+
+            foreach (var seat in seats)
+            {
+                seat.CartId = reservation.Cart.CartId;
+                seat.IsReserved = true;
+                reservation.Cart.Seats.Add(seat);
+            }
 
             await _context.SaveChangesAsync();
         }
@@ -201,6 +272,38 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 room.RoomName = dto.RoomName;
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+        }
+
+        public async Task ModifyTicketType(ModifyTicketTypeDto dto, int ticketTId)
+        {
+            var ticketT = _context.ticketsForHTML.First(x => x.TicketId == ticketTId);
+            if (ticketT == null)
+            {
+                throw new InvalidOperationException("Room not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                ticketT.TicketType = dto.TicketName;
+                ticketT.TicketPrice = dto.Price;
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+        }
+
+        public async Task ModifyCateg(ModifyCategDto dto, int categId)
+        {
+            var categ = _context.categoriesForHTML.First(x => x.CategoryId == categId);
+            if (categ == null)
+            {
+                throw new InvalidOperationException("Room not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                categ.CategoryName = dto.CategName;
+                categ.CategoryDescription = dto.Description;
                 await _context.SaveChangesAsync();
                 await trx.CommitAsync();
             }
@@ -273,6 +376,33 @@ namespace CinemaProject.Model
             using var trx = _context.Database.BeginTransaction();
             {
                 _context.paymentReservations.Remove(_context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).First());
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+        }
+
+        public async Task DeleteTicketT(int ticketTId)
+        {
+            if (!_context.ticketsForHTML.Any(x => x.TicketId == ticketTId))
+            {
+                throw new InvalidOperationException("Ticket type not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.ticketsForHTML.Remove(_context.ticketsForHTML.Where(x => x.TicketId == ticketTId).First());
+                await _context.SaveChangesAsync();
+                await trx.CommitAsync();
+            }
+        }
+        public async Task DeleteCateg(int categId)
+        {
+            if (!_context.categoriesForHTML.Any(x => x.CategoryId == categId))
+            {
+                throw new InvalidOperationException("User not found");
+            }
+            using var trx = _context.Database.BeginTransaction();
+            {
+                _context.categoriesForHTML.Remove(_context.categoriesForHTML.Where(x => x.CategoryId == categId).First());
                 await _context.SaveChangesAsync();
                 await trx.CommitAsync();
             }

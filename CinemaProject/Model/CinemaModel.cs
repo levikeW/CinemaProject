@@ -1,4 +1,5 @@
 ﻿using Cinema.Dto;
+using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -61,6 +62,26 @@ namespace CinemaProject.Model
             {
                 RoomId = x.RoomId,
                 RoomName = x.RoomName,
+            }).ToList();
+        }
+
+        public async Task<IEnumerable<TicketTypeDto>> GetAllTicketType()
+        {
+            return _context.ticketsForHTML.Select(x => new TicketTypeDto
+            {
+                Id = x.TicketId,
+                TicketName = x.TicketType,
+                Price = x.TicketPrice,
+            }).ToList();
+        }
+
+        public async Task<IEnumerable<CategoriesDto>> GetAllCategories()
+        {
+            return _context.categoriesForHTML.Select(x => new CategoriesDto
+            {
+                Id = x.CategoryId,
+                CategName = x.CategoryName,
+                Description = x.CategoryDescription,
             }).ToList();
         }
 
