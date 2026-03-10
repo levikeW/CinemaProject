@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
+using Cinema.Dto;
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using CinemaProject_Avalonia.Models;
@@ -24,7 +25,7 @@ namespace CinemaProject_Avalonia.ViewModels
         private int _amount;
         private int _price;
         private int _userId;
-        private List<Seat> _seats;
+        private List<SeatDto> _seats = new();
 
         private string _errorMessage;
 
@@ -114,7 +115,7 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public List<Seat> Seats
+        public List<SeatDto> Seats
         {
             get=> _seats;
             set
@@ -151,7 +152,8 @@ namespace CinemaProject_Avalonia.ViewModels
                 var dto = new ModifyReservationDto
                 {
                     PaymentReservationId = ReservationId,
-                    Date = Date.UtcDateTime,
+                    CartId = CartId,
+                    Date = Date,
                     IsPaid = IsPaid,
                     FilmScreeningId = ScreeningId,
                     Amount = Amount,
@@ -163,10 +165,12 @@ namespace CinemaProject_Avalonia.ViewModels
                 await _model.ModifyReservation(dto, ReservationId);
 
                 ReservationSaved?.Invoke(this, EventArgs.Empty);
+
+                _viewModel.IsReservationEditPanelOpen = false;
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Hiba a film mentésekor: " + ex.Message;
+                ErrorMessage = "Hiba a foglalás mentésekor: " + ex.Message;
             }
         }
 

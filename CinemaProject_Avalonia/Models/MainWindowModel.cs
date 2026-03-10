@@ -86,14 +86,51 @@ namespace CinemaProject_Avalonia.Models
 
         // ===================== TICKETS =====================
 
-        public async Task<List<TicketDto>> GetAllTickets()
+        public async Task<List<TicketTypeDto>> GetAllTicketT()
         {
-            return await _session.Client.GetFromJsonAsync<List<TicketDto>>("api/cinema/getallticket");
+            return await _session.Client.GetFromJsonAsync<List<TicketTypeDto>>("api/cinema/getalltickettype");
         }
 
-        public async Task ModifyTicket(ModifyTicketDto dto, int ticketId)
+        public async Task NewTicketType(NewTicketTypeDto dto)
         {
-            var response = await _session.Client.PutAsJsonAsync($"api/admin/modifyticket?ticketId={ticketId}", dto);
+            var response = await _session.Client.PostAsJsonAsync("api/admin/newtickettype", dto);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task ModifyTicketType(ModifyTicketTypeDto dto, int ticketId)
+        {
+            var response = await _session.Client.PutAsJsonAsync($"api/admin/modifytickettype?ticketId={ticketId}", dto);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task DeleteTicketType(int ticketId)
+        {
+            var response = await _session.Client.DeleteAsync($"api/admin/deletetickettype?ticketId={ticketId}");
+            response.EnsureSuccessStatusCode();
+        }
+
+        // ==================== CATEGORIES ====================
+
+        public async Task<List<CategoriesDto>> GetAllCateg()
+        {
+            return await _session.Client.GetFromJsonAsync<List<CategoriesDto>>("api/cinema/getallcateg");
+        }
+
+        public async Task NewCateg(NewCategDto dto)
+        {
+            var response = await _session.Client.PostAsJsonAsync("api/admin/newcateg", dto);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task ModifyCateg(ModifyCartDto dto, int categId)
+        {
+            var response = await _session.Client.PutAsJsonAsync($"api/admin/modifycateg?categId={categId}", dto);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task DeleteCateg(int categId)
+        {
+            var response = await _session.Client.DeleteAsync($"api/admin/deletecateg?categId={categId}");
             response.EnsureSuccessStatusCode();
         }
 

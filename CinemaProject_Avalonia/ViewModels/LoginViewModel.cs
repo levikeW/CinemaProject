@@ -95,6 +95,9 @@ namespace CinemaProject_Avalonia.ViewModels
                     return;
                 }
 
+                MainWindowViewModel mainVm = new MainWindowViewModel(new MainWindowModel(_authModel._session));
+                mainVm.CurrentAdminId = _authModel._session.Userid;
+
                 NavigationToMainRequested?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)

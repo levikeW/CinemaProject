@@ -43,8 +43,6 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             _viewModel = viewModel;
 
-            _name = Name;
-
             OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
             DeleteCommand = new RelayCommand(Delete);
         }

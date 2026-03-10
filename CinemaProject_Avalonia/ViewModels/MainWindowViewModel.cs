@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace CinemaProject_Avalonia.ViewModels
@@ -87,13 +88,24 @@ namespace CinemaProject_Avalonia.ViewModels
 
         public event EventHandler? ExitToNavigationRequest;
 
+        private int _currentAdminId;
         private bool _isAdmin;
         public bool IsAdmin
         {
             get => _mainWindowModel._session.IsAdmin;
             set
             {
-                _isAdmin = value;
+                _mainWindowModel._session.IsAdmin = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int CurrentAdminId
+        {
+            get => _currentAdminId;
+            set
+            {
+                _currentAdminId = value;
                 OnPropertyChanged();
             }
         }
@@ -561,14 +573,15 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 Prices.Clear();
 
-                var tickets = await _mainWindowModel.GetAllTickets();
+                var tickets = await _mainWindowModel.GetAllTicketT();
 
                 foreach (var ticket in tickets)
                 {
-                    Prices.Add(new TicketViewModel(this)
+                    Prices.Add(new TicketViewModel(this, _mainWindowModel)
                     {
-                        Name = ticket.TicketType,
-                        Amount = ticket.TicketPrice
+                        Id = ticket.Id,
+                        Name = ticket.TicketName,
+                        Price = ticket.Price,
                     });
                 }
             }
@@ -578,17 +591,38 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public async Task UpdateTicketAsync(ModifyTicketDto ticket)
+        public async Task UpdateTicketAsync(TicketViewModel ticket)
+        {
+            SelectedPriceItem = ticket;
+
+            SelectedPriceItem.PriceSaved += async (s, dto) =>
+            {
+                try
+                {
+                    await _mainWindowModel.ModifyTicketType(dto, dto.Id);
+
+                    await LoadTicketsAsync();
+                    SelectedPriceItem = null;
+                    ErrorMessage = "";
+                }
+                catch (Exception ex)
+                {
+                    ErrorMessage = "Hiba a jegy mentésekor: " + ex.Message;
+                }
+            };
+        }
+
+        public async Task DeleteTicketTypeAsync(int ticketTId)
         {
             try
             {
-                await _mainWindowModel.ModifyTicket(ticket, ticket.TicketId);
-                await LoadTicketsAsync();
+                await _mainWindowModel.DeleteTicketType(ticketTId);
+                await LoadRoomsAsync();
                 ErrorMessage = "";
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Hiba jegy módosításakor: " + ex.Message;
+                ErrorMessage = "Hiba jegy törlésekor: " + ex.Message;
             }
         }
 
@@ -671,14 +705,19 @@ namespace CinemaProject_Avalonia.ViewModels
                 var felhasz = await _mainWindowModel.GetAllUsers();
                 foreach (var ember in felhasz)
                 {
-                    Users.Add(new UserViewModel(this, _mainWindowModel)
+                    var vm = new UserViewModel(this, _mainWindowModel)
                     {
+                        UserId = ember.UserId,
                         Email = ember.Email,
                         Name = ember.FullName,
                         Role = ember.Role
-                    });
+                    };
+
+                    vm.UserDeleted += async (s, e) => await DeleteUserAsync(vm.UserId);
+
+                    Users.Add(vm);
                 }
-                Console.WriteLine($"Users: {Users.Count}");
+
             }
             catch (Exception ex)
             {
@@ -700,12 +739,11 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        //!
-       /* public async Task ChangeUserRoleAsync(UserViewModel user)
+        public async Task ChangeUserRoleAsync(UserViewModel user)
         {
             try
             {
-                await _mainWindowModel.ChangeRole(user.UserId, user.Role);
+                await _mainWindowModel.ChangeRole(user.UserId, user.Role, CurrentAdminId);
 
                 await LoadUsersAsync();
                 SelectedUserItem = null;
@@ -715,7 +753,7 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 ErrorMessage = "Hiba szerepkör módosításakor: " + ex.Message;
             }
-        }*/
+        }
 
         // ===================== RESERVATIONS =====================
 
@@ -766,11 +804,9 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 SelectedReservationItem = reservation;
 
-                SelectedReservationItem.ReservationSaved += async (s, e) =>
-                {
-                    await LoadReservationAsync();
-                    SelectedReservationItem = null;
-                };
+                SelectedReservationItem.ReservationSaved -= OnReservationSaved;
+
+                SelectedReservationItem.ReservationSaved += OnReservationSaved;
 
                 ErrorMessage = "";
             }
@@ -792,6 +828,12 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 ErrorMessage = "Hiba foglalás törlésekor: " + ex.Message;
             }
+        }
+
+        private async void OnReservationSaved(object? sender, EventArgs e)
+        {
+            await LoadReservationAsync();
+            SelectedReservationItem = null;
         }
 
         // ===================== IMAGE =====================

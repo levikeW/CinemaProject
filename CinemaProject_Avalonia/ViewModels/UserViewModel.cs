@@ -86,12 +86,11 @@ namespace CinemaProject_Avalonia.ViewModels
             DeleteCommand = new RelayCommand(Delete);
         }
 
-        //!
         public async Task SaveUser()
         {
             try
             {
-              //  await _model.ChangeRole(UserId);
+                await _viewModel.ChangeUserRoleAsync(this);
 
                 UserSaved?.Invoke(this, EventArgs.Empty);
             }
