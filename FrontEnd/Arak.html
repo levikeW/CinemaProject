@@ -45,15 +45,21 @@
   <div class="row Arakall">
     <div class="row Arakkeret kartya">
       <h1 class="Arakh1">Jegyárak:</h1>
-      <table class="arak-table">
-        <thead>
+      <table class="table table-striped table-hover">
+        <thead class="table-dark">
           <tr>
             <th>Jegytípus</th>
-            <th>Leírás</th>
-            <th>Ár</th>
+            <th>Ár (Ft)</th>
           </tr>
         </thead>
         <tbody id="jegyekTbody">
+          <tr>
+            <td colspan="2" class="text-center">
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Betöltés...</span>
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>

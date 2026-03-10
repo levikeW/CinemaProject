@@ -11,10 +11,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
+            // when using credentials (cookies/auth) the origin cannot be '*' – must specify exact hosts
             policy
-                .AllowAnyOrigin()
+                .WithOrigins("http://127.0.0.1:5500", "http://localhost:5500")
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials();
         });
 });
 
