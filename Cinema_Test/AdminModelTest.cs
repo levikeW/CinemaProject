@@ -110,7 +110,13 @@ namespace Cinema_Test
                 IsPaid = !reservation.IsPaid,
                 Amount = reservation.Cart.Amount,
                 Price = reservation.Cart.TotalPrice / reservation.Cart.Amount,
-                Seats = reservation.Cart.Seats.ToList(),
+                Seats = reservation.Cart.Seats.Select(s => new SeatDto
+                {
+                    SeatId = s.SeatId,
+                    RoomId = s.RoomId,
+                    RowNumber = s.RowNumber,
+                    SeatNumber = s.SeatNumber
+                }).ToList(),
                 FilmScreeningId = reservation.Cart.FilmScreeningId,
                 UserId = reservation.Cart.UserId
             };

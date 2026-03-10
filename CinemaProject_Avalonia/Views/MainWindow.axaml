@@ -45,6 +45,9 @@
 			<Button Content="☰" Grid.Column="3" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="12" Background="GhostWhite" Command="{Binding ToggleMenuCommand}"/>
 		</Grid>
 
+		<!-- ================= ERROR MESSAGE ================= -->
+		<TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" IsVisible="{Binding HasError}"/>
+
 		<!-- ================= FILTERS ================= -->
 		<StackPanel Grid.Row="2" Margin="10" Spacing="3">
 			<Label Content="🔍 Keresés: " FontSize="14"/>
@@ -66,8 +69,6 @@
 			<DatePicker SelectedDate="{Binding SelectedDate}" IsEnabled="{Binding IsDateFilterActive}" Background="WhiteSmoke" HorizontalAlignment="Stretch"/>
 
 			<Button Content="Szűrések törlése" Command="{Binding ClearFiltersCommand}" Width="140" HorizontalAlignment="Right" Background="WhiteSmoke"/>
-
-			<TextBlock Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" IsVisible="{Binding HasError}"/>
 		</StackPanel>
 
 		<!-- ================= CONTENT ================= -->
@@ -81,10 +82,7 @@
 			</ItemsControl>
 		</ScrollViewer>
 
-		<!-- ================= FOOTER ================= -->
-		<Border Grid.Row="4" Background="#333" Padding="10">
-			<TextBlock Text="© 2025 Filmes oldal" Foreground="White" HorizontalAlignment="Center"/>
-		</Border>
+
 
 		<!-- ================= MENU (OVERLAY) ================= -->
 		<Border Grid.RowSpan="4" Background="#AA000000"	ZIndex="50"	IsVisible="{Binding IsMenuOpen}" PointerPressed="Overlay_PointerPressed">
@@ -143,7 +141,7 @@
 
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
 
-						<Button Content="Mentés és Bezárás" Background="#C8E6C9" Command="{Binding CloseEditPanelCommand}" />
+						<Button Content="Mentés és Bezárás" Background="#C8E6C9" Width="100" Command="{Binding CloseEditPanelCommand}" />
 					</StackPanel>
 				</StackPanel>
 			</Border>
@@ -177,11 +175,9 @@
 						</ComboBox.ItemTemplate>
 					</ComboBox>
 
-					<TextBlock Text="{Binding ErrorMessage}" Foreground="Red"/>
-
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
 
-						<Button Content="Mentés" Background="#C8E6C9" Command="{Binding SaveMovieCommand}"/>
+						<Button Content="Mentés" Background="#C8E6C9" Width="100" Command="{Binding SaveMovieCommand}"/>
 
 						<Button Content="Bezárás" Background="#FFCDD2" Command="{Binding ((vm:MainWindowViewModel)DataContext).CloseMovieEditPanelCommand, RelativeSource={RelativeSource AncestorType=Border}}"/>
 					</StackPanel>
@@ -197,18 +193,32 @@
 					<ItemsControl ItemsSource="{Binding Users}">
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
-								<StackPanel Orientation="Horizontal" Spacing="20" Margin="0,10">
-									<TextBlock Text="{Binding Name}" Width="120"/>
-									<TextBlock Text="{Binding Email}" Width="150"/>
-									<TextBox Text="{Binding Role}" />
-									<Button Content="Törlés" Foreground="Red" Command="{Binding DeleteCommand}"/>
-								</StackPanel>
+								<Border Background="#F5F5F5" CornerRadius="10" Padding="10" Margin="0,0,0,12">
+									<StackPanel Spacing="6">
+										<TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="16"/>
+										<TextBlock Text="{Binding Email}" FontSize="13" Foreground="Gray"/>
+
+										<StackPanel Orientation="Horizontal" Spacing="10">
+											<TextBlock Text="Role:" VerticalAlignment="Center"/>
+											<ComboBox Width="120" SelectedItem="{Binding Role, Mode=TwoWay}">
+												<x:String>User</x:String>
+												<x:String>Admin</x:String>
+											</ComboBox>
+										</StackPanel>
+
+										<StackPanel Orientation="Horizontal" Spacing="10" Margin="0,8,0,0">
+											<Button Content="Mentés" Command="{Binding SaveUserCommand}" Background="#C8E6C9" Width="100"/>
+											<Button Content="🗑 Törlés" Background="Red" Foreground="White" Command="{Binding DeleteCommand}"/>
+										</StackPanel>
+									</StackPanel>
+								</Border>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
 				</ScrollViewer>
 				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
 
+					<TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" IsVisible="{Binding HasError}"/>
 					<Button Content="Vissza a főoldalra" Command="{Binding CloseUsersPageCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
 				</StackPanel>
 			</Grid>
@@ -223,11 +233,16 @@
 					<ItemsControl ItemsSource="{Binding Prices}">
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
-								<StackPanel Orientation="Horizontal" Spacing="20" Margin="0,10">
-									<TextBox Text="{Binding Name}" Width="120"/>
-									<TextBox Text="{Binding Amount}" Width="80"/>
-									<Button Content="Törlés" Foreground="Red" Command="{Binding DeleteCommand}"/>
-								</StackPanel>
+								<Border Background="#F5F5F5" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+									<StackPanel Orientation="Horizontal" Spacing="15">
+										<TextBox Text="{Binding Name}" Width="150" Watermark="Jegy név"/>
+										<TextBox Text="{Binding Price}" Width="80" Watermark="Ár"/>
+
+										<Button Content="Mentés" Command="{Binding SaveTicketCommand}" Background="#C8E6C9" Width="80"/>
+
+										<Button Content="🗑 Törlés" Command="{Binding DeleteCommand}" Background="Red" Foreground="White"/>
+									</StackPanel>
+								</Border>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
@@ -235,6 +250,7 @@
 
 				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
 					<!-- <Button Content="Ticket modify/save" Command="{Binding AddPriceCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/> -->
+					<TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" IsVisible="{Binding HasError}"/>
 					<Button Content="Vissza a főoldalra" Command="{Binding CloseTicketPageCommand}"  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
 				</StackPanel>
 			</Grid>
@@ -251,7 +267,7 @@
 							<DataTemplate>
 								<StackPanel Orientation="Horizontal" Spacing="20" Margin="0,10">
 									<TextBox Text="{Binding Name}" Width="120"/>
-									<Button Content="Törlés" Foreground="Red" Command="{Binding DeleteCommand}"/>
+									<Button Content="🗑 Törlés" Background="Red" Foreground="White" Command="{Binding DeleteCommand}"/>
 								</StackPanel>
 							</DataTemplate>
 						</ItemsControl.ItemTemplate>
@@ -260,6 +276,7 @@
 
 				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
 					<!-- <Button Content="+ Új terem hozzáadása" Command="{Binding AddRoomCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/> -->
+					<TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" IsVisible="{Binding HasError}"/>
 					<Button Content="Vissza a főoldalra" Command="{Binding CloseRoomPageCommand}"  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
 				</StackPanel>
 			</Grid>
@@ -284,8 +301,8 @@
 										<TextBlock Text="{Binding IsPaid, StringFormat='Fizetve: {0}'}"/>
 
 										<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" Margin="0,10,0,0">
-											<Button Content="Szerkeszt" Width="90" Command="{Binding OpenEditPanelCommand}"/>
-											<Button Content="Törlés" Width="90" Foreground="Red" Command="{Binding DeleteCommand}"/>
+											<Button Content="✏️ Szerkeszt" Width="90" Command="{Binding OpenEditPanelCommand}"/>
+											<Button Content="🗑 Törlés" Background="Red" Foreground="White" Command="{Binding DeleteCommand}"/>
 										</StackPanel>
 									</StackPanel>
 								</Border>
@@ -294,6 +311,7 @@
 					</ItemsControl>
 				</ScrollViewer>
 				<StackPanel Grid.Row="2" Margin="0,10,0,0">
+					<TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" IsVisible="{Binding HasError}"/>
 					<Button Content="Vissza a főoldalra" Command="{Binding CloseReservationPageCommand}" Background="LightGray" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
 				</StackPanel>
 			</Grid>
@@ -302,7 +320,7 @@
 		<Border Background="#DDFFFFFF" ZIndex="300" IsVisible="{Binding IsReservationEditPanelOpen}">
 			<Border Width="320" Padding="20" Background="White" CornerRadius="10" HorizontalAlignment="Center" VerticalAlignment="Center">
 				<StackPanel Spacing="10">
-					<TextBlock Text="Foglalás szerkesztése" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+					<TextBlock Text="✏️ Foglalás szerkesztése" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
 
 					<TextBox Text="{Binding SelectedReservationItem.Date, Mode=TwoWay}"/>
 					<TextBox Text="{Binding SelectedReservationItem.ScreeningId, Mode=TwoWay}"/>
@@ -313,14 +331,15 @@
 					<CheckBox Content="Fizetve" IsChecked="{Binding SelectedReservationItem.IsPaid}"/>
 
 					<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
-						<Button Content="Mentés" Command="{Binding SelectedReservationItem.SaveReservationCommand}"/>
+						<Button Content="Mentés" Command="{Binding SelectedReservationItem.SaveReservationCommand}" Background="#C8E6C9" Width="100"/>
 						<Button Content="Bezárás" Command="{Binding CloseReservationPanelCommand}"/>
 					</StackPanel>
-
 				</StackPanel>
-
 			</Border>
 		</Border>
-
+		<!-- ================= FOOTER ================= -->
+		<Border Grid.Row="4" Background="#333" Padding="10">
+			<TextBlock Text="© 2025 Filmes oldal" Foreground="White" HorizontalAlignment="Center"/>
+		</Border>
 	</Grid>
 </Window>
