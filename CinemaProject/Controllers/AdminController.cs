@@ -134,7 +134,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("modifymovie")]
-        public async Task<ActionResult> ModifyMovie([FromBody] MovieDto dto)
+        public async Task<ActionResult> ModifyMovie([FromBody] ModifyMovieDto dto)
         {
             try
             {
@@ -153,7 +153,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("modifyfilmscreening")]
-        public async Task<ActionResult> ModifyFilmScreening([FromBody] FilmScreeningDto dto, [FromQuery] int screeningId)
+        public async Task<ActionResult> ModifyFilmScreening([FromBody] ModifyFilmScreeningDto dto, [FromQuery] int screeningId)
         {
             try
             {
@@ -172,7 +172,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("modifyreservation")]
-        public async Task<ActionResult> ModifyReservation([FromBody] PaymentReservationDto dto, [FromQuery] int reservationId)
+        public async Task<ActionResult> ModifyReservation([FromBody] ModifyReservationDto dto, [FromQuery] int reservationId)
         {
             try
             {
@@ -191,7 +191,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("modifyticket")]
-        public async Task<ActionResult> ModifyTicket([FromBody] TicketDto dto, [FromQuery] int ticketId)
+        public async Task<ActionResult> ModifyTicket([FromBody] ModifyTicketDto dto, [FromQuery] int ticketId)
         {
             try
             {
@@ -210,7 +210,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("modifyroom")]
-        public async Task<ActionResult> ModifyRoom([FromBody] RoomDto dto, [FromQuery] int roomId)
+        public async Task<ActionResult> ModifyRoom([FromBody] ModifyRoomDto dto, [FromQuery] int roomId)
         {
             try
             {
@@ -362,11 +362,11 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("changerole")]
-        public async Task<ActionResult> ChangeRole([FromQuery] int userId, [FromQuery] string newRole)
+        public async Task<ActionResult> ChangeRole([FromQuery] int userId, [FromQuery] string newRole, int actAdminId)
         {
             try
             {
-                await _adminModel.ChangeRole(userId, newRole);
+                await _adminModel.ChangeRole(userId, newRole, actAdminId);
                 return Ok();
             }
             catch (InvalidOperationException e)

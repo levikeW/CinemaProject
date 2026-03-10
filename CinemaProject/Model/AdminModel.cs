@@ -118,7 +118,7 @@ namespace CinemaProject.Model
             return dto;
         }
 
-        public async Task ModifyMovie(MovieDto dto)
+        public async Task ModifyMovie(ModifyMovieDto dto)
         {
             var movie = _context.movies.First(x => x.MovieId == dto.MovieId);
             if (movie == null)
@@ -134,12 +134,13 @@ namespace CinemaProject.Model
                 movie.Director = dto.Director;
                 movie.Description = dto.Description;
                 movie.ImageId = imageId;
+                movie.Status = dto.Status;
                 await _context.SaveChangesAsync();
                 await trx.CommitAsync();
             }
         }
 
-        public async Task ModifyFilmScreening(FilmScreeningDto dto, int screeningId)
+        public async Task ModifyFilmScreening(ModifyFilmScreeningDto dto, int screeningId)
         {
             var screening = _context.filmScreenings.First(x => x.FilmScreeningId == screeningId);
             if (screening == null)
@@ -157,7 +158,7 @@ namespace CinemaProject.Model
             }
         }
 
-        public async Task ModifyReservation(PaymentReservationDto dto, int reservationId)
+        public async Task ModifyReservation(ModifyReservationDto dto, int reservationId)
         {
             var reservation = await _context.paymentReservations.Include(p => p.Cart).ThenInclude(c => c.Seats).FirstOrDefaultAsync(p => p.PaymentReservationId == reservationId);
 
@@ -174,7 +175,7 @@ namespace CinemaProject.Model
             await _context.SaveChangesAsync();
         }
 
-        public async Task ModifyTicket(TicketDto dto, int ticketId)
+        public async Task ModifyTicket(ModifyTicketDto dto, int ticketId)
         {
             var ticket = _context.tickets.First(x => x.TicketId == ticketId);
             if (ticket == null)
@@ -190,7 +191,7 @@ namespace CinemaProject.Model
             }
         }
 
-        public async Task ModifyRoom(RoomDto dto, int roomId)
+        public async Task ModifyRoom(ModifyRoomDto dto, int roomId)
         {
             var room = _context.rooms.First(x => x.RoomId == roomId);
             if (room == null)
@@ -311,10 +312,17 @@ namespace CinemaProject.Model
             }
         }
 
-        public async Task ChangeRole(int userId, string newRole)
+        public async Task ChangeRole(int userId, string newRole, int actAdminId)
         {
+            if (userId == actAdminId)
+                throw new InvalidOperationException("You cannot change your own role.");
+
             var user = await _context.users.FirstOrDefaultAsync(u => u.UserId == userId);
-            if (user == null) throw new Exception("User not found");
+            if (user == null)
+                throw new InvalidOperationException("User not found");
+
+            if (user.Role == "Admin" && newRole != "Admin")
+                throw new InvalidOperationException("You cannot demote another Admin.");
 
             user.Role = newRole;
             await _context.SaveChangesAsync();
