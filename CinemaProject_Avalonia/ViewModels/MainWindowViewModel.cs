@@ -1,4 +1,7 @@
-﻿using Cinema.Dto;
+﻿using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
+using Avalonia.Controls;
+using Cinema.Dto;
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using CinemaProject_Avalonia.Models;
@@ -9,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -20,23 +24,29 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private readonly MainWindowModel _mainWindowModel;
 
-        public ObservableCollection<MovieDto> Movies { get; set; } = new();
-        public ObservableCollection<ScreeningsViewModel> Screenings { get; set; } = new();
-        public ObservableCollection<ScreeningsViewModel> FilteredScreenings { get; set; } = new();
-        public ObservableCollection<TicketViewModel> Prices { get; set; } = new();
-        public ObservableCollection<UserViewModel> Users { get; set; } = new();
-        public ObservableCollection<RoomViewModel> Room { get; set; } = new();
+        private Window? _hostWindow;
+
+        public ObservableCollection<MovieViewModel> Movies { get; set; }
+        public ObservableCollection<ScreeningsViewModel> Screenings { get; set; }
+        public ObservableCollection<ScreeningsViewModel> FilteredScreenings { get; set; }
+        public ObservableCollection<TicketViewModel> Prices { get; set; }
+        public ObservableCollection<UserViewModel> Users { get; set; }
+        public ObservableCollection<RoomViewModel> Room { get; set; }
         public ObservableCollection<ReservationViewModel> Reservations { get; set; }
+        public ObservableCollection<CategoryViewModel> Categories { get; set; }
 
         public ObservableCollection<string> Rooms { get; set; } = new();
 
         private ScreeningsViewModel? _selectedScreening;
-        private MovieDto? _selectedMovie;
+        private MovieViewModel? _selectedMovie;
+
+        private MovieViewModel? _selectedMovieItem { get; set; }
         private UserViewModel? _selectedUserItem { get; set; }
         private TicketViewModel? _selectedPriceItem { get; set; }
         private RoomViewModel? _selectedRoomItem { get; set; }
         private ReservationViewModel? _selectedReservationItem { get; set; }
-        private MovieViewModel? _selectedMovieEdit { get; set; }
+        private CategoryViewModel? _selectedCategoryItem { get; set; }
+
 
         private string _selectedRoom;
         private DateTimeOffset _selectedDate = DateTime.Today;
@@ -45,13 +55,30 @@ namespace CinemaProject_Avalonia.ViewModels
 
 
         private bool _isMenuOpen;
-        private bool _isScreeningEditPanelOpen;
+
+        private bool _isMoviePageOpen;
         private bool _isMovieEditPanelOpen;
+        private bool _isMovieAddPanelOpen;
+
+        private bool _isScreeningEditPanelOpen;
+
+        private bool _isTicketAddPanelOpen;
+        private bool _isTicketEditPanelOpen;
         private bool _isTicketsPageOpen;
+
         private bool _isUsersPageOpen;
+
+        private bool _isRoomAddPanelOpen;
+        private bool _isRoomEditPanelOpen;
         private bool _isRoomPageOpen;
+
         private bool _isReservationPageOpen;
         private bool _isReservationEditPanelOpen;
+
+        private bool _isCategoryPageOpen;
+        private bool _isCategoryAddPanelOpen;
+        private bool _isCategoryEditPanelOpen;
+
         private bool _isDateFilterActive = false;
 
 
@@ -63,19 +90,50 @@ namespace CinemaProject_Avalonia.ViewModels
         public RelayCommand AddPriceCommand { get; set; }
         public RelayCommand AddDateToSelectedMovieCommand { get; set; }
 
+        public RelayCommand OpenMoviePageCommand { get; set; }
+        public RelayCommand OpenMovieAddPanelCommand { get; set; }
+
+        public RelayCommand OpenTicketAddPanelCommand { get; set; }
         public RelayCommand OpenTicketsPageCommand { get; set; }
+
         public RelayCommand OpenUsersPageCommand { get; set; }
+
+        public RelayCommand OpenRoomAddPanelCommand { get; set; }
         public RelayCommand OpenRoomPageCommand { get; set; }
+
         public RelayCommand OpenReservationCommand { get; set; }
 
-        public RelayCommand CloseEditPanelCommand { get; set; }
-        public RelayCommand CloseMovieEditPanelCommand { get; set; }
-        public RelayCommand CloseTicketPageCommand { get; set; }
-        public RelayCommand CloseUsersPageCommand { get; set; }
-        public RelayCommand CloseRoomPageCommand { get; set; }
-        public RelayCommand CloseReservationPageCommand { get; set; }
+        public RelayCommand OpenCategoryPageCommand { get; set; }
+        public RelayCommand OpenCategoryAddPanelCommand { get; set; }
 
+
+        public RelayCommand CloseEditPanelCommand { get; set; }
+
+        public RelayCommand CloseMoviePageCommand { get; set; }
+        public RelayCommand CloseMovieEditPanelCommand { get; set; }
+        public RelayCommand CloseMovieAddPanelCommand { get; set; }
+
+        public RelayCommand CloseTicketAddPanelCommand { get; set; }
+        public RelayCommand CloseTicketEditPanelCommand { get; set; }
+        public RelayCommand CloseTicketPageCommand { get; set; }
+
+        public RelayCommand CloseUsersPageCommand { get; set; }
+
+        public RelayCommand CloseRoomAddPanelCommand { get; set; }
+        public RelayCommand CloseRoomEditPanelCommand { get; set; }
+        public RelayCommand CloseRoomPageCommand { get; set; }
+
+        public RelayCommand CloseReservationPageCommand { get; set; }
         public RelayCommand CloseReservationPanelCommand { get; }
+
+        public RelayCommand CloseCategoryPageCommand { get; set; }
+        public RelayCommand CloseCategoryAddPanelCommand { get; set; }
+        public RelayCommand CloseCategoryEditPanelCommand { get; set; }
+
+        public AsyncRelayCommand UploadMovieImageCommand { get; set; }
+        public AsyncRelayCommand LoadMovieImageCommand { get; set; }
+        public AsyncRelayCommand DeleteMovieImageCommand { get; set; }
+
 
         public RelayCommand<DateTimeOffset> DeleteDateSelectedMovieCommand { get; set; }
 
@@ -90,6 +148,8 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private int _currentAdminId;
         private bool _isAdmin;
+
+
         public bool IsAdmin
         {
             get => _mainWindowModel._session.IsAdmin;
@@ -123,12 +183,7 @@ namespace CinemaProject_Avalonia.ViewModels
 
         public ScreeningsViewModel? SelectedScreening
         {
-            get => _selectedScreening ??= new ScreeningsViewModel(this)
-            {
-                Title = string.Empty,
-                Room = string.Empty,
-                ShowTimes = new ObservableCollection<DateTimeOffset>()
-            };
+            get => _selectedScreening;
             set
             {
                 _selectedScreening = value;
@@ -137,7 +192,7 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public MovieDto? SelectedMovie
+        public MovieViewModel? SelectedMovie
         {
             get => _selectedMovie;
             set
@@ -190,6 +245,33 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
+        public bool IsMoviePageOpen
+        {
+            get => _isMoviePageOpen;
+            set
+            {
+                _isMoviePageOpen = value;
+                OnPropertyChanged();
+            }
+        }
+        public bool IsMovieEditPanelOpen
+        {
+            get => _isMovieEditPanelOpen;
+            set
+            {
+                _isMovieEditPanelOpen = value;
+                OnPropertyChanged();
+            }
+        }
+        public bool IsMovieAddPanelOpen
+        {
+            get => _isMovieAddPanelOpen;
+            set
+            {
+                _isMovieAddPanelOpen = value;
+                OnPropertyChanged();
+            }
+        }
         public bool IsScreeningEditPanelOpen
         {
             get => _isScreeningEditPanelOpen;
@@ -200,12 +282,22 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public bool IsMovieEditPanelOpen
+        public bool IsTicketAddPanelOpen
         {
-            get => _isMovieEditPanelOpen;
+            get => _isTicketAddPanelOpen;
             set
             {
-                _isMovieEditPanelOpen = value;
+                _isTicketAddPanelOpen = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsTicketEditPanelOpen
+        {
+            get => _isTicketEditPanelOpen;
+            set
+            {
+                _isTicketEditPanelOpen = value;
                 OnPropertyChanged();
             }
         }
@@ -229,6 +321,26 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
+        public bool IsRoomAddPanelOpen
+        {
+            get => _isRoomAddPanelOpen;
+            set
+            {
+                _isRoomAddPanelOpen = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsRoomEditPanelOpen
+        {
+            get => _isRoomEditPanelOpen;
+            set
+            {
+                _isRoomEditPanelOpen = value;
+                OnPropertyChanged();
+            }
+        }
+
         public bool IsRoomPageOpen
         {
             get => _isRoomPageOpen;
@@ -238,7 +350,6 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
-
         public bool IsReservationPageOpen
         {
             get => _isReservationPageOpen;
@@ -248,7 +359,6 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
-
         public bool IsReservationEditPanelOpen
         {
             get => _isReservationEditPanelOpen;
@@ -258,7 +368,35 @@ namespace CinemaProject_Avalonia.ViewModels
                 OnPropertyChanged();
             }
         }
+        public bool IsCategoryPageOpen
+        {
+            get => _isCategoryPageOpen;
+            set
+            {
+                _isCategoryPageOpen = value;
+                OnPropertyChanged();
+            }
+        }
 
+        public bool IsCategoryAddPanelOpen
+        {
+            get => _isCategoryAddPanelOpen;
+            set
+            {
+                _isCategoryAddPanelOpen = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsCategoryEditPanelOpen
+        {
+            get => _isCategoryEditPanelOpen;
+            set
+            {
+                _isCategoryEditPanelOpen = value;
+                OnPropertyChanged();
+            }
+        }
         public bool IsDateFilterActive
         {
             get => _isDateFilterActive;
@@ -308,12 +446,21 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public MovieViewModel? SelectedMovieEdit
+        public MovieViewModel? SelectedMovieItem
         {
-            get => _selectedMovieEdit;
+            get => _selectedMovieItem;
             set
             {
-                _selectedMovieEdit = value;
+                _selectedMovieItem = value;
+                OnPropertyChanged();
+            }
+        }
+        public CategoryViewModel? SelectedCategoryItem
+        {
+            get => _selectedCategoryItem;
+            set
+            {
+                _selectedCategoryItem = value;
                 OnPropertyChanged();
             }
         }
@@ -322,10 +469,15 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             _mainWindowModel = model;
 
+            Movies = new ObservableCollection<MovieViewModel>();
+            Screenings = new ObservableCollection<ScreeningsViewModel>();
+            FilteredScreenings = new ObservableCollection<ScreeningsViewModel>();
+
             Prices = new ObservableCollection<TicketViewModel>();
             Users = new ObservableCollection<UserViewModel>();
             Room = new ObservableCollection<RoomViewModel>();
             Reservations = new ObservableCollection<ReservationViewModel>();
+            Categories = new ObservableCollection<CategoryViewModel>();
 
 
             Rooms = new ObservableCollection<string>();
@@ -338,23 +490,53 @@ namespace CinemaProject_Avalonia.ViewModels
             ToggleMenuCommand = new RelayCommand(ToggleMenu);
             BlockPointerCommand = new RelayCommand(() => { });
 
-            AddNewMovieCommand = new RelayCommand(AddNewMovie);
             AddNewScreeningCommand = new AsyncRelayCommand(AddNewScreening);
             AddDateToSelectedMovieCommand = new RelayCommand(AddDateToSelectedMovie);
 
+            OpenMoviePageCommand = new RelayCommand(OpenMoviePage);
+            OpenMovieAddPanelCommand = new RelayCommand(OpenMovieAddPanel);
+
+            OpenTicketAddPanelCommand = new RelayCommand(OpenTicketAddPanel);
             OpenTicketsPageCommand = new RelayCommand(OpenTicketPage);
+
             OpenUsersPageCommand = new RelayCommand(OpenUserPage);
+
+            OpenRoomAddPanelCommand = new RelayCommand(OpenRoomAddPanel);
             OpenRoomPageCommand = new RelayCommand(OpenRoomPage);
+
             OpenReservationCommand = new RelayCommand(OpenReservationPage);
 
-            CloseEditPanelCommand = new RelayCommand(CloseEditPanel);
-            CloseMovieEditPanelCommand = new RelayCommand(CloseMovieEditPanel);
-            CloseTicketPageCommand = new RelayCommand(CloseTicketPage);
-            CloseUsersPageCommand = new RelayCommand(CloseUserPage);
-            CloseRoomPageCommand = new RelayCommand(CloseRoomPage);
-            CloseReservationPageCommand = new RelayCommand(CloseReservationPage);
+            OpenCategoryPageCommand = new RelayCommand(OpenCategoryPage);
+            OpenCategoryAddPanelCommand = new RelayCommand(OpenCategoryAddPanel);
 
+
+            CloseEditPanelCommand = new RelayCommand(CloseEditPanel);
+
+            CloseMoviePageCommand = new RelayCommand(CloseMoviePage);
+            CloseMovieAddPanelCommand = new RelayCommand(CloseMovieAddPanel);
+            CloseMovieEditPanelCommand = new RelayCommand(CloseMovieEditPanel);
+
+            CloseTicketAddPanelCommand = new RelayCommand(CloseTicketAddPanel);
+            CloseTicketEditPanelCommand = new RelayCommand(CloseTicketEditPanel);
+            CloseTicketPageCommand = new RelayCommand(CloseTicketPage);
+
+            CloseUsersPageCommand = new RelayCommand(CloseUserPage);
+
+            CloseRoomAddPanelCommand = new RelayCommand(CloseRoomAddPanel);
+            CloseRoomEditPanelCommand = new RelayCommand(CloseRoomEditPanel);
+            CloseRoomPageCommand = new RelayCommand(CloseRoomPage);
+
+            CloseReservationPageCommand = new RelayCommand(CloseReservationPage);
             CloseReservationPanelCommand = new RelayCommand(CloseReservationPanel);
+
+            CloseCategoryPageCommand = new RelayCommand(CloseCategoryPage);
+            CloseCategoryAddPanelCommand = new RelayCommand(CloseCategoryAddPanel);
+            CloseCategoryEditPanelCommand = new RelayCommand(CloseCategoryEditPanel);
+
+            UploadMovieImageCommand = new AsyncRelayCommand(UploadMovieImageAsync);
+            LoadMovieImageCommand = new AsyncRelayCommand(LoadMovieImageAsync);
+            DeleteMovieImageCommand = new AsyncRelayCommand(DeleteMovieImageAsync);
+
 
             DeleteDateSelectedMovieCommand = new RelayCommand<DateTimeOffset>(DeleteDateSelectedMovie);
 
@@ -371,6 +553,7 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             await LoadRoomsAsync();
             await LoadTicketsAsync();
+            await LoadCategoriesAsync();
             await LoadMoviesAsync();
             await LoadScreeningsAsync();
 
@@ -381,45 +564,90 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
+        public void SetHostWindow(Window window)
+        {
+            _hostWindow = window;
+        }
+
         // ===================== MOVIES =====================
 
         public async Task LoadMoviesAsync()
         {
             try
             {
-                var movies = await _mainWindowModel.GetAllMovies();
                 Movies.Clear();
+
+                var movies = await _mainWindowModel.GetAllMovies();
 
                 foreach (var movie in movies)
                 {
-                    Movies.Add(movie);
+                    var movieVM = new MovieViewModel(this)
+                    {
+                        MovieId = movie.MovieId,
+                        MovieTitle = movie.MovieTitle,
+                        Duration = movie.Duration,
+                        Genre = movie.Genre,
+                        Director = movie.Director,
+                        Description = movie.Description,
+                        ImageId = movie.ImageId,
+                        Status = movie.Status
+                    };
+
+                    if (movie.ImageId != 0)
+                    {
+                        try
+                        {
+                            var imageDto = await _mainWindowModel.GetImage(movie.MovieId);
+
+                            if (imageDto != null && imageDto.ImageContent != null && imageDto.ImageContent.Length > 0)
+                            {
+                                using var ms = new MemoryStream(imageDto.ImageContent);
+                                movieVM.MovieImage = new Bitmap(ms);
+                            }
+                        }
+                        catch
+                        {
+                            movieVM.MovieImage = null;
+                        }
+                    }
+
+                    movieVM.MovieEditSaved += async (s, dto) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.ModifyMovie(dto, dto.MovieId);
+                            await LoadMoviesAsync();
+                            SelectedMovieItem = null;
+                            IsMovieEditPanelOpen = false;
+                            IsMovieAddPanelOpen = false;
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba film módosításakor: " + ex.Message;
+                        }
+                    };
+
+                    movieVM.MovieDeleted += async (s, e) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.DeleteMovie(movieVM.MovieId);
+                            await LoadMoviesAsync();
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba film törlésekor: " + ex.Message;
+                        }
+                    };
+
+                    Movies.Add(movieVM);
                 }
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Hiba a filmek betöltésekor: " + ex.Message;
-            }
-        }
-
-        private void AddNewMovie()
-        {
-            try
-            {
-                SelectedMovieEdit = new MovieViewModel(_mainWindowModel);
-
-                SelectedMovieEdit.MovieSaved += async (s, e) =>
-                {
-                    await LoadMoviesAsync();
-                    SelectedMovieEdit = null;
-                    IsMovieEditPanelOpen = false;
-                };
-
-                IsMovieEditPanelOpen = true;
-                ErrorMessage = "";
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = "Hiba az új film szerkesztő megnyitásakor: " + ex.Message;
             }
         }
         public async Task UpdateMovieAsync(ModifyMovieDto movie)
@@ -476,12 +704,42 @@ namespace CinemaProject_Avalonia.ViewModels
                         MovieId = screeningDto.MovieId,
                         RoomId = screeningDto.RoomId,
                         Title = movie.MovieTitle,
-                        Room = room.RoomName
+                        Room = room.RoomName,
+                        MovieImage = Movies.FirstOrDefault(m => m.MovieId == screeningDto.MovieId)?.MovieImage
                     };
 
                     screeningVm.ShowTimes.Add(screeningDto.Date);
 
-                    RegisterScreening(screeningVm);
+                    screeningVm.ScreeningSaved += async (s, dto) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.ModifyFilmScreening(dto, dto.FilmScreeningId);
+                            await LoadScreeningsAsync();
+                            SelectedScreening = null;
+                            IsScreeningEditPanelOpen = false;
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba vetítés módosításakor: " + ex.Message;
+                        }
+                    };
+
+                    screeningVm.ScreeningDeleted += async (s, e) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.DeleteScreening(screeningVm.FilmScreeningId);
+                            await LoadScreeningsAsync();
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba vetítés törlésekor: " + ex.Message;
+                        }
+                    };
+
                     Screenings.Add(screeningVm);
                 }
 
@@ -518,7 +776,7 @@ namespace CinemaProject_Avalonia.ViewModels
                     MovieTitle = SelectedMovie.MovieTitle,
                     RoomId = room.RoomId,
                     RoomName = SelectedRoom,
-                    Date = SelectedDate
+                    Date = SelectedDate.ToUniversalTime()
                 };
 
                 await _mainWindowModel.NewScreening(newScreening);
@@ -536,7 +794,7 @@ namespace CinemaProject_Avalonia.ViewModels
             try
             {
                 await _mainWindowModel.ModifyFilmScreening(screening, screening.FilmScreeningId);
-                await LoadMoviesAsync();
+                await LoadScreeningsAsync();
                 ErrorMessage = "";
             }
             catch (Exception ex)
@@ -550,7 +808,7 @@ namespace CinemaProject_Avalonia.ViewModels
             try
             {
                 await _mainWindowModel.DeleteScreening(screeningId);
-                await LoadMoviesAsync();
+                await LoadScreeningsAsync();
                 ErrorMessage = "";
             }
             catch (Exception ex)
@@ -558,13 +816,6 @@ namespace CinemaProject_Avalonia.ViewModels
                 ErrorMessage = "Hiba vetítés törlésekor: " + ex.Message;
             }
         }
-
-        private void RegisterScreening(ScreeningsViewModel screening)
-        {
-            screening.ScreeningDeleted += (s, e) => { Screenings.Remove(screening); ApplyFilters(); };
-            screening.ScreeningEdit += (s, e) => { SelectedScreening = screening; IsScreeningEditPanelOpen = true; };
-        }
-
         // ===================== TICKETS =====================
 
         private async Task LoadTicketsAsync()
@@ -577,12 +828,42 @@ namespace CinemaProject_Avalonia.ViewModels
 
                 foreach (var ticket in tickets)
                 {
-                    Prices.Add(new TicketViewModel(this, _mainWindowModel)
+                    var ticketVM = new TicketViewModel(this)
                     {
                         Id = ticket.Id,
                         Name = ticket.TicketName,
-                        Price = ticket.Price,
-                    });
+                        Price = ticket.Price
+                    };
+
+                    ticketVM.TicketTypeSaved += async (s, dto) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.ModifyTicketType(dto, dto.Id);
+                            await LoadTicketsAsync();
+                            SelectedPriceItem = null;
+                            IsTicketEditPanelOpen = false;
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba a jegy mentésekor: " + ex.Message;
+                        }
+                    };
+
+                    ticketVM.TicketTypeDeleted += async (s, e) =>
+                    {
+                        try
+                        {
+                            await DeleteTicketTypeAsync(ticketVM.Id);
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba jegy törlésekor: " + ex.Message;
+                        }
+                    };
+
+                    Prices.Add(ticketVM);
                 }
             }
             catch (Exception ex)
@@ -591,33 +872,12 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public async Task UpdateTicketAsync(TicketViewModel ticket)
-        {
-            SelectedPriceItem = ticket;
-
-            SelectedPriceItem.PriceSaved += async (s, dto) =>
-            {
-                try
-                {
-                    await _mainWindowModel.ModifyTicketType(dto, dto.Id);
-
-                    await LoadTicketsAsync();
-                    SelectedPriceItem = null;
-                    ErrorMessage = "";
-                }
-                catch (Exception ex)
-                {
-                    ErrorMessage = "Hiba a jegy mentésekor: " + ex.Message;
-                }
-            };
-        }
-
         public async Task DeleteTicketTypeAsync(int ticketTId)
         {
             try
             {
                 await _mainWindowModel.DeleteTicketType(ticketTId);
-                await LoadRoomsAsync();
+                await LoadTicketsAsync();
                 ErrorMessage = "";
             }
             catch (Exception ex)
@@ -633,18 +893,51 @@ namespace CinemaProject_Avalonia.ViewModels
             try
             {
                 Room.Clear();
+                Rooms.Clear();
 
                 var termek = await _mainWindowModel.GetAllRooms();
 
                 foreach (var terem in termek)
                 {
-                    Room.Add(new RoomViewModel(this)
+                    var roomVM = new RoomViewModel(this)
                     {
+                        RoomId = terem.RoomId,
                         Name = terem.RoomName
-                    });
+                    };
+
+                    roomVM.RoomSaved += async (s, dto) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.ModifyRoom(dto, dto.RoomId);
+                            await LoadRoomsAsync();
+                            SelectedRoomItem = null;
+                            IsRoomEditPanelOpen = false;
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba terem módosításakor: " + ex.Message;
+                        }
+                    };
+
+                    roomVM.RoomDeleted += async (s, e) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.DeleteRoom(roomVM.RoomId);
+                            await LoadRoomsAsync();
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba terem törlésekor: " + ex.Message;
+                        }
+                    };
+
+                    Room.Add(roomVM);
                     Rooms.Add(terem.RoomName);
                 }
-                IsAdmin = true;
             }
             catch (Exception ex)
             {
@@ -663,20 +956,6 @@ namespace CinemaProject_Avalonia.ViewModels
             catch (Exception ex)
             {
                 ErrorMessage = "Hiba új terem hozzáadásakor: " + ex.Message;
-            }
-        }
-
-        public async Task UpdateRoomAsync(ModifyRoomDto room)
-        {
-            try
-            {
-                await _mainWindowModel.ModifyRoom(room, room.RoomId);
-                await LoadRoomsAsync();
-                ErrorMessage = "";
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = "Hiba terem módosításakor: " + ex.Message;
             }
         }
 
@@ -767,26 +1046,45 @@ namespace CinemaProject_Avalonia.ViewModels
                 var foglalasok = await _mainWindowModel.GetAllReservations();
                 foreach (var foglalas in foglalasok)
                 {
-                    var reservationVM = new ReservationViewModel(this, _mainWindowModel)
+                    var reservationVM = new ReservationViewModel(this)
                     {
                         ReservationId = foglalas.PaymentReservationId,
+                        CartId = foglalas.CartId,
                         Date = foglalas.Date,
                         IsPaid = foglalas.IsPaid,
                         ScreeningId = foglalas.FilmScreeningId,
                         Amount = foglalas.Amount,
                         Price = foglalas.Price,
                         UserId = foglalas.UserId,
-                        Seats = foglalas.Seats,
+                        Seats = foglalas.Seats ?? new List<SeatDto>()
                     };
-
+                    reservationVM.ReservationSaved += async (s, dto) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.ModifyReservation(dto, dto.PaymentReservationId);
+                            await LoadReservationAsync();
+                            SelectedReservationItem = null;
+                            IsReservationEditPanelOpen = false;
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba a foglalások mentésekor: " + ex.Message;
+                        }
+                    };
                     reservationVM.ReservationDeleted += async (s, e) =>
                     {
-                        await DeleteReservationAsync(reservationVM.ReservationId);
-                    };
-
-                    reservationVM.ReservationSaved += async (s, e) =>
-                    {
-                        await LoadReservationAsync();
+                        try
+                        {
+                            await _mainWindowModel.DeleteReservation(reservationVM.ReservationId);
+                            await LoadReservationAsync();
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba a foglalások törlésekor: " + ex.Message;
+                        }
                     };
 
                     Reservations.Add(reservationVM);
@@ -798,17 +1096,68 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
+        private async Task LoadReservationSeatsAsync(ReservationViewModel reservation)
+        {
+            try
+            {
+                var screening = Screenings.FirstOrDefault(x => x.FilmScreeningId == reservation.ScreeningId);
+                if (screening == null)
+                {
+                    reservation.ErrorMessage = "A vetítés nem található.";
+                    return;
+                }
+
+                var seats = await _mainWindowModel.GetSeats(screening.RoomId, reservation.ScreeningId);
+
+                reservation.AvailableSeats.Clear();
+
+                foreach (var seat in seats)
+                {
+                    var isSelected = reservation.Seats.Any(x => x.SeatId == seat.SeatId);
+
+                    reservation.AvailableSeats.Add(new SeatSelectionViewModel
+                    {
+                        SeatId = seat.SeatId,
+                        RowNumber = seat.RowNumber,
+                        SeatNumber = seat.SeatNumber,
+                        RoomId = seat.RoomId,
+                        IsReserved = seat.IsReserved,
+                        IsSelected = isSelected
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                reservation.ErrorMessage = "Hiba a székek betöltésekor: " + ex.Message;
+            }
+        }
+
+        public async Task LoadReservationSeatsForSelectedReservationAsync(ReservationViewModel reservation)
+        {
+            await LoadReservationSeatsAsync(reservation);
+        }
+
         public async Task UpdateReservationAsync(ReservationViewModel reservation)
         {
             try
             {
                 SelectedReservationItem = reservation;
 
-                SelectedReservationItem.ReservationSaved -= OnReservationSaved;
+                SelectedReservationItem.ReservationSaved += async (s, dto) =>
+                {
+                    try
+                    {
+                        await _mainWindowModel.ModifyReservation(dto, dto.PaymentReservationId);
 
-                SelectedReservationItem.ReservationSaved += OnReservationSaved;
-
-                ErrorMessage = "";
+                        await LoadReservationAsync();
+                        SelectedReservationItem = null;
+                        ErrorMessage = "";
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrorMessage = "Hiba a foglalások mentésekor: " + ex.Message;
+                    }
+                };
             }
             catch (Exception ex)
             {
@@ -829,20 +1178,113 @@ namespace CinemaProject_Avalonia.ViewModels
                 ErrorMessage = "Hiba foglalás törlésekor: " + ex.Message;
             }
         }
-
-        private async void OnReservationSaved(object? sender, EventArgs e)
+        // ===================== CATEGORIES =====================
+        private async Task LoadCategoriesAsync()
         {
-            await LoadReservationAsync();
-            SelectedReservationItem = null;
+            try
+            {
+                Categories.Clear();
+
+                var categories = await _mainWindowModel.GetAllCateg();
+
+                foreach (var category in categories)
+                {
+                    var categoryVM = new CategoryViewModel(this)
+                    {
+                        Id = category.Id,
+                        Name = category.CategName,
+                        Description = category.Description
+                    };
+
+                    categoryVM.CategorySaved += async (s, dto) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.ModifyCateg(dto, dto.Id);
+                            await LoadCategoriesAsync();
+                            SelectedCategoryItem = null;
+                            IsCategoryEditPanelOpen = false;
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba kategória módosításakor: " + ex.Message;
+                        }
+                    };
+
+                    categoryVM.CategoryDeleted += async (s, e) =>
+                    {
+                        try
+                        {
+                            await _mainWindowModel.DeleteCateg(categoryVM.Id);
+                            await LoadCategoriesAsync();
+                            ErrorMessage = "";
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorMessage = "Hiba kategória törlésekor: " + ex.Message;
+                        }
+                    };
+
+                    Categories.Add(categoryVM);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a kategóriák betöltésekor: " + ex.Message;
+            }
         }
 
         // ===================== IMAGE =====================
 
-        public async Task UploadImageAsync(ImageDto image)
+        private async Task UploadMovieImageAsync()
         {
             try
             {
-                await _mainWindowModel.UploadImage(image);
+                if (_hostWindow == null)
+                {
+                    ErrorMessage = "Az ablak referencia nem elérhető.";
+                    return;
+                }
+
+                if (SelectedMovieItem == null)
+                {
+                    ErrorMessage = "Nincs kiválasztott film.";
+                    return;
+                }
+
+                var files = await _hostWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    Title = "Kép kiválasztása",
+                    AllowMultiple = false,
+                    FileTypeFilter = new[]
+                    {
+                new FilePickerFileType("Képek")
+                {
+                    Patterns = new[] { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.webp" }
+                }
+            }
+                });
+
+                var file = files.FirstOrDefault();
+                if (file == null)
+                    return;
+
+                await using var stream = await file.OpenReadAsync();
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                var imageBytes = ms.ToArray();
+
+                var dto = new ImageDto
+                {
+                    ImageContent = imageBytes
+                };
+
+                var savedImage = await _mainWindowModel.UploadImage(dto);
+
+                SelectedMovieItem.ImageId = savedImage.ImageId;
+                SelectedMovieItem.MovieImage = new Bitmap(new MemoryStream(imageBytes));
+
                 ErrorMessage = "";
             }
             catch (Exception ex)
@@ -851,31 +1293,68 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public async Task DeleteImageAsync(int imageId)
+        private async Task LoadMovieImageAsync()
         {
             try
             {
-                await _mainWindowModel.DeleteImage(imageId);
+                if (SelectedMovieItem == null)
+                {
+                    ErrorMessage = "Nincs kiválasztott film.";
+                    return;
+                }
+
+                if (SelectedMovieItem.MovieId == 0)
+                {
+                    ErrorMessage = "A film még nincs elmentve.";
+                    return;
+                }
+
+                var image = await _mainWindowModel.GetImage(SelectedMovieItem.MovieId);
+
+                if (image == null || image.ImageContent == null || image.ImageContent.Length == 0)
+                {
+                    SelectedMovieItem.MovieImage = null;
+                    ErrorMessage = "Ehhez a filmhez nincs kép.";
+                    return;
+                }
+
+                SelectedMovieItem.ImageId = image.ImageId;
+                SelectedMovieItem.MovieImage = new Bitmap(new MemoryStream(image.ImageContent));
+
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba kép betöltésekor: " + ex.Message;
+            }
+        }
+
+        private async Task DeleteMovieImageAsync()
+        {
+            try
+            {
+                if (SelectedMovieItem == null)
+                {
+                    ErrorMessage = "Nincs kiválasztott film.";
+                    return;
+                }
+
+                if (SelectedMovieItem.ImageId == 0)
+                {
+                    ErrorMessage = "Nincs törölhető kép.";
+                    return;
+                }
+
+                await _mainWindowModel.DeleteImage(SelectedMovieItem.ImageId);
+
+                SelectedMovieItem.MovieImage = null;
+                SelectedMovieItem.ImageId = 0;
+
                 ErrorMessage = "";
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Hiba kép törlésekor: " + ex.Message;
-            }
-        }
-
-        public async Task<ImageDto> GetImageAsync(int movieId)
-        {
-            try
-            {
-                var image = await _mainWindowModel.GetImage(movieId);
-                ErrorMessage = "";
-                return image;
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = "Hiba kép betöltésekor: " + ex.Message;
-                return null!;
             }
         }
 
@@ -912,11 +1391,83 @@ namespace CinemaProject_Avalonia.ViewModels
             ApplyFilters();
         }
 
+        private void OpenMoviePage()
+        {
+            IsMenuOpen = false;
+            IsMoviePageOpen = true;
+        }
+
+        public void OpenMovieAddPanel()
+        {
+            SelectedMovieItem = new MovieViewModel(this);
+
+            SelectedMovieItem.MovieAddSaved += async (s, dto) =>
+            {
+                try
+                {
+                    await _mainWindowModel.NewMovie(dto);
+                    await LoadMoviesAsync();
+                    SelectedMovieItem = null;
+                    IsMovieAddPanelOpen = false;
+                    ErrorMessage = "";
+                }
+                catch (Exception ex)
+                {
+                    ErrorMessage = "Hiba új film mentésekor: " + ex.Message;
+                }
+            };
+
+            IsMovieAddPanelOpen = true;
+            IsMovieEditPanelOpen = false;
+            ErrorMessage = "";
+        }
+
+        private void CloseMoviePage()
+        {
+            IsMoviePageOpen = false;
+            IsMovieEditPanelOpen = false;
+            IsMovieAddPanelOpen = false;
+            SelectedMovieItem = null;
+            ErrorMessage = "";
+        }
+
         private void CloseMovieEditPanel()
         {
             IsMovieEditPanelOpen = false;
+            SelectedMovieItem = null;
             ErrorMessage = "";
-            ApplyFilters();
+        }
+
+        private void CloseMovieAddPanel()
+        {
+            IsMovieAddPanelOpen = false;
+            SelectedMovieItem = null;
+            ErrorMessage = "";
+        }
+
+        private void OpenTicketAddPanel()
+        {
+            SelectedPriceItem = new TicketViewModel(this);
+
+            SelectedPriceItem.TicketTypeAddSaved += async (s, dto) =>
+            {
+                try
+                {
+                    await _mainWindowModel.NewTicketType(dto);
+                    await LoadTicketsAsync();
+                    SelectedPriceItem = null;
+                    IsTicketAddPanelOpen = false;
+                    ErrorMessage = "";
+                }
+                catch (Exception ex)
+                {
+                    ErrorMessage = "Hiba új jegy mentésekor: " + ex.Message;
+                }
+            };
+
+            IsTicketAddPanelOpen = true;
+            IsTicketEditPanelOpen = false;
+            ErrorMessage = "";
         }
 
         private void OpenTicketPage()
@@ -925,12 +1476,27 @@ namespace CinemaProject_Avalonia.ViewModels
             IsTicketsPageOpen = true;
         }
 
+        private void CloseTicketAddPanel()
+        {
+            IsTicketAddPanelOpen = false;
+            SelectedPriceItem = null;
+            ErrorMessage = "";
+        }
+
+        private void CloseTicketEditPanel()
+        {
+            IsTicketEditPanelOpen = false;
+            SelectedPriceItem = null;
+            ErrorMessage = "";
+        }
+
         private void CloseTicketPage()
         {
             IsTicketsPageOpen = false;
-            IsScreeningEditPanelOpen = false;
+            IsTicketAddPanelOpen = false;
+            IsTicketEditPanelOpen = false;
             SelectedPriceItem = null;
-            SelectedScreening = null;
+            ErrorMessage = "";
         }
 
         private void OpenUserPage()
@@ -947,18 +1513,58 @@ namespace CinemaProject_Avalonia.ViewModels
             SelectedScreening = null;
         }
 
+        private void OpenRoomAddPanel()
+        {
+            SelectedRoomItem = new RoomViewModel(this);
+
+            SelectedRoomItem.RoomAddSaved += async (s, dto) =>
+            {
+                try
+                {
+                    await _mainWindowModel.NewRoom(dto);
+                    await LoadRoomsAsync();
+                    SelectedRoomItem = null;
+                    IsRoomAddPanelOpen = false;
+                    ErrorMessage = "";
+                }
+                catch (Exception ex)
+                {
+                    ErrorMessage = "Hiba új terem mentésekor: " + ex.Message;
+                }
+            };
+
+            IsRoomAddPanelOpen = true;
+            IsRoomEditPanelOpen = false;
+            ErrorMessage = "";
+        }
+
         private void OpenRoomPage()
         {
             IsMenuOpen = false;
             IsRoomPageOpen = true;
         }
 
+        private void CloseRoomAddPanel()
+        {
+            IsRoomAddPanelOpen = false;
+            SelectedRoomItem = null;
+            ErrorMessage = "";
+        }
+
+        private void CloseRoomEditPanel()
+        {
+            IsRoomEditPanelOpen = false;
+            SelectedRoomItem = null;
+            ErrorMessage = "";
+        }
+
         private void CloseRoomPage()
         {
             IsRoomPageOpen = false;
-            IsScreeningEditPanelOpen = false;
+            IsRoomAddPanelOpen = false;
+            IsRoomEditPanelOpen = false;
             SelectedRoomItem = null;
-            SelectedScreening = null;
+            ErrorMessage = "";
         }
 
         private void OpenReservationPage()
@@ -979,6 +1585,60 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             IsReservationEditPanelOpen = false;
             SelectedReservationItem = null;
+        }
+
+        private void OpenCategoryPage()
+        {
+            IsMenuOpen = false;
+            IsCategoryPageOpen = true;
+        }
+
+        private void OpenCategoryAddPanel()
+        {
+            SelectedCategoryItem = new CategoryViewModel(this);
+
+            SelectedCategoryItem.CategoryAddSaved += async (s, dto) =>
+            {
+                try
+                {
+                    await _mainWindowModel.NewCateg(dto);
+                    await LoadCategoriesAsync();
+                    SelectedCategoryItem = null;
+                    IsCategoryAddPanelOpen = false;
+                    ErrorMessage = "";
+                }
+                catch (Exception ex)
+                {
+                    ErrorMessage = "Hiba új kategória mentésekor: " + ex.Message;
+                }
+            };
+
+            IsCategoryAddPanelOpen = true;
+            IsCategoryEditPanelOpen = false;
+            ErrorMessage = "";
+        }
+
+        private void CloseCategoryPage()
+        {
+            IsCategoryPageOpen = false;
+            IsCategoryAddPanelOpen = false;
+            IsCategoryEditPanelOpen = false;
+            SelectedCategoryItem = null;
+            ErrorMessage = "";
+        }
+
+        private void CloseCategoryAddPanel()
+        {
+            IsCategoryAddPanelOpen = false;
+            SelectedCategoryItem = null;
+            ErrorMessage = "";
+        }
+
+        private void CloseCategoryEditPanel()
+        {
+            IsCategoryEditPanelOpen = false;
+            SelectedCategoryItem = null;
+            ErrorMessage = "";
         }
 
         // ===================== FILTERS =====================

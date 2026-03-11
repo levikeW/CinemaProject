@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Avalonia.Media.Imaging;
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using CinemaProject_Avalonia.Models;
@@ -14,8 +15,9 @@ namespace CinemaProject_Avalonia.ViewModels
 {
     public class MovieViewModel : ViewModelBase
     {
-        private readonly MainWindowModel _model;
+        private readonly MainWindowViewModel _viewModel;
 
+        private int _movieId;
         private string _movieTitle;
         private int _duration;
         private string _genre;
@@ -24,10 +26,27 @@ namespace CinemaProject_Avalonia.ViewModels
         private int _imageId;
         private MovieStatus _status;
 
+        private Bitmap? _movieImage;
+
         private string _errorMessage;
 
-        public event EventHandler? MovieSaved;
+        public RelayCommand OpenEditPanelCommand { get; }
+        public RelayCommand DeleteCommand { get; }
+        public AsyncRelayCommand SaveMovieCommand { get; }
 
+        public event EventHandler<NewMovieDto> MovieAddSaved;
+        public event EventHandler<ModifyMovieDto> MovieEditSaved;
+        public event EventHandler? MovieDeleted;
+
+        public int MovieId
+        {
+            get => _movieId;
+            set
+            {
+                _movieId = value;
+                OnPropertyChanged();
+            }
+        }
         public string MovieTitle
         {
             get => _movieTitle;
@@ -98,6 +117,16 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
+        public Bitmap? MovieImage
+        {
+            get => _movieImage;
+            set
+            {
+                _movieImage = value;
+                OnPropertyChanged();
+            }
+        }
+
         public string ErrorMessage
         {
             get => _errorMessage;
@@ -120,13 +149,13 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public AsyncRelayCommand SaveMovieCommand { get; }
-
-        public MovieViewModel(MainWindowModel model)
+        public MovieViewModel(MainWindowViewModel viewModel)
         {
-            _model = model;
+            _viewModel = viewModel;
 
+            OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
             SaveMovieCommand = new AsyncRelayCommand(SaveMovie);
+            DeleteCommand = new RelayCommand(Delete);
         }
 
         public async Task SaveMovie()
@@ -139,25 +168,56 @@ namespace CinemaProject_Avalonia.ViewModels
                     return;
                 }
 
-                var dto = new NewMovieDto
+                if (MovieId == 0)
                 {
-                    MovieTitle = MovieTitle,
-                    Duration = Duration,
-                    Genre = Genre,
-                    Director = Director,
-                    Description = Description,
-                    ImageId = ImageId,
-                    Status = Status
-                };
+                    var addDto = new NewMovieDto
+                    {
+                        MovieTitle = MovieTitle,
+                        Duration = Duration,
+                        Genre = Genre,
+                        Director = Director,
+                        Description = Description,
+                        ImageId = ImageId,
+                        Status = Status
+                    };
 
-                await _model.NewMovie(dto);
+                    MovieAddSaved?.Invoke(this, addDto);
+                }
+                else
+                {
+                    var modifyDto = new ModifyMovieDto
+                    {
+                        MovieId = MovieId,
+                        MovieTitle = MovieTitle,
+                        Duration = Duration,
+                        Genre = Genre,
+                        Director = Director,
+                        Description = Description,
+                        ImageId = ImageId,
+                        Status = Status
+                    };
 
-                MovieSaved?.Invoke(this, EventArgs.Empty);
+                    MovieEditSaved?.Invoke(this, modifyDto);
+                }
+
+                ErrorMessage = "";
             }
             catch (Exception ex)
             {
                 ErrorMessage = "Hiba a film mentésekor: " + ex.Message;
             }
+        }
+
+        private void OpenEditPanel()
+        {
+            _viewModel.SelectedMovieItem = this;
+            _viewModel.IsMovieEditPanelOpen = true;
+            _viewModel.IsMovieAddPanelOpen = false;
+        }
+
+        private void Delete()
+        {
+            MovieDeleted?.Invoke(this, EventArgs.Empty);
         }
     }
 }

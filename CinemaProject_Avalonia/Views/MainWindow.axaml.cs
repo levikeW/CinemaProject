@@ -9,6 +9,15 @@ namespace CinemaProject_Avalonia.Views
         public MainWindow()
         {
             InitializeComponent();
+
+            Opened += MainWindow_Opened;
+        }
+        private void MainWindow_Opened(object? sender, System.EventArgs e)
+        {
+            if (DataContext is ViewModels.MainWindowViewModel vm)
+            {
+                vm.SetHostWindow(this);
+            }
         }
         private void Overlay_PointerPressed(object? sender, PointerPressedEventArgs e)
         {

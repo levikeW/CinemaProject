@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,13 +10,15 @@ using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using CinemaProject_Avalonia.Models;
 using CommunityToolkit.Mvvm.Input;
+using Tmds.DBus.Protocol;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
     public class ReservationViewModel : ViewModelBase
-    {   
-        private readonly MainWindowModel _model;
+    {
         public MainWindowViewModel _viewModel;
+
+        private ObservableCollection<SeatSelectionViewModel> _availableSeats = new();
 
         private int _reservationId;
         private int _cartId;
@@ -29,13 +32,22 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private string _errorMessage;
 
-        public RelayCommand OpenEditPanelCommand { get; }
+        public AsyncRelayCommand OpenEditPanelCommand { get; }
         public RelayCommand DeleteCommand { get; }
         public AsyncRelayCommand SaveReservationCommand { get; }
 
-        public event EventHandler? ReservationSaved;
+        public event EventHandler<ModifyReservationDto> ReservationSaved;
         public event EventHandler? ReservationDeleted;
 
+        public ObservableCollection<SeatSelectionViewModel> AvailableSeats
+        {
+            get => _availableSeats;
+            set
+            {
+                _availableSeats = value;
+                OnPropertyChanged();
+            }
+        }
 
         public int ReservationId
         {
@@ -117,7 +129,7 @@ namespace CinemaProject_Avalonia.ViewModels
 
         public List<SeatDto> Seats
         {
-            get=> _seats;
+            get => _seats;
             set
             {
                 _seats = value;
@@ -135,12 +147,21 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        public ReservationViewModel(MainWindowViewModel viewModel, MainWindowModel model)
+        public string SeatsDisplay
         {
-            _model = model;
+            get
+            {
+                if (Seats == null || Seats.Count == 0)
+                    return "Nincsenek megadott helyek";
+                return string.Join(", ", Seats.Select(s => $"Sor: {s.RowNumber}, Szék: {s.SeatNumber}"));
+            }
+        }
+
+        public ReservationViewModel(MainWindowViewModel viewModel)
+        {
             _viewModel = viewModel;
 
-            OpenEditPanelCommand = new RelayCommand(OpenEditPanel);
+            OpenEditPanelCommand = new AsyncRelayCommand(OpenEditPanel);
             SaveReservationCommand = new AsyncRelayCommand(SaveReservation);
             DeleteCommand = new RelayCommand(Delete);
         }
@@ -149,6 +170,22 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             try
             {
+                if (Amount <= 0)
+                {
+                    ErrorMessage = "A jegyek száma legyen nagyobb mint 0.";
+                    return;
+                }
+
+                var selectedSeats = AvailableSeats.Where(x => x.IsSelected)
+                    .Select(x => new SeatDto
+                    {
+                        SeatId = x.SeatId,
+                        RowNumber = x.RowNumber,
+                        SeatNumber = x.SeatNumber,
+                        RoomId = x.RoomId,
+                        IsReserved = x.IsReserved
+                    }).ToList();
+
                 var dto = new ModifyReservationDto
                 {
                     PaymentReservationId = ReservationId,
@@ -159,14 +196,12 @@ namespace CinemaProject_Avalonia.ViewModels
                     Amount = Amount,
                     Price = Price,
                     UserId = UserId,
-                    Seats = Seats,
+                    Seats = selectedSeats
                 };
 
-                await _model.ModifyReservation(dto, ReservationId);
+                ReservationSaved?.Invoke(this, dto);
 
-                ReservationSaved?.Invoke(this, EventArgs.Empty);
-
-                _viewModel.IsReservationEditPanelOpen = false;
+                ErrorMessage = "";
             }
             catch (Exception ex)
             {
@@ -174,10 +209,11 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
-        private void OpenEditPanel()
+        private async Task OpenEditPanel()
         {
             _viewModel.SelectedReservationItem = this;
             _viewModel.IsReservationEditPanelOpen = true;
+            await _viewModel.LoadReservationSeatsForSelectedReservationAsync(this);
         }
 
         private void Delete()
