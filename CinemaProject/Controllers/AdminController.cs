@@ -41,7 +41,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("getallreservation")]
-        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllReservation()
+        public async Task<ActionResult<IEnumerable<PaymentReservationDto>>> GetAllReservation()
         {
             try
             {
@@ -77,7 +77,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost("newmovie")]
-        public async Task<ActionResult> NewMovie([FromBody] NewMovieDto dto)
+        public async Task<ActionResult<NewMovieDto>> NewMovie([FromBody] NewMovieDto dto)
         {
             try
             {
@@ -438,7 +438,7 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost("uploadimage")]
-        public async Task<ActionResult> UploadImage([FromBody] ImageDto dto)
+        public async Task<ActionResult<ImageDto>> UploadImage([FromBody] ImageDto dto)
         {
             try
             {

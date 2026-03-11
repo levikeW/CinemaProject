@@ -109,9 +109,9 @@ namespace Cinema_Test
         }
 
         [Fact]
-        public void HasFreeSeats_Wrong_NotFound()
+        public async Task HasFreeSeats_Wrong_NotFound()
         {
-            var ex = Assert.Throws<InvalidOperationException>(() =>
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 _cinemaModel.HasFreeSeats(99999, 1));
             Assert.Equal("Screening not found", ex.Message);
         }
