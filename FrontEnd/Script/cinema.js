@@ -210,22 +210,27 @@ function renderScreeningsTable() {
     });
 }
 // AUTHENTICATION
-function handleLogin(email, password) {
+// Bejelentkezés űrlap submit handler
+function handleLoginSubmit(event) {
     return __awaiter(this, void 0, void 0, function () {
-        var loginContainer, loginMessage, response, text, data_1, error_4;
+        var emailInput, passwordInput, loginMessage, email, password, response, text, err_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    loginContainer = document.getElementById("loginContainer");
+                    event.preventDefault();
+                    emailInput = document.getElementById("loginEmail");
+                    passwordInput = document.getElementById("loginPassword");
                     loginMessage = document.getElementById("loginMessage");
+                    if (!emailInput || !passwordInput)
+                        return [2 /*return*/];
+                    email = emailInput.value;
+                    password = passwordInput.value;
                     _a.label = 1;
                 case 1:
-                    _a.trys.push([1, 6, , 7]);
-                    return [4 /*yield*/, fetch("".concat(API_BASE, "/api/user/login"), {
+                    _a.trys.push([1, 5, , 6]);
+                    return [4 /*yield*/, fetch("http://localhost:5067/api/user/login", {
                             method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
+                            headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ email: email, password: password }),
                             credentials: "include"
                         })];
@@ -235,197 +240,35 @@ function handleLogin(email, password) {
                     return [4 /*yield*/, response.text()];
                 case 3:
                     text = _a.sent();
-                    throw new Error(text || "Bejelentkezés sikertelen");
-                case 4: return [4 /*yield*/, response.json()];
-                case 5:
-                    data_1 = _a.sent();
-                    if (loginMessage) {
-                        loginMessage.className = "alert alert-success";
-                        loginMessage.textContent = "Sikeres bejelentkezés!";
-                        loginMessage.style.display = "block";
-                    }
-                    setTimeout(function () {
-                        if (data_1.role === "Admin") {
-                            window.location.href = "Cinema.html"; // admin page not implemented yet
-                        }
-                        else {
-                            window.location.href = "Cinema.html";
-                        }
-                    }, 2000);
-                    return [3 /*break*/, 7];
-                case 6:
-                    error_4 = _a.sent();
-                    console.error(error_4);
-                    if (loginMessage) {
-                        loginMessage.className = "alert alert-danger";
-                        loginMessage.textContent = "Hiba: ".concat(error_4 instanceof Error ? error_4.message : "Bejelentkezés sikertelen");
-                        loginMessage.style.display = "block";
-                    }
-                    return [3 /*break*/, 7];
-                case 7: return [2 /*return*/];
-            }
-        });
-    });
-}
-function handleRegister(email, fullName, password, passwordConfirm, billingAddress) {
-    return __awaiter(this, void 0, void 0, function () {
-        var registerContainer, registerMessage, response, text, form, error_5;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    registerContainer = document.getElementById("registerContainer");
-                    registerMessage = document.getElementById("registerMessage");
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 5, , 6]);
-                    if (!email || !fullName || !password || !passwordConfirm || !billingAddress) {
-                        throw new Error("Minden mező kitöltése kötelező!");
-                    }
-                    if (password !== passwordConfirm) {
-                        throw new Error("A jelszavak nem egyeznek!");
-                    }
-                    if (password.length < 6) {
-                        throw new Error("A jelszó legalább 6 karakter hosszú legyen!");
-                    }
-                    return [4 /*yield*/, fetch("".concat(API_BASE, "/api/user/Regist?IsAdmin=false"), {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                Email: email,
-                                FullName: fullName,
-                                Password: password,
-                                BillingAddress: billingAddress
-                            }),
-                            credentials: "include"
-                        })];
-                case 2:
-                    response = _a.sent();
-                    if (!!response.ok) return [3 /*break*/, 4];
-                    return [4 /*yield*/, response.text()];
-                case 3:
-                    text = _a.sent();
-                    throw new Error(text || "Regisztráció sikertelen");
+                    if (loginMessage)
+                        loginMessage.textContent = text || "Hibás email vagy jelszó.";
+                    return [2 /*return*/];
                 case 4:
-                    if (registerMessage) {
-                        registerMessage.className = "alert alert-success";
-                        registerMessage.textContent = "Sikeres regisztráció! Mostantól bejelentkezhetsz.";
-                        registerMessage.style.display = "block";
-                    }
-                    form = document.getElementById("registerForm");
-                    if (form) {
-                        form.reset();
-                    }
-                    // Switch to login tab
-                    setTimeout(function () {
-                        var loginTab = document.getElementById("loginTab");
-                        if (loginTab) {
-                            loginTab.click();
-                        }
-                    }, 2000);
+                    // Sikeres bejelentkezés után átirányítás
+                    window.location.href = "Cinema.html";
                     return [3 /*break*/, 6];
                 case 5:
-                    error_5 = _a.sent();
-                    console.error(error_5);
-                    if (registerMessage) {
-                        registerMessage.className = "alert alert-danger";
-                        registerMessage.textContent = "Hiba: ".concat(error_5 instanceof Error ? error_5.message : "Regisztráció sikertelen");
-                        registerMessage.style.display = "block";
-                    }
+                    err_1 = _a.sent();
+                    if (loginMessage)
+                        loginMessage.textContent = "Hiba a bejelentkezés során.";
                     return [3 /*break*/, 6];
                 case 6: return [2 /*return*/];
             }
         });
     });
 }
-function handleLogout() {
-    return __awaiter(this, void 0, void 0, function () {
-        var response, error_6;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, fetch("".concat(API_BASE, "/api/user/logout"), {
-                            method: "POST",
-                            credentials: "include"
-                        })];
-                case 1:
-                    response = _a.sent();
-                    if (response.ok) {
-                        window.location.href = "/";
-                    }
-                    return [3 /*break*/, 3];
-                case 2:
-                    error_6 = _a.sent();
-                    console.error(error_6);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
-            }
-        });
-    });
-}
-// AUTH HELPERS
-function fetchCurrentUser() {
-    return __awaiter(this, void 0, void 0, function () {
-        var resp, _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    _b.trys.push([0, 3, , 4]);
-                    return [4 /*yield*/, fetch("".concat(API_BASE, "/api/user/me"), { credentials: 'include' })];
-                case 1:
-                    resp = _b.sent();
-                    if (!resp.ok)
-                        return [2 /*return*/, null];
-                    return [4 /*yield*/, resp.json()];
-                case 2: return [2 /*return*/, _b.sent()];
-                case 3:
-                    _a = _b.sent();
-                    return [2 /*return*/, null];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-function replaceNavWithProfile(userName) {
-    var nav = document.querySelector('.navbar-nav');
-    if (!nav)
-        return;
-    var li = document.createElement('li');
-    li.className = 'nav-item dropdown';
-    li.innerHTML = "\n        <a class=\"nav-link dropdown-toggle\" href=\"#\" id=\"profileDropdown\" role=\"button\" data-bs-toggle=\"dropdown\" aria-expanded=\"false\">\n            \uD83D\uDC64 ".concat(userName, "\n        </a>\n        <ul class=\"dropdown-menu dropdown-menu-end\" aria-labelledby=\"profileDropdown\">\n            <li><a class=\"dropdown-item\" href=\"profile.html\">Profil</a></li>\n            <li><hr class=\"dropdown-divider\"></li>\n            <li><a class=\"dropdown-item\" href=\"#\" onclick=\"handleLogout();\">Kijelentkez\u00E9s</a></li>\n        </ul>\n    ");
-    // remove previous login/reg links
-    nav.querySelectorAll('li.nav-item').forEach(function (el) {
-        var a = el.querySelector('a.nav-link');
-        if (a && /Bejelentkezés|Regisztráció/.test(a.textContent || '')) {
-            el.remove();
-        }
-    });
-    nav.appendChild(li);
-}
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', function () { return __awaiter(_this, void 0, void 0, function () {
-    var user;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                if (jegyekTbody) {
-                    renderjegyekTable();
-                }
-                if (movieList) {
-                    renderMoviesList();
-                }
-                if (screeningsTbody) {
-                    renderScreeningsTable();
-                }
-                return [4 /*yield*/, fetchCurrentUser()];
-            case 1:
-                user = _a.sent();
-                if (user) {
-                    replaceNavWithProfile(user.fullName || user.email);
-                }
-                return [2 /*return*/];
+        if (jegyekTbody) {
+            renderjegyekTable();
         }
+        if (movieList) {
+            renderMoviesList();
+        }
+        if (screeningsTbody) {
+            renderScreeningsTable();
+        }
+        return [2 /*return*/];
     });
 }); });

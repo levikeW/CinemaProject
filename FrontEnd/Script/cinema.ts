@@ -206,166 +206,33 @@ async function renderScreeningsTable(): Promise<void> {
 }
 
 // AUTHENTICATION
-async function handleLogin(email: string, password: string): Promise<void> {
-    const loginContainer = document.getElementById("loginContainer") as HTMLDivElement | null;
-    const loginMessage = document.getElementById("loginMessage") as HTMLDivElement | null;
-    
+// Bejelentkezés űrlap submit handler
+async function handleLoginSubmit(event: Event) {
+    event.preventDefault();
+    const emailInput = document.getElementById("loginEmail") as HTMLInputElement;
+    const passwordInput = document.getElementById("loginPassword") as HTMLInputElement;
+    const loginMessage = document.getElementById("loginMessage");
+    if (!emailInput || !passwordInput) return;
+    const email = emailInput.value;
+    const password = passwordInput.value;
     try {
-        const response = await fetch(`${API_BASE}/api/user/login`, {
+        const response = await fetch("http://localhost:5067/api/user/login", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
             credentials: "include"
         });
-
         if (!response.ok) {
             const text = await response.text();
-            throw new Error(text || "Bejelentkezés sikertelen");
+            if (loginMessage) loginMessage.textContent = text || "Hibás email vagy jelszó.";
+            return;
         }
-
-        const data = await response.json() as LoginResponse;
-        
-        if (loginMessage) {
-            loginMessage.className = "alert alert-success";
-            loginMessage.textContent = "Sikeres bejelentkezés!";
-            loginMessage.style.display = "block";
-        }
-        
-        setTimeout(() => {
-            if (data.role === "Admin") {
-                window.location.href = "Cinema.html"; // admin page not implemented yet
-            } else {
-                window.location.href = "Cinema.html";
-            }
-        }, 2000);
-    } catch (error) {
-        console.error(error);
-        if (loginMessage) {
-            loginMessage.className = "alert alert-danger";
-            loginMessage.textContent = `Hiba: ${error instanceof Error ? error.message : "Bejelentkezés sikertelen"}`;
-            loginMessage.style.display = "block";
-        }
+        // Sikeres bejelentkezés után átirányítás
+        window.location.href = "Cinema.html";
+    } catch (err) {
+        if (loginMessage) loginMessage.textContent = "Hiba a bejelentkezés során.";
     }
 }
-
-async function handleRegister(email: string, fullName: string, password: string, passwordConfirm: string, billingAddress: string): Promise<void> {
-    const registerContainer = document.getElementById("registerContainer") as HTMLDivElement | null;
-    const registerMessage = document.getElementById("registerMessage") as HTMLDivElement | null;
-    
-    try {
-        if (!email || !fullName || !password || !passwordConfirm || !billingAddress) {
-            throw new Error("Minden mező kitöltése kötelező!");
-        }
-
-        if (password !== passwordConfirm) {
-            throw new Error("A jelszavak nem egyeznek!");
-        }
-
-        if (password.length < 6) {
-            throw new Error("A jelszó legalább 6 karakter hosszú legyen!");
-        }
-
-        const response = await fetch(`${API_BASE}/api/user/Regist?IsAdmin=false`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                Email: email,
-                FullName: fullName,
-                Password: password,
-                BillingAddress: billingAddress
-            } as RegistDto),
-            credentials: "include"
-        });
-
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(text || "Regisztráció sikertelen");
-        }
-
-        if (registerMessage) {
-            registerMessage.className = "alert alert-success";
-            registerMessage.textContent = "Sikeres regisztráció! Mostantól bejelentkezhetsz.";
-            registerMessage.style.display = "block";
-        }
-
-        // Clear form
-        const form = document.getElementById("registerForm") as HTMLFormElement;
-        if (form) {
-            form.reset();
-        }
-
-        // Switch to login tab
-        setTimeout(() => {
-            const loginTab = document.getElementById("loginTab") as HTMLElement | null;
-            if (loginTab) {
-                loginTab.click();
-            }
-        }, 2000);
-    } catch (error) {
-        console.error(error);
-        if (registerMessage) {
-            registerMessage.className = "alert alert-danger";
-            registerMessage.textContent = `Hiba: ${error instanceof Error ? error.message : "Regisztráció sikertelen"}`;
-            registerMessage.style.display = "block";
-        }
-    }
-}
-
-async function handleLogout(): Promise<void> {
-    try {
-        const response = await fetch(`${API_BASE}/api/user/logout`, {
-            method: "POST",
-            credentials: "include"
-        });
-
-        if (response.ok) {
-            window.location.href = "/";
-        }
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-// AUTH HELPERS
-async function fetchCurrentUser(): Promise<{ userId: number; email: string; fullName: string; billingAddress: string } | null> {
-    try {
-        const resp = await fetch(`${API_BASE}/api/user/me`, { credentials: 'include' });
-        if (!resp.ok) return null;
-        return await resp.json();
-    } catch {
-        return null;
-    }
-}
-
-function replaceNavWithProfile(userName: string): void {
-    const nav = document.querySelector('.navbar-nav');
-    if (!nav) return;
-    const li = document.createElement('li');
-    li.className = 'nav-item dropdown';
-    li.innerHTML = `
-        <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            👤 ${userName}
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-            <li><a class="dropdown-item" href="profile.html">Profil</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#" onclick="handleLogout();">Kijelentkezés</a></li>
-        </ul>
-    `;
-    // remove previous login/reg links
-    nav.querySelectorAll('li.nav-item').forEach(el => {
-        const a = el.querySelector('a.nav-link');
-        if (a && /Bejelentkezés|Regisztráció/.test(a.textContent || '')) {
-            el.remove();
-        }
-    });
-    nav.appendChild(li);
-}
-
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', async () => {
     if (jegyekTbody) {
@@ -376,9 +243,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (screeningsTbody) {
         renderScreeningsTable();
-    }
-    const user = await fetchCurrentUser();
-    if (user) {
-        replaceNavWithProfile(user.fullName || user.email);
     }
 });
