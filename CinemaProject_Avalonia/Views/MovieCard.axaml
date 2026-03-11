@@ -10,31 +10,46 @@ d:DesignWidth="800"
 d:DesignHeight="450"
 x:DataType="vm:ScreeningsViewModel"
 x:Class="CinemaProject_Avalonia.Views.MovieCard">
-	<Border CornerRadius="8" Padding="10" Margin="6" BoxShadow="0 2 6 #40000000">
+	<Border CornerRadius="10" Padding="10" Margin="6" Background="White" BoxShadow="0 2 6 #40000000">
 
-		<StackPanel Spacing="6">
+		<Grid ColumnDefinitions="90,*">
 
-			<TextBlock Text="{Binding Title}"
-					   FontSize="16"
-					   FontWeight="Bold"/>
+			<!-- ===== POSTER ===== -->
+			<Border Grid.Column="0" Width="80" Height="110" Background="#DDDDDD" CornerRadius="6">
 
-			<TextBlock Text="{Binding Room}"/>
-			<TextBlock Text="{Binding ShowTimes}" IsVisible="False"/>
-			<ItemsControl ItemsSource="{Binding ShowTimes}">
-				<ItemsControl.ItemTemplate>
-					<DataTemplate>
-						<TextBlock Text="{Binding StringFormat='{}{0:MM.dd}'}" Margin="2"/>
-					</DataTemplate>
-				</ItemsControl.ItemTemplate>
-			</ItemsControl>
+				<Image Source="{Binding MovieImage}" Stretch="UniformToFill"/>
+			</Border>
 
-			<StackPanel Orientation="Horizontal" Spacing="8">
+			<!-- ===== INFO ===== -->
+			<StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="4">
 
-				<Button Content="✏️ Szerkeszt" Command="{Binding OpenEditPanelCommand}"/>
+				<TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" TextWrapping="Wrap"/>
 
-				<Button Content="🗑 Törlés" Background="Red" Foreground="White" Command="{Binding DeleteCommand}"/>
+				<TextBlock Text="{Binding Room, StringFormat='Terem: {0}'}" FontSize="12" Foreground="Gray"/>
+
+				<!-- Vetítési időpontok -->
+				<ItemsControl ItemsSource="{Binding ShowTimes}">
+					<ItemsControl.ItemsPanel>
+						<ItemsPanelTemplate>
+							<WrapPanel/>
+						</ItemsPanelTemplate>
+					</ItemsControl.ItemsPanel>
+
+					<ItemsControl.ItemTemplate>
+						<DataTemplate>
+							<Border Background="#EEEEEE" CornerRadius="4" Padding="4" Margin="2">
+								<TextBlock Text="{Binding StringFormat='{}{0:MM.dd}'}" FontSize="11"/>
+							</Border>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+
+				<StackPanel Orientation="Horizontal" Spacing="6" Margin="0,6,0,0">
+					<Button Content="✏️ Szerkeszt" Command="{Binding OpenEditPanelCommand}"/>
+					<Button Content="🗑 Törlés" Background="Red" Foreground="White" Command="{Binding DeleteCommand}"/>
+				</StackPanel>
 
 			</StackPanel>
-		</StackPanel>
+		</Grid>
 	</Border>
 </UserControl>
