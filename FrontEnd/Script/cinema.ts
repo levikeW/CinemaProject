@@ -206,7 +206,6 @@ async function renderScreeningsTable(): Promise<void> {
 }
 
 // AUTHENTICATION
-// Bejelentkezés űrlap submit handler
 async function handleLoginSubmit(event: Event) {
     event.preventDefault();
     const emailInput = document.getElementById("loginEmail") as HTMLInputElement;
@@ -227,7 +226,6 @@ async function handleLoginSubmit(event: Event) {
             if (loginMessage) loginMessage.textContent = text || "Hibás email vagy jelszó.";
             return;
         }
-        // Sikeres bejelentkezés után átirányítás
         window.location.href = "Cinema.html";
     } catch (err) {
         if (loginMessage) loginMessage.textContent = "Hiba a bejelentkezés során.";

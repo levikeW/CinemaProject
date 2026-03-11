@@ -210,7 +210,6 @@ function renderScreeningsTable() {
     });
 }
 // AUTHENTICATION
-// Bejelentkezés űrlap submit handler
 function handleLoginSubmit(event) {
     return __awaiter(this, void 0, void 0, function () {
         var emailInput, passwordInput, loginMessage, email, password, response, text, err_1;
@@ -244,7 +243,6 @@ function handleLoginSubmit(event) {
                         loginMessage.textContent = text || "Hibás email vagy jelszó.";
                     return [2 /*return*/];
                 case 4:
-                    // Sikeres bejelentkezés után átirányítás
                     window.location.href = "Cinema.html";
                     return [3 /*break*/, 6];
                 case 5:
