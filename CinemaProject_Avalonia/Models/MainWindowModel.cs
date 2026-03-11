@@ -97,15 +97,15 @@ namespace CinemaProject_Avalonia.Models
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task ModifyTicketType(ModifyTicketTypeDto dto, int ticketId)
+        public async Task ModifyTicketType(ModifyTicketTypeDto dto, int ticketTId)
         {
-            var response = await _session.Client.PutAsJsonAsync($"api/admin/modifytickettype?ticketId={ticketId}", dto);
+            var response = await _session.Client.PutAsJsonAsync($"api/admin/modifytickettype?ticketTId={ticketTId}", dto);
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task DeleteTicketType(int ticketId)
+        public async Task DeleteTicketType(int ticketTId)
         {
-            var response = await _session.Client.DeleteAsync($"api/admin/deletetickettype?ticketId={ticketId}");
+            var response = await _session.Client.DeleteAsync($"api/admin/deletetickettype?ticketTId={ticketTId}");
             response.EnsureSuccessStatusCode();
         }
 
@@ -122,7 +122,7 @@ namespace CinemaProject_Avalonia.Models
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task ModifyCateg(ModifyCartDto dto, int categId)
+        public async Task ModifyCateg(ModifyCategDto dto, int categId)
         {
             var response = await _session.Client.PutAsJsonAsync($"api/admin/modifycateg?categId={categId}", dto);
             response.EnsureSuccessStatusCode();
@@ -205,10 +205,13 @@ namespace CinemaProject_Avalonia.Models
 
         // ===================== IMAGE =====================
 
-        public async Task UploadImage(ImageDto dto)
+        public async Task<ImageDto> UploadImage(ImageDto dto)
         {
             var response = await _session.Client.PostAsJsonAsync("api/admin/uploadimage", dto);
             response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<ImageDto>();
+            return result!;
         }
 
         public async Task DeleteImage(int imageId)
@@ -220,6 +223,13 @@ namespace CinemaProject_Avalonia.Models
         public async Task<ImageDto> GetImage(int movieId)
         {
             return await _session.Client.GetFromJsonAsync<ImageDto>($"api/cinema/getimage?movieId={movieId}");
+        }
+
+        // ===================== SEAT =====================
+
+        public async Task<List<SeatDto>> GetSeats(int roomId, int screeningId)
+        {
+            return await _session.Client.GetFromJsonAsync<List<SeatDto>>($"api/cinema/getseats?roomId={roomId}&screeningId={screeningId}");
         }
     }
 }
