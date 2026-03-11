@@ -1,7 +1,7 @@
 const API_BASE = "http://localhost:5067";
 
 // DTO
-interface TicketDto {
+interface TicketTypeDto {
     ticketId: number;
     ticketType: string;
     ticketPrice: number;
@@ -27,37 +27,179 @@ interface MovieDto {
     screenings: FilmScreeningDto[];
 }
 
-interface RoomDto {
-    roomId: number;
-    roomName: string;
+interface CurrentUserDto {
+    email?: string;
+    fullName?: string;
+    billingAddress?: string;
+    Email?: string;
+    FullName?: string;
+    BillingAddress?: string;
 }
 
-interface LoginDto {
+interface StoredUserProfile {
     email: string;
-    password: string;
-}
-
-interface RegistDto {
-    Email: string;
-    FullName: string;
-    Password: string;
-    BillingAddress: string;
-}
-
-interface LoginResponse {
-    role: string;
+    fullName: string;
+    billingAddress: string;
 }
 
 
 const jegyekTbody = document.getElementById("jegyekTbody") as HTMLTableSectionElement | null;
 const movieList = document.getElementById("movieList") as HTMLElement | null;
 const screeningsTbody = document.getElementById("screeningsTbody") as HTMLTableSectionElement | null;
+const locationFilter = document.getElementById("locationFilter") as HTMLSelectElement | null;
+const genreFilter = document.getElementById("genreFilter") as HTMLSelectElement | null;
+const movieFilter = document.getElementById("movieFilter") as HTMLSelectElement | null;
+const dateFilter = document.getElementById("dateFilter") as HTMLInputElement | null;
+
+let allMovies: MovieDto[] = [];
+
+const currentUserStorageKey = "cinemaCurrentUserEmail";
+const userProfilesStorageKey = "cinemaUserProfiles";
+
+const actorNamedRooms = [
+    "Morgan Freeman",
+    "Anne Hathaway",
+    "Leonardo DiCaprio",
+];
+
+function getActorRoomValue(roomLabel: string): string {
+    return roomLabel.toLowerCase().replace(/\s+/g, "-");
+}
+
+function getStoredProfiles(): StoredUserProfile[] {
+    const rawProfiles = localStorage.getItem(userProfilesStorageKey);
+    if (!rawProfiles) return [];
+
+    try {
+        return JSON.parse(rawProfiles) as StoredUserProfile[];
+    } catch {
+        return [];
+    }
+}
+
+function saveStoredProfile(email: string, fullName: string, billingAddress: string): void {
+    const profiles = getStoredProfiles();
+    const existingIndex = profiles.findIndex((item) => item.email.toLowerCase() === email.toLowerCase());
+    const existingProfile = existingIndex >= 0 ? profiles[existingIndex] : null;
+    const mergedProfile: StoredUserProfile = {
+        email,
+        fullName: fullName || existingProfile?.fullName || "",
+        billingAddress: billingAddress || existingProfile?.billingAddress || "",
+    };
+
+    if (existingIndex >= 0) {
+        profiles[existingIndex] = mergedProfile;
+    } else {
+        profiles.push(mergedProfile);
+    }
+
+    localStorage.setItem(userProfilesStorageKey, JSON.stringify(profiles));
+}
+
+function updateStoredProfile(oldEmail: string, newEmail: string, fullName: string, billingAddress: string): void {
+    const profiles = getStoredProfiles().filter((item) => item.email.toLowerCase() !== oldEmail.toLowerCase());
+    localStorage.setItem(userProfilesStorageKey, JSON.stringify(profiles));
+    saveStoredProfile(newEmail, fullName, billingAddress);
+}
+
+function getStoredProfile(email: string): StoredUserProfile | null {
+    const profiles = getStoredProfiles();
+    return profiles.find((item) => item.email.toLowerCase() === email.toLowerCase()) || null;
+}
+
+function setCurrentUserEmail(email: string): void {
+    if (email) {
+        localStorage.setItem(currentUserStorageKey, email);
+        return;
+    }
+
+    localStorage.removeItem(currentUserStorageKey);
+}
+
+function getCurrentUserEmail(): string {
+    return localStorage.getItem(currentUserStorageKey) || "";
+}
+
+function applyLoginState(): void {
+    const email = getCurrentUserEmail().trim();
+    const currentPage = window.location.pathname.split("/").pop() || "Cinema.html";
+    const navProfileArea = document.getElementById("navProfileArea");
+    const authLink = navProfileArea?.querySelector('a[href="Bejelentkezes.html"]') as HTMLAnchorElement | null;
+
+    if (authLink) {
+        authLink.href = email ? "Profile.html" : "Bejelentkezes.html";
+        authLink.textContent = email ? "Profil" : "Bejelentkezés/Regisztráció";
+    }
+
+    if (email && currentPage === "Bejelentkezes.html") {
+        window.location.replace("Profile.html");
+        return;
+    }
+
+    if (!email && currentPage === "Profile.html") {
+        window.location.replace("Bejelentkezes.html");
+    }
+}
+
+function fillProfileFields(email: string, fullName: string, billingAddress: string): void {
+    const emailField = document.getElementById("profileEmail") as HTMLInputElement | null;
+    const fullNameField = document.getElementById("profileFullName") as HTMLInputElement | null;
+    const billingField = document.getElementById("profileBilling") as HTMLInputElement | null;
+
+    if (!emailField || !fullNameField || !billingField) return;
+
+    emailField.value = email;
+    fullNameField.value = fullName;
+    billingField.value = billingAddress;
+}
+
+function showProfileMessage(message: string, isError: boolean): void {
+    const profileMessage = document.getElementById("profileMessage");
+
+    if (!profileMessage) return;
+
+    profileMessage.textContent = message;
+    profileMessage.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
+}
+
+async function handleProfileSave(event: Event): Promise<void> {
+    event.preventDefault();
+
+    const oldEmail = getCurrentUserEmail();
+    const emailField = document.getElementById("profileEmail") as HTMLInputElement | null;
+    const fullNameField = document.getElementById("profileFullName") as HTMLInputElement | null;
+    const billingField = document.getElementById("profileBilling") as HTMLInputElement | null;
+
+    if (!oldEmail || !emailField || !fullNameField || !billingField) {
+        showProfileMessage("A profil mentése most nem sikerült.", true);
+        return;
+    }
+
+    const newEmail = emailField.value.trim();
+    const fullName = fullNameField.value.trim();
+    const billingAddress = billingField.value.trim();
+
+    if (!newEmail) {
+        showProfileMessage("Az email cím megadása kötelező.", true);
+        return;
+    }
+
+    updateStoredProfile(oldEmail, newEmail, fullName, billingAddress);
+    setCurrentUserEmail(newEmail);
+
+    fillProfileFields(newEmail, fullName, billingAddress);
+    showProfileMessage("A profil adatai elmentve.", false);
+}
+
+function getStaticRoomOptions(): string[] {
+    return actorNamedRooms.map((roomLabel) => getActorRoomValue(roomLabel));
+}
 
 // TICKETS
-async function fetchJegyekList(): Promise<TicketDto[]> {
-    const response = await fetch(`${API_BASE}/api/cinema/getallticket`);
+async function fetchJegyekList(): Promise<TicketTypeDto[]> {
+    const response = await fetch(`${API_BASE}/api/cinema/getalltickettype`);
     if (!response.ok) throw new Error("Nem sikerült lekérni a jegyek listát.");
-    return await response.json() as TicketDto[];
+    return await response.json() as TicketTypeDto[];
 }
 
 async function renderjegyekTable(): Promise<void> {
@@ -70,7 +212,7 @@ async function renderjegyekTable(): Promise<void> {
         if (jegyek.length === 0) {
             jegyekTbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="text-center text-muted">Nincs megjeleníthető Jegy.</td>
+                    <td colspan="2" class="text-center text-muted">Nincs megjeleníthető Jegy.</td>
                 </tr>
             `;
             return;
@@ -81,7 +223,6 @@ async function renderjegyekTable(): Promise<void> {
             row.innerHTML = `
                 <td>${jegy.ticketType}</td>
                 <td>${jegy.ticketPrice} Ft</td>
-                <td></td>
             `;
             jegyekTbody.appendChild(row);
         }
@@ -90,7 +231,7 @@ async function renderjegyekTable(): Promise<void> {
         if (jegyekTbody) {
             jegyekTbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="text-center text-danger">Hiba történt a lista betöltésekor.</td>
+                    <td colspan="2" class="text-center text-danger">Hiba történt a lista betöltésekor.</td>
                 </tr>
             `;
         }
@@ -104,11 +245,77 @@ async function fetchMoviesList(): Promise<MovieDto[]> {
     return await response.json() as MovieDto[];
 }
 
-async function renderMoviesList(): Promise<void> {
+function renderMovieOptions(
+    select: HTMLSelectElement | null,
+    values: string[],
+    defaultLabel: string,
+    getLabel?: (value: string) => string,
+): void {
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = "";
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = defaultLabel;
+    select.appendChild(defaultOption);
+
+    for (const value of values) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = getLabel ? getLabel(value) : value;
+        select.appendChild(option);
+    }
+
+    if (values.indexOf(currentValue) !== -1) {
+        select.value = currentValue;
+    }
+}
+
+function populateMovieFilters(movies: MovieDto[]): void {
+    const genres = Array.from(new Set(movies.map((movie) => movie.genre).filter(Boolean))).sort((left, right) => left.localeCompare(right, "hu"));
+    const movieTitles = Array.from(new Set(movies.map((movie) => movie.movieTitle).filter(Boolean))).sort((left, right) => left.localeCompare(right, "hu"));
+
+    renderMovieOptions(locationFilter, getStaticRoomOptions(), "Összes terem", (roomValue) => actorNamedRooms[getStaticRoomOptions().indexOf(roomValue)] || roomValue);
+    renderMovieOptions(genreFilter, genres, "Összes kategória");
+    renderMovieOptions(movieFilter, movieTitles, "Összes film");
+}
+
+function getFilteredMovies(): MovieDto[] {
+    const selectedLocation = locationFilter?.value ?? "";
+    const selectedGenre = genreFilter?.value ?? "";
+    const selectedMovie = movieFilter?.value ?? "";
+    const selectedDate = dateFilter?.value ?? "";
+
+    return allMovies
+        .filter((movie) => !selectedGenre || movie.genre === selectedGenre)
+        .filter((movie) => !selectedMovie || movie.movieTitle === selectedMovie)
+        .map((movie) => {
+            const filteredScreenings = movie.screenings.filter((screening) => {
+                const matchesLocation = !selectedLocation || true;
+                const matchesDate = !selectedDate || screening.date.slice(0, 10) === selectedDate;
+                return matchesLocation && matchesDate;
+            });
+
+            return {
+                ...movie,
+                screenings: filteredScreenings,
+            };
+        })
+        .filter((movie) => movie.screenings.length > 0 || !selectedDate);
+}
+
+async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<void> {
     if (!movieList) return;
 
     try {
-        const movies = await fetchMoviesList();
+        if (allMovies.length === 0) {
+            allMovies = await fetchMoviesList();
+            populateMovieFilters(allMovies);
+        }
+
+        const movies = moviesToRender ?? allMovies;
         movieList.innerHTML = "";
 
         if (movies.length === 0) {
@@ -153,6 +360,17 @@ async function renderMoviesList(): Promise<void> {
             `;
         }
     }
+}
+
+function applyMovieFilters(): void {
+    void renderMoviesList(getFilteredMovies());
+}
+
+function initializeMovieFilters(): void {
+    locationFilter?.addEventListener("change", applyMovieFilters);
+    genreFilter?.addEventListener("change", applyMovieFilters);
+    movieFilter?.addEventListener("change", applyMovieFilters);
+    dateFilter?.addEventListener("change", applyMovieFilters);
 }
 
 // SCREENINGS
@@ -206,179 +424,207 @@ async function renderScreeningsTable(): Promise<void> {
 }
 
 // AUTHENTICATION
-async function handleLogin(email: string, password: string): Promise<void> {
-    const loginContainer = document.getElementById("loginContainer") as HTMLDivElement | null;
-    const loginMessage = document.getElementById("loginMessage") as HTMLDivElement | null;
-    
+async function handleLoginSubmit(event: Event) {
+    event.preventDefault();
+    const emailInput = document.getElementById("loginEmail") as HTMLInputElement;
+    const passwordInput = document.getElementById("loginPassword") as HTMLInputElement;
+    const loginMessage = document.getElementById("loginMessage") as HTMLElement | null;
+    if (!emailInput || !passwordInput) return;
+
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    if (loginMessage) {
+        loginMessage.className = "mb-3";
+        loginMessage.textContent = "";
+    }
+
     try {
         const response = await fetch(`${API_BASE}/api/user/login`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
             credentials: "include"
         });
 
         if (!response.ok) {
             const text = await response.text();
-            throw new Error(text || "Bejelentkezés sikertelen");
+            if (loginMessage) {
+                loginMessage.className = "text-danger mb-3";
+                loginMessage.textContent = text || "Hibás email vagy jelszó.";
+            }
+            return;
         }
 
-        const data = await response.json() as LoginResponse;
-        
         if (loginMessage) {
-            loginMessage.className = "alert alert-success";
+            loginMessage.className = "text-success mb-3";
             loginMessage.textContent = "Sikeres bejelentkezés!";
-            loginMessage.style.display = "block";
         }
-        
-        setTimeout(() => {
-            if (data.role === "Admin") {
-                window.location.href = "Cinema.html"; // admin page not implemented yet
-            } else {
-                window.location.href = "Cinema.html";
-            }
-        }, 2000);
-    } catch (error) {
-        console.error(error);
+        setCurrentUserEmail(email);
+        window.location.replace("Profile.html");
+        return;
+    } catch (err) {
         if (loginMessage) {
-            loginMessage.className = "alert alert-danger";
-            loginMessage.textContent = `Hiba: ${error instanceof Error ? error.message : "Bejelentkezés sikertelen"}`;
-            loginMessage.style.display = "block";
+            loginMessage.className = "text-danger mb-3";
+            loginMessage.textContent = "Hiba a bejelentkezés során.";
         }
     }
 }
 
-async function handleRegister(email: string, fullName: string, password: string, passwordConfirm: string, billingAddress: string): Promise<void> {
-    const registerContainer = document.getElementById("registerContainer") as HTMLDivElement | null;
-    const registerMessage = document.getElementById("registerMessage") as HTMLDivElement | null;
-    
+async function handleRegisterSubmit(event: Event): Promise<void> {
+    event.preventDefault();
+
+    const emailInput = document.getElementById("registerEmail") as HTMLInputElement;
+    const fullNameInput = document.getElementById("registerFullName") as HTMLInputElement;
+    const addressInput = document.getElementById("registerAddress") as HTMLInputElement;
+    const passwordInput = document.getElementById("registerPassword") as HTMLInputElement;
+    const passwordConfirmInput = document.getElementById("registerPasswordConfirm") as HTMLInputElement;
+    const registerMessage = document.getElementById("registerMessage") as HTMLElement | null;
+
+    if (!emailInput || !fullNameInput || !addressInput || !passwordInput || !passwordConfirmInput) return;
+
+    if (registerMessage) {
+        registerMessage.className = "mb-3";
+        registerMessage.textContent = "";
+    }
+
+    if (passwordInput.value !== passwordConfirmInput.value) {
+        if (registerMessage) {
+            registerMessage.className = "text-danger mb-3";
+            registerMessage.textContent = "A két jelszó nem egyezik.";
+        }
+        return;
+    }
+
     try {
-        if (!email || !fullName || !password || !passwordConfirm || !billingAddress) {
-            throw new Error("Minden mező kitöltése kötelező!");
-        }
-
-        if (password !== passwordConfirm) {
-            throw new Error("A jelszavak nem egyeznek!");
-        }
-
-        if (password.length < 6) {
-            throw new Error("A jelszó legalább 6 karakter hosszú legyen!");
-        }
-
-        const response = await fetch(`${API_BASE}/api/user/Regist?IsAdmin=false`, {
+        const response = await fetch(`${API_BASE}/api/user/register`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                Email: email,
-                FullName: fullName,
-                Password: password,
-                BillingAddress: billingAddress
-            } as RegistDto),
+                Email: emailInput.value,
+                FullName: fullNameInput.value,
+                Password: passwordInput.value,
+                BillingAddress: addressInput.value,
+            }),
             credentials: "include"
         });
 
         if (!response.ok) {
             const text = await response.text();
-            throw new Error(text || "Regisztráció sikertelen");
-        }
-
-        if (registerMessage) {
-            registerMessage.className = "alert alert-success";
-            registerMessage.textContent = "Sikeres regisztráció! Mostantól bejelentkezhetsz.";
-            registerMessage.style.display = "block";
-        }
-
-        // Clear form
-        const form = document.getElementById("registerForm") as HTMLFormElement;
-        if (form) {
-            form.reset();
-        }
-
-        // Switch to login tab
-        setTimeout(() => {
-            const loginTab = document.getElementById("loginTab") as HTMLElement | null;
-            if (loginTab) {
-                loginTab.click();
+            if (registerMessage) {
+                registerMessage.className = "text-danger mb-3";
+                registerMessage.textContent = response.status === 409 || /letezik|exists/i.test(text)
+                    ? "Ez a felhasználó már létezik."
+                    : (text || "Sikertelen regisztráció.");
             }
-        }, 2000);
-    } catch (error) {
-        console.error(error);
+            return;
+        }
+
         if (registerMessage) {
-            registerMessage.className = "alert alert-danger";
-            registerMessage.textContent = `Hiba: ${error instanceof Error ? error.message : "Regisztráció sikertelen"}`;
-            registerMessage.style.display = "block";
+            registerMessage.className = "text-success mb-3";
+            registerMessage.textContent = "Sikeres regisztráció! Az adatok elmentve.";
+        }
+        saveStoredProfile(emailInput.value, fullNameInput.value, addressInput.value);
+        emailInput.value = "";
+        fullNameInput.value = "";
+        addressInput.value = "";
+        passwordInput.value = "";
+        passwordConfirmInput.value = "";
+    } catch (err) {
+        if (registerMessage) {
+            registerMessage.className = "text-danger mb-3";
+            registerMessage.textContent = "Hiba történt a regisztráció során.";
         }
     }
 }
 
 async function handleLogout(): Promise<void> {
+    setCurrentUserEmail("");
+
     try {
-        const response = await fetch(`${API_BASE}/api/user/logout`, {
+        await fetch(`${API_BASE}/api/user/logout`, {
             method: "POST",
             credentials: "include"
         });
-
-        if (response.ok) {
-            window.location.href = "/";
-        }
     } catch (error) {
-        console.error(error);
     }
+
+    window.location.href = "Bejelentkezes.html";
 }
 
-// AUTH HELPERS
-async function fetchCurrentUser(): Promise<{ userId: number; email: string; fullName: string; billingAddress: string } | null> {
+async function loadProfileData(): Promise<void> {
+    const emailField = document.getElementById("profileEmail");
+    const fullNameField = document.getElementById("profileFullName");
+    const billingField = document.getElementById("profileBilling");
+
+    if (!emailField || !fullNameField || !billingField) return;
+
     try {
-        const resp = await fetch(`${API_BASE}/api/user/me`, { credentials: 'include' });
-        if (!resp.ok) return null;
-        return await resp.json();
-    } catch {
-        return null;
+        const response = await fetch(`${API_BASE}/api/user/current`, {
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            const storedEmail = getCurrentUserEmail();
+            const storedProfile = storedEmail ? getStoredProfile(storedEmail) : null;
+
+            if (storedProfile) {
+                fillProfileFields(storedProfile.email, storedProfile.fullName, storedProfile.billingAddress);
+            } else {
+                fillProfileFields(storedEmail, "", "");
+            }
+            return;
+        }
+
+        const user = await response.json() as CurrentUserDto;
+        const storedEmail = getCurrentUserEmail();
+        const storedProfile = storedEmail ? getStoredProfile(storedEmail) : null;
+
+        const email = user.email || user.Email || storedEmail || "";
+        const fullName = user.fullName || user.FullName || storedProfile?.fullName || "";
+        const billingAddress = user.billingAddress || user.BillingAddress || storedProfile?.billingAddress || "";
+
+        if (email) {
+            setCurrentUserEmail(email);
+            saveStoredProfile(email, fullName, billingAddress);
+        }
+
+        fillProfileFields(email, fullName, billingAddress);
+    } catch (error) {
+        const storedEmail = getCurrentUserEmail();
+        const storedProfile = storedEmail ? getStoredProfile(storedEmail) : null;
+
+        if (storedProfile) {
+            fillProfileFields(storedProfile.email, storedProfile.fullName, storedProfile.billingAddress);
+            return;
+        }
+
+        fillProfileFields(storedEmail, "", "");
     }
 }
 
-function replaceNavWithProfile(userName: string): void {
-    const nav = document.querySelector('.navbar-nav');
-    if (!nav) return;
-    const li = document.createElement('li');
-    li.className = 'nav-item dropdown';
-    li.innerHTML = `
-        <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            👤 ${userName}
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-            <li><a class="dropdown-item" href="profile.html">Profil</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#" onclick="handleLogout();">Kijelentkezés</a></li>
-        </ul>
-    `;
-    // remove previous login/reg links
-    nav.querySelectorAll('li.nav-item').forEach(el => {
-        const a = el.querySelector('a.nav-link');
-        if (a && /Bejelentkezés|Regisztráció/.test(a.textContent || '')) {
-            el.remove();
-        }
-    });
-    nav.appendChild(li);
-}
-
+// @ts-ignore
+window.handleLoginSubmit = handleLoginSubmit;
+// @ts-ignore
+window.handleRegisterSubmit = handleRegisterSubmit;
+// @ts-ignore
+window.handleLogout = handleLogout;
+// @ts-ignore
+window.handleProfileSave = handleProfileSave;
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', async () => {
+    applyLoginState();
+
     if (jegyekTbody) {
         renderjegyekTable();
     }
     if (movieList) {
+        initializeMovieFilters();
         renderMoviesList();
     }
     if (screeningsTbody) {
         renderScreeningsTable();
     }
-    const user = await fetchCurrentUser();
-    if (user) {
-        replaceNavWithProfile(user.fullName || user.email);
-    }
+
+    await loadProfileData();
 });

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="Cinema.css"/>
     <title>Profil</title>
 </head>
-<body>
+<body class="profile-page">
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <a class="navbar-brand" href="Cinema.html">
@@ -22,10 +22,8 @@
                     <input class="form-control me-2" type="search" placeholder="Keresés">
                     <button class="btn btn-outline-success" type="submit">Keresés</button>
                 </form>
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="Cinema.html">Főoldal</a>
-                    </li>
+                <ul class="navbar-nav ms-auto" id="navProfileArea">
+                    <li class="nav-item"><a class="nav-link" href="Cinema.html">Főoldal</a></li>
                 </ul>
             </div>
         </nav>
@@ -33,12 +31,25 @@
 
     <div class="container py-5" id="profileContainer">
         <h1>Profil</h1>
-        <div id="profileInfo">
-            <p><strong>Email:</strong> <span id="profEmail"></span></p>
-            <p><strong>Teljes név:</strong> <span id="profFullName"></span></p>
-            <p><strong>Számlázási cím:</strong> <span id="profBilling"></span></p>
-        </div>
-        <button class="btn btn-secondary" onclick="handleLogout();">Kijelentkezés</button>
+        <div id="profileMessage" class="alert alert-success"></div>
+        <form id="profileForm" onsubmit="handleProfileSave(event)">
+            <div class="form-group">
+                <label for="profileEmail">Email:</label>
+                <input type="email" id="profileEmail" name="profileEmail" placeholder="Add meg az email címed">
+            </div>
+            <div class="form-group">
+                <label for="profileFullName">Teljes név:</label>
+                <input type="text" id="profileFullName" name="profileFullName" placeholder="Add meg a teljes neved">
+            </div>
+            <div class="form-group">
+                <label for="profileBilling">Számlázási cím:</label>
+                <input type="text" id="profileBilling" name="profileBilling" placeholder="Add meg a számlázási címed">
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Mentés</button>
+                <button type="button" class="btn btn-secondary" onclick="handleLogout();">Kijelentkezés</button>
+            </div>
+        </form>
     </div>
 
     <footer class="mt-5">
@@ -46,17 +57,5 @@
     </footer>
 
     <script src="Script/cinema.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const user = await fetchCurrentUser();
-            if (!user) {
-                window.location.href = 'Cinema.html';
-                return;
-            }
-            document.getElementById('profEmail').textContent = user.email;
-            document.getElementById('profFullName').textContent = user.fullName;
-            document.getElementById('profBilling').textContent = user.billingAddress;
-        });
-    </script>
 </body>
 </html>

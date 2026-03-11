@@ -1,150 +1,420 @@
-/*Base*/
+/* Base */
+html {
+    scroll-behavior: smooth;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: #18212b;
+    background: linear-gradient(180deg, #eef4f8 0%, #d9e4ec 100%);
 }
-  
+
+body.cinema-page {
+    background-color: #100c1d;
+    background-image:
+        radial-gradient(circle at 16% 18%, rgba(212, 121, 255, 0.3) 0%, transparent 24%),
+        radial-gradient(circle at 84% 16%, rgba(120, 68, 255, 0.24) 0%, transparent 22%),
+        radial-gradient(circle at 50% 82%, rgba(255, 96, 186, 0.14) 0%, transparent 28%),
+        linear-gradient(140deg, rgba(35, 17, 56, 0.92) 0%, rgba(18, 14, 37, 0.88) 48%, rgba(9, 10, 20, 0.96) 100%),
+        linear-gradient(180deg, #1c1230 0%, #140f24 52%, #0b0c16 100%);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+body.arak-page {
+    background-color: #15111d;
+    background-image:
+        radial-gradient(circle at top left, rgba(210, 126, 255, 0.14) 0%, transparent 28%),
+        radial-gradient(circle at bottom left, rgba(115, 47, 182, 0.18) 0%, transparent 34%),
+        linear-gradient(180deg, #1a1327 0%, #2a193b 52%, #17111f 100%);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+body.auth-page,
+body.profile-page {
+    background-color: #171124;
+    background-image:
+        radial-gradient(circle at top left, rgba(196, 110, 255, 0.12) 0%, transparent 28%),
+        radial-gradient(circle at bottom right, rgba(103, 41, 164, 0.16) 0%, transparent 34%),
+        linear-gradient(180deg, #171124 0%, #251738 52%, #130f1d 100%);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+body.rolunk-page {
+    background-color: #13101d;
+    background-image:
+        radial-gradient(circle at top left, rgba(196, 110, 255, 0.14) 0%, transparent 28%),
+        radial-gradient(circle at bottom right, rgba(103, 41, 164, 0.18) 0%, transparent 34%),
+        linear-gradient(180deg, #171124 0%, #251738 52%, #130f1d 100%);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
 header {
-    background-color: #333;
-    color: white;
-    padding: 10px 10px;
-    justify-content: space-between;
-    align-items: right;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
-  
+
 .navbar {
-    background-color: #333 !important; 
+    position: relative;
+    padding: 0.9rem 1.5rem;
+    background: rgba(20, 29, 39, 0.46) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
 }
-  
+
+.navbar::after {
+    content: "CINEMANIA";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 0.35rem 0.85rem;
+    border: 1px solid rgba(196, 88, 255, 0.55);
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(209, 103, 255, 0.18), rgba(122, 44, 255, 0.08));
+    box-shadow: 0 8px 24px rgba(162, 56, 255, 0.16);
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #c85cff;
+    text-shadow: 0 0 18px rgba(200, 92, 255, 0.42);
+    opacity: 0.88;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
 .navbar .navbar-brand {
     color: white !important;
-    font-weight: bold;
+    font-weight: 700;
 }
-  
-  .navbar .nav-link {
-    color: white !important; 
-    margin: 0 10px;
+
+.navbar .nav-link {
+    position: relative;
+    margin: 0 0.35rem;
+    padding: 0.5rem 0.8rem !important;
+    color: rgba(255, 255, 255, 0.88) !important;
+    border-radius: 999px;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
-  
-  .navbar .nav-link:hover {
-    color: #ddd !important;
-  }
-  
-  .navbar .form-control {
-    border-radius: 4px;
-  }
-  
-  .navbar .btn {
-    margin-left: 5px;
-    color: whitesmoke;
-    border: 2px solid whitesmoke;
-  }
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.navbar .form-control {
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+}
+
+.navbar .btn {
+    margin-left: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    color: white;
+}
+
+.navbar .btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.page-section {
+    padding: 2rem 1rem 4rem;
+}
+
+.Fooldalall {
+    position: relative;
+    isolation: isolate;
+    min-height: calc(100vh - 84px);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+.Fooldalall {
+    background-image:
+        radial-gradient(circle at 18% 22%, rgba(214, 125, 255, 0.2) 0%, transparent 24%),
+        radial-gradient(circle at 78% 14%, rgba(116, 67, 255, 0.16) 0%, transparent 20%),
+        linear-gradient(180deg, rgba(9, 10, 20, 0.2) 0%, rgba(16, 12, 31, 0.34) 34%, rgba(8, 9, 18, 0.5) 100%);
+}
+
+.Fooldalall::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(circle at 50% -8%, rgba(255, 233, 174, 0.2) 0%, rgba(224, 146, 255, 0.1) 18%, transparent 42%),
+        linear-gradient(115deg, transparent 0%, rgba(199, 104, 255, 0.08) 34%, transparent 52%),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0, rgba(0, 0, 0, 0.2) 5%, transparent 5%, transparent 11%, rgba(0, 0, 0, 0.1) 11%, rgba(0, 0, 0, 0.1) 17%, transparent 17%, transparent 100%);
+    opacity: 0.34;
+    pointer-events: none;
+}
+
+.home-hero {
+    max-width: 1180px;
+    margin: 0 auto 1.5rem;
+    padding: 1.5rem 1rem 0.5rem;
+}
+
+.home-hero h1 {
+    max-width: 820px;
+    margin: 0 0 1rem;
+    font-size: clamp(1.45rem, 2.6vw, 2.2rem);
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    color: #f3dbff;
+    text-shadow:
+        0 1px 0 rgba(133, 66, 188, 0.72),
+        0 8px 20px rgba(72, 20, 116, 0.28),
+        0 0 18px rgba(229, 146, 255, 0.16);
+}
+
+.home-lead {
+    max-width: 700px;
+    margin: 0;
+    padding: 0;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: #efd9ff;
+    text-shadow:
+        0 1px 0 rgba(96, 39, 149, 0.52),
+        0 6px 18px rgba(0, 0, 0, 0.22);
+}
 
 .filters {
-    background-color: whitesmoke;
-    padding: 20px;
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-  
-.filters select {
-    padding: 5px;
+    max-width: 1180px;
+    margin: 0 auto 1.5rem;
+    padding: 1.25rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    background: rgba(239, 226, 255, 0.61);
+    border-radius: 20px;
+    box-shadow: 0 18px 50px rgba(48, 22, 73, 0.22);
+    backdrop-filter: blur(8px);
 }
 
-.kartya{
-    background-color: rgba(255, 255, 255, 0.25  );
+.filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    font-weight: 600;
+}
+
+.filters select,
+.filters input {
+    width: 100%;
+    padding: 0.8rem 0.95rem;
+    border: 1px solid #cfb8f2;
+    border-radius: 14px;
+    background: rgba(250, 245, 255, 0.66);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filters select:focus,
+.filters input:focus {
+    outline: none;
+    border-color: #b05cff;
+    box-shadow: 0 0 0 4px rgba(176, 92, 255, 0.16);
+}
+
+.kartya {
+    background-color: rgba(255, 255, 255, 0.13);
     padding: 1%;
     border-radius: 30px;
 }
 
-/*Cinema.html*/
-
 .movie-list {
-    max-width: 1000px;
-	margin: auto;
-	text-align: center;
-    padding: 20px;
+    max-width: 1180px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 0 1rem 2rem;
 }
 
 .movie-card {
-    background-color: white;
-    width: 70%;
-    padding: 15px;
-    border-radius: 5px;
-    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    width: 100%;
+    margin: 0 auto 1.5rem;
+    padding: 1.25rem;
+    border: 0;
+    border-radius: 26px;
+    box-shadow: 0 18px 40px rgba(48, 22, 73, 0.22);
+    background: rgba(244, 234, 255, 0.64);
+    backdrop-filter: blur(6px);
 }
 
 .movie-card img {
     width: 100%;
-    height: 350px;
-    background-color: #ccc;
-	float: left;
-    margin-bottom: 10px;
+    height: 320px;
+    border-radius: 18px;
+    object-fit: cover;
+    background-color: #ccd6df;
+    margin-bottom: 1rem;
 }
 
 .movie-card h3 {
-    margin: 0 0 10px;
-	text-align: center;
+    margin: 0 0 1rem;
+    text-align: left;
+    font-size: 1.6rem;
+}
+
+.movie-card p {
+    text-align: left;
 }
 
 .movie-card button {
-    margin-right: 10px;
-    padding: 5px 10px;
+    margin-top: 0.5rem;
+    border-radius: 999px;
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
 }
 
-.Fooldalall{
-    background-color: lightblue;
-}
-  
-footer {
-    background-color: #333;
-    color: white;
-    text-align: center;
-    padding: 10px;
-}
+/* Arak.html */
 
-/*Arak.html*/
-
-.Arakh1{
-    border: 2px solid black;
-    width: 250px;
-    text-align: center;
-    margin: auto;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    padding: 5px;
+.Arakh1 {
+    margin: 0 0 0.75rem;
+    text-align: left;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.1;
+    color: #e4b5ff;
+    text-shadow:
+        1px 1px 0 rgba(111, 42, 168, 0.82),
+        2px 2px 0 rgba(86, 22, 139, 0.64),
+        0 10px 26px rgba(0, 0, 0, 0.22);
 }
 
-.Arakkeret{
+.Arakkeret {
     margin: auto;
     padding: 30px;
-    width: 475px;
-    padding-bottom: 36vh;
+    width: min(720px, calc(100% - 2rem));
+    padding-bottom: 0;
+    border-radius: 28px;
 }
 
-.arak-table tr td{
+.arak-table tr td {
     margin: auto;
     padding: 15px;
 }
 
-.Arakall{
-    background-image: url(Arakbckg.png);
+.Arakall {
+    position: relative;
+    isolation: isolate;
+    min-height: calc(100vh - 84px);
+    background-image:
+        radial-gradient(circle at top left, rgba(210, 126, 255, 0.14) 0%, transparent 28%),
+        radial-gradient(circle at bottom left, rgba(115, 47, 182, 0.18) 0%, transparent 34%),
+        linear-gradient(180deg, #1a1327 0%, #2a193b 52%, #17111f 100%);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
+    background-attachment: fixed;
 }
 
-/*Kateg.html*/
+.Arakall::before {
+    content: "💸   💰   💵   💸\A\A   💰   💵   💸   💰\A\A💵   💸   💰   💵";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: pre;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    line-height: 2.4;
+    letter-spacing: 1rem;
+    opacity: 0.08;
+    transform: rotate(-12deg);
+    pointer-events: none;
+    user-select: none;
+}
 
-.Kategall{
+.arak-hero {
+    max-width: 1180px;
+    margin: 0 auto 1.5rem;
+    padding: 1.5rem 1rem 0.5rem;
+    text-align: left;
+}
+
+.arak-lead {
+    max-width: 760px;
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #e4b5ff;
+    text-shadow:
+        1px 1px 0 rgba(111, 42, 168, 0.82),
+        2px 2px 0 rgba(86, 22, 139, 0.64),
+        0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+.arak-panel {
+    border: 1px solid rgba(199, 164, 238, 0.65);
+    box-shadow: 0 18px 40px rgba(48, 22, 73, 0.22);
+    background: rgba(239, 226, 255, 0.61);
+    backdrop-filter: blur(6px);
+    overflow: hidden;
+    padding-bottom: 1.5rem;
+}
+
+.arak-panel .table {
+    --bs-table-bg: rgba(250, 245, 255, 0.5);
+    --bs-table-striped-bg: rgba(226, 207, 247, 0.3);
+    --bs-table-hover-bg: rgba(214, 186, 246, 0.34);
+    margin-bottom: 0;
+    border: 1px solid rgba(139, 90, 189, 0.35);
+}
+
+.arak-panel .table-dark,
+.arak-panel .table-dark th {
+    background: #39224f !important;
+    color: #f7efff;
+}
+
+.arak-panel thead th {
+    border: 1px solid rgba(187, 153, 223, 0.45);
+}
+
+.arak-panel tbody tr {
+    border-bottom: 1px solid rgba(187, 153, 223, 0.35);
+}
+
+.arak-panel td,.arak-panel th {
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid rgba(187, 153, 223, 0.35);
+}
+
+body.arak-page footer {
+    margin-top: 0;
+}
+
+/* Kateg.html */
+
+.Kategall {
     background-image: url(Kategbckg.png);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
 }
 
-.Kategh1{
+.Kategh1 {
     border: 2px solid black;
     width: 400px;
     text-align: center;
@@ -154,157 +424,241 @@ footer {
     padding: 5px;
 }
 
-.Kategkeret{
+.Kategkeret {
     margin: auto;
     padding: 20px;
 }
 
-.Kategnev h4{
+.Kategnev h4 {
     margin: 10px;
     padding: 25px;
 }
 
-.Kategbold{
+.Kategbold {
     font-weight: bold;
 }
 
-/*Rolunk.html*/
-.Rolunk{
-    background-image: url(Kategbckg.png);
+/* Rolunk.html */
+
+.Rolunk {
+    min-height: calc(100vh - 84px);
+    background-image:
+        radial-gradient(circle at top left, rgba(196, 110, 255, 0.14) 0%, transparent 28%),
+        radial-gradient(circle at bottom right, rgba(103, 41, 164, 0.18) 0%, transparent 34%),
+        linear-gradient(180deg, #171124 0%, #251738 52%, #130f1d 100%);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
+    background-attachment: fixed;
 }
-    
-    .Rolunkh1{
-    border: 2px solid black;
-    width: 250px;
+
+.Rolunkh1 {
+    margin: 0 0 0.75rem;
+    text-align: left;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.1;
+    color: #e4b5ff;
+    text-shadow:
+        1px 1px 0 rgba(111, 42, 168, 0.82),
+        2px 2px 0 rgba(86, 22, 139, 0.64),
+        0 10px 26px rgba(0, 0, 0, 0.22);
+}
+
+.Infocim {
+    margin: 0 0 1rem;
     text-align: center;
-    margin: auto;
-    margin-top: 40px;
-    padding: 8px;
+    font-size: 1.4rem;
+    color: #4a235f;
 }
-    
-    .Infocim{
+
+.rolunk-hero {
+    max-width: 620px;
+    margin: 0 auto 1.5rem;
+    padding: 1.5rem 1rem 0.5rem;
+    text-align: left;
+}
+
+.rolunk-lead {
+    max-width: 760px;
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #e4b5ff;
+    text-shadow:
+        1px 1px 0 rgba(111, 42, 168, 0.82),
+        2px 2px 0 rgba(86, 22, 139, 0.64),
+        0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+.rolunk-info {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 0 1rem 2rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    justify-items: center;
+}
+
+.Rolunkkeret {
+    width: min(100%, 520px);
+    margin: 0;
+    padding: 1.35rem;
+    border: 1px solid rgba(199, 164, 238, 0.65);
+    border-radius: 28px;
+    box-shadow: 0 18px 40px rgba(48, 22, 73, 0.22);
+    background: rgba(239, 226, 255, 0.61);
+    backdrop-filter: blur(6px);
+}
+
+.Elerhetoseg {
     text-align: center;
-    margin-top: 40px;
 }
-    
-    .Rolunkkeret{
-    width: 70%;
-    margin: auto;
-    margin-top: 50px;
-}
-    
-    .Elerhetoseg{
-    text-align: center;
-    padding: 20px;
-}
-    
-    .ikonok{
+
+.ikonok {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     gap: 20px;
     margin-top: 20px;
 }
-    
-    .ikon{
-    width: 50px;
-    height: 50px;
-    background-color: #212529;
-    color: white;
+
+.ikon {
+    width: 78px;
+    height: 78px;
+    border: 1px solid rgba(177, 137, 221, 0.5);
+    background: rgba(250, 245, 255, 0.59);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 22px;
     font-size: 22px;
     text-decoration: none;
-    transition: 0.3s;
-}
-    
-    .ikon:hover{
-    background-color: #0d6efd;
-    transform: scale(1.1);
-}
-    
-    .Nyitvatartas{
-    text-align: center;
-}
-    
-    .nyitbox{
-    border: 2px solid lightblue;
-    width: 150px;
-    margin: auto;
-    padding: 20px;
-    border-radius: 15px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-/*Bejelenkezes.html*/
-.Bejelall{
+.ikon:hover {
+    background: rgba(234, 219, 251, 0.67);
+    box-shadow: 0 12px 28px rgba(97, 43, 146, 0.18);
+    transform: translateY(-3px);
+}
+
+.Nyitvatartas {
+    text-align: center;
+}
+
+.nyitva {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.nyitva p {
+    margin: 0;
+    padding: 0.95rem 1rem;
+    border: 1px solid rgba(187, 153, 223, 0.45);
+    border-radius: 18px;
+    background: rgba(250, 245, 255, 0.53);
+    color: #4a235f;
+    font-weight: 600;
+}
+
+body.rolunk-page footer {
+    margin-top: 0;
+}
+
+/* Bejelentkezes.html */
+
+.Bejelall {
     background-image: url(Arakbckg.png);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
 }
 
-.Bejelkeret{
+.Bejelkeret {
     width: 300px;
     margin: auto;
     margin-top: 60px;
 }
 
-.Regkeret{
+.Regkeret {
     width: 300px;
     margin: auto;
     margin-top: 60px;
 }
 
-.formcsoport{
+.formcsoport {
     margin-bottom: 15px;
 }
 
-.formcsoport input{
+.formcsoport input {
     width: 200px;
     display: inline-block;
     margin-left: 10px;
 }
 
-button{
+button {
     margin-top: 10px;
 }
 
-/*Bejelentkezes.html - Auth styles*/
+/* Bejelentkezes.html - Auth styles */
+
 .auth-container {
     max-width: 600px;
     margin: 50px auto;
-    padding: 30px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 32px;
+    border: 1px solid rgba(199, 164, 238, 0.65);
+    background: rgba(239, 226, 255, 0.61);
+    border-radius: 24px;
+    box-shadow: 0 18px 40px rgba(48, 22, 73, 0.22);
+    backdrop-filter: blur(6px);
 }
+
 /* profile.html */
+
 #profileContainer {
     max-width: 600px;
     margin: 50px auto;
-    padding: 20px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 28px;
+    border: 1px solid rgba(199, 164, 238, 0.65);
+    background: rgba(239, 226, 255, 0.61);
+    border-radius: 24px;
+    box-shadow: 0 18px 40px rgba(48, 22, 73, 0.22);
+    backdrop-filter: blur(6px);
 }
+
+#profileContainer h1 {
+    margin-bottom: 1rem;
+    color: #ba5cff;
+    text-shadow:
+        1px 1px 0 rgba(111, 42, 168, 0.82),
+        2px 2px 0 rgba(86, 22, 139, 0.64),
+        0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
 #profileInfo p {
     font-size: 1.1rem;
     margin-bottom: 10px;
 }
+
+.nav-tabs {
+    border-bottom: 0;
+    gap: 0.75rem;
+}
+
 .nav-tabs .nav-link {
-    color: #495057;
+    color: #5a2e78;
     border: none;
-    border-bottom: 3px solid transparent;
+    border-radius: 999px;
+    background: rgba(250, 245, 255, 0.46);
+    padding: 0.6rem 1rem;
+    font-weight: 600;
 }
 
 .nav-tabs .nav-link.active {
-    color: #0d6efd;
-    background: none;
-    border-bottom: 3px solid #0d6efd;
+    color: #fff;
+    background: linear-gradient(135deg, rgba(186, 92, 255, 0.92), rgba(116, 46, 214, 0.9));
+    box-shadow: 0 10px 24px rgba(120, 52, 182, 0.24);
 }
 
 .form-group {
@@ -318,25 +672,104 @@ button{
 }
 
 .form-group input {
-    border-radius: 4px;
-    border: 1px solid #dee2e6;
+    border-radius: 14px;
+    border: 1px solid #cfb8f2;
     padding: 10px;
     width: 100%;
+    background: rgba(250, 245, 255, 0.66);
 }
 
 .form-group input:focus {
-    border-color: #0d6efd;
+    border-color: #b05cff;
     outline: none;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(176, 92, 255, 0.18);
 }
 
 .btn {
-    border-radius: 4px;
+    border-radius: 14px;
     padding: 10px 20px;
     font-weight: 600;
+}
+
+.auth-container .btn-primary,
+#profileContainer .btn-primary {
+    border: 0;
+    background: linear-gradient(135deg, rgba(186, 92, 255, 0.95), rgba(116, 46, 214, 0.92));
+    box-shadow: 0 12px 26px rgba(120, 52, 182, 0.22);
+}
+
+.auth-container .btn-primary:hover,
+#profileContainer .btn-primary:hover {
+    background: linear-gradient(135deg, rgba(174, 76, 246, 0.95), rgba(104, 38, 198, 0.92));
+}
+
+#profileContainer .btn-secondary {
+    border-color: rgba(112, 72, 156, 0.32);
+    background: rgba(250, 245, 255, 0.74);
+    color: #4c2968;
+}
+
+#loginMessage,
+#registerMessage,
+#profileMessage {
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+    background: rgba(250, 245, 255, 0.72);
+}
+
+#loginMessage:empty,
+#registerMessage:empty,
+#profileMessage:empty {
+    display: none;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+}
+
+.tab-content {
+    overflow: visible;
 }
 
 .alert {
     display: none;
     margin-bottom: 20px;
+}
+
+footer {
+    background-color: #333;
+    text-align: center;
+    color: white;
+    padding: 10px;
+}
+
+.Fooldalall + footer {
+    margin-top: 0;
+}
+
+@media (max-width: 768px) {
+    .navbar::after {
+        display: none;
+    }
+
+    .navbar {
+        padding: 1rem;
+    }
+
+    .page-section {
+        padding: 1.25rem 0.75rem 3rem;
+    }
+
+    .filters {
+        padding: 1rem;
+    }
+
+    .movie-card {
+        padding: 1rem;
+    }
+
+    .Arakkeret,
+    .auth-container,
+    #profileContainer {
+        padding: 1.25rem;
+    }
 }
