@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="Cinema.css"/>
     <title>Document</title>
 </head>
-<body>
+<body class="arak-page">
   <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <a class="navbar-brand" href="Cinema.html"><img src="Logo.png" alt="Logo" height="50"></a>
@@ -23,7 +23,7 @@
         </form>
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0" id="navProfileArea">
           <li class="nav-item"><a class="nav-link" href="Cinema.html">Főoldal</a></li>
-          <li class="nav-item"><a class="nav-link" href="Arak.html">Árak</a></li>
+          <li class="nav-item"><a class="nav-link active" href="Arak.html">Árak</a></li>
           <li class="nav-item"><a class="nav-link" href="Kategoriak.html">Kategóriák</a></li>
           <li class="nav-item"><a class="nav-link" href="Rolunk.html">Rólunk</a></li>
           <li class="nav-item"><a class="nav-link" href="Bejelentkezes.html">Bejelentkezés/Regisztráció</a></li>
@@ -31,10 +31,14 @@
       </div>
     </nav>
   </header>
-  <div class="row Arakall">
-    <div class="row Arakkeret kartya">
-      <h1 class="Arakh1">Jegyárak:</h1>
-      <table class="table table-striped table-hover">
+  <main class="Arakall page-section">
+    <section class="arak-hero">
+      <h1 class="Arakh1">Jegyárak</h1>
+      <p class="arak-lead">Nézd meg az aktuális jegytípusokat és válaszd ki a neked megfelelő opciót a következő mozizáshoz.</p>
+    </section>
+
+    <section class="Arakkeret kartya arak-panel">
+      <table class="table table-striped table-hover align-middle mb-0">
         <thead class="table-dark">
           <tr>
             <th>Jegytípus</th>
@@ -51,11 +55,11 @@
           </tr>
         </tbody>
       </table>
-    </div>
-  </div>
-      <footer>
-        &copy; 2025 Filmes oldal
-      </footer>
-      <script src="Script/cinema.js"></script>
+    </section>
+  </main>
+  <footer>
+    &copy; 2025 Filmes oldal
+  </footer>
+  <script src="Script/cinema.js"></script>
 </body>
 </html>

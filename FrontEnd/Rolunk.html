@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="Cinema.css"/>
     <title>Document</title>
 </head>
-<body>
+<body class="rolunk-page">
   <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <a class="navbar-brand" href="Rolunk.html "><img src="Logo.png" alt="Logo" height="50"></a>
+      <a class="navbar-brand" href="Cinema.html"><img src="Logo.png" alt="Logo" height="50"></a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCinema" aria-controls="navbarCinema" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -25,68 +25,49 @@
           <li class="nav-item"><a class="nav-link" href="Cinema.html">Főoldal</a></li>
           <li class="nav-item"><a class="nav-link" href="Arak.html">Árak</a></li>
           <li class="nav-item"><a class="nav-link" href="Kategoriak.html">Kategóriák</a></li>
-          <li class="nav-item"><a class="nav-link" href="Rolunk.html">Rólunk</a></li>
+          <li class="nav-item"><a class="nav-link active" href="Rolunk.html">Rólunk</a></li>
           <li class="nav-item"><a class="nav-link" href="Bejelentkezes.html">Bejelentkezés/Regisztráció</a></li>
         </ul>
       </div>
     </nav>
-        </header>
-            <div class="Rolunk">
+  </header>
 
-                <h1 class="Rolunkh1">Rólunk</h1>
+  <main class="Rolunk page-section">
+    <section class="rolunk-hero">
+      <h1 class="Rolunkh1">Rólunk</h1>
+      <p class="rolunk-lead">Itt találsz minden fontos információt az elérhetőségeinkről és a nyitvatartásunkról.</p>
+    </section>
 
-                <h2 class="Infocim">Információk</h2>
+    <section class="rolunk-info">
+      <div class="Rolunkkeret Elerhetoseg">
+        <h2 class="Infocim">Elérhetőség</h2>
+        <div class="ikonok">
+          <a href="mailto:email@email.com" class="ikon" aria-label="Email">
+            <img src="gmail.webp" alt="Gmail" width="42">
+          </a>
+          <a href="https://facebook.com" target="_blank" class="ikon" aria-label="Facebook">
+            <img src="facebook.png" alt="Facebook" width="42">
+          </a>
+          <a href="https://instagram.com" target="_blank" class="ikon" aria-label="Instagram">
+            <img src="instagram.png" alt="Instagram" width="42">
+          </a>
+        </div>
+      </div>
 
-            <div class="row Rolunkkeret">
+      <div class="Rolunkkeret Nyitvatartas">
+        <h2 class="Infocim">Nyitvatartás</h2>
+        <div class="nyitva">
+          <p>H-P: 10:00 - 22:00</p>
+          <p>Szo: 10:00 - 22:00</p>
+          <p>Vas: 10:00 - 22:00</p>
+        </div>
+      </div>
+    </section>
+  </main>
 
-              <div class="col-sm-12 Elerhetoseg">
-
-                <h3>Elérhetőség</h3>
-                
-                <div class="ikonok">
-                
-                <a href="mailto:email@email.com" class="ikon">
-                  <img src="gmail.webp" width="50">
-                <i class="bi bi-envelope-fill"></i>
-                </a>
-                
-                <a href="tel:+3612345678" class="ikon">
-                  <img src="tel.png" width="90">
-                <i class="bi bi-telephone-fill"></i>
-                </a>
-                
-                <a href="https://facebook.com" target="_blank" class="ikon">
-                  <img src="facebook.png" width="50">
-                <i class="bi bi-facebook"></i>
-                </a>
-                
-                <a href="https://instagram.com" target="_blank" class="ikon">
-                  <img src="instagram.png" width="50">
-                <i class="bi bi-instagram"></i>
-                </a>
-                
-              </div>
-
-
-            <div class="col col-md-12 Nyitvatartas">
-
-                <h3>Nyitvatartás</h3>
-
-            <div class="nyitva">
-                <p>H-P: 10:00 - 22:00</p>
-                <p>Szo: 10:00 - 22:00</p>
-                <p>Vas: 10:00 - 22:00</p>
-            </div>
-
-            </div>
-
-            </div>
-
-          </div>
-    </div>
-
-        <footer>
-          &copy; 2025 Filmes oldal
-        </footer>
+  <footer>
+    &copy; 2025 Filmes oldal
+  </footer>
+  <script src="Script/cinema.js"></script>
 </body>
 </html>
