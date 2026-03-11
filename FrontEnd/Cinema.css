@@ -537,17 +537,6 @@ body.arak-page footer {
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.ikon img {
-    width: 42px;
-    height: 42px;
-    object-fit: contain;
-}
-
-.ikon[aria-label="Telefon"] img {
-    width: 52px;
-    height: 52px;
-}
-
 .ikon:hover {
     background: rgba(234, 219, 251, 0.67);
     box-shadow: 0 12px 28px rgba(97, 43, 146, 0.18);
