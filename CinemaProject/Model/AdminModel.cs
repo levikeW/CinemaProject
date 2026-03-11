@@ -1,6 +1,4 @@
-﻿using System.Net.Sockets;
-using System.Resources;
-using Cinema.Dto;
+﻿using Cinema.Dto;
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -10,223 +8,257 @@ namespace CinemaProject.Model
     public class AdminModel
     {
         private readonly CinemaDbContext _context;
+
         public AdminModel(CinemaDbContext context)
         {
             _context = context;
         }
+
         public async Task<IEnumerable<UserDto>> GetAllUsers()
         {
-            return _context.users.Select(x => new UserDto
-            {
-                UserId = x.UserId,
-                Email = x.Email,
-                FullName = x.FullName,
-                Role = x.Role
-            }).ToList();
-        }
-
-        public async Task<IEnumerable<PaymentReservationDto>> GetAllReservations()
-        {
-            return _context.paymentReservations.Select(x => new PaymentReservationDto
-            {
-                PaymentReservationId = x.PaymentReservationId,
-                CartId = x.CartId,
-                Date = x.Date,
-                IsPaid = x.IsPaid,
-                Amount = x.Cart.Amount,
-                Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
-                Seats = x.Cart.Seats.Select(s => new SeatDto
-                {
-                    SeatId = s.SeatId,
-                    RowNumber = s.RowNumber,
-                    SeatNumber = s.SeatNumber,
-                    RoomId = s.RoomId,
-                    IsReserved = s.IsReserved
-                }).ToList()
-            }).ToList();
-        }
-
-        public async Task<IEnumerable<UserDto>> SearchUser(string item)
-        {
-            return _context.users.Where(x => x.Email.ToLower().Contains(item.ToLower()) ||
-            x.FullName.ToLower().Contains(item.ToLower()))
+            return await _context.users
                 .Select(x => new UserDto
                 {
                     UserId = x.UserId,
                     Email = x.Email,
                     FullName = x.FullName,
-                }).ToList();
+                    Role = x.Role
+                }).ToListAsync();
         }
 
-        public async Task NewMovie(NewMovieDto dto)
+        public async Task<IEnumerable<PaymentReservationDto>> GetAllReservations()
         {
-            if (_context.movies.Any(x => x.MovieTitle == dto.MovieTitle))
-            {
-                throw new InvalidOperationException("Already exists");
-            }
-
-            int imageId = _context.images.Where(x => x.ImageId == dto.ImageId).First().ImageId;
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.movies.Add(new Persistence.Movie
+            return await _context.paymentReservations
+                .Select(x => new PaymentReservationDto
                 {
-                    MovieTitle = dto.MovieTitle,
-                    Duration = dto.Duration,
-                    Genre = dto.Genre,
-                    Director = dto.Director,
-                    Description = dto.Description,
-                    ImageId = imageId,
-                    Status = MovieStatus.Inactive
-                });
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+                    PaymentReservationId = x.PaymentReservationId,
+                    CartId = x.CartId,
+                    Date = x.Date,
+                    IsPaid = x.IsPaid,
+                    FilmScreeningId = x.FilmScreeningId,
+                    UserId = x.UserId,
+                    Amount = x.Cart.Amount,
+                    Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    Seats = x.Cart.Seats.Select(s => new SeatDto
+                    {
+                        SeatId = s.SeatId,
+                        RowNumber = s.RowNumber,
+                        SeatNumber = s.SeatNumber,
+                        RoomId = s.RoomId,
+                        IsReserved = s.IsReserved
+                    }).ToList()
+                }).ToListAsync();
+        }
+
+        public async Task<IEnumerable<UserDto>> SearchUser(string item)
+        {
+            item = item.ToLower();
+
+            return await _context.users.Where(x => x.Email.ToLower().Contains(item) || x.FullName.ToLower().Contains(item)).Select(x => new UserDto
+            {
+                UserId = x.UserId,
+                Email = x.Email,
+                FullName = x.FullName,
+                Role = x.Role
+            }).ToListAsync();
+        }
+
+        public async Task<NewMovieDto> NewMovie(NewMovieDto dto)
+        {
+            if (await _context.movies.AnyAsync(x => x.MovieTitle == dto.MovieTitle))
+                throw new InvalidOperationException("Already exists");
+
+            var imageId = await _context.images.Where(x => x.ImageId == dto.ImageId).Select(x => x.ImageId).FirstOrDefaultAsync();
+
+            if (imageId == 0)
+                throw new InvalidOperationException("Image not found");
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.movies.Add(new Persistence.Movie
+            {
+                MovieTitle = dto.MovieTitle,
+                Duration = dto.Duration,
+                Genre = dto.Genre,
+                Director = dto.Director,
+                Description = dto.Description,
+                ImageId = imageId,
+                Status = MovieStatus.Inactive
+            });
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
+
+            return dto;
         }
 
         public async Task<NewScreeningDto> NewScreening(NewScreeningDto dto)
         {
-            if (_context.filmScreenings.Any(x => x.FilmScreeningId == dto.FilmScreeningId))
+            if (dto.FilmScreeningId != 0 &&
+                await _context.filmScreenings.AnyAsync(x => x.FilmScreeningId == dto.FilmScreeningId))
             {
                 throw new InvalidOperationException("Already exists");
             }
-            using var trx = _context.Database.BeginTransaction();
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.filmScreenings.Add(new Persistence.FilmScreening
             {
-                _context.filmScreenings.Add(new Persistence.FilmScreening
-                {
-                    MovieId = dto.MovieId,
-                    MovieTitle = dto.MovieTitle,
-                    RoomName = dto.RoomName,
-                    RoomId = dto.RoomId,
-                    Date = dto.Date
-                });
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
-            await Task.CompletedTask;
+                MovieId = dto.MovieId,
+                MovieTitle = dto.MovieTitle,
+                RoomId = dto.RoomId,
+                RoomName = dto.RoomName,
+                Date = dto.Date.ToUniversalTime()
+            });
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
+
             return dto;
         }
 
         public async Task<NewRoomDto> NewRoom(NewRoomDto dto)
         {
-            if (_context.rooms.Any(x => x.RoomId == dto.RoomId))
-            {
+            if (dto.RoomId != 0 && await _context.rooms.AnyAsync(x => x.RoomId == dto.RoomId))
                 throw new InvalidOperationException("Already exists");
-            }
-            using var trx = _context.Database.BeginTransaction();
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.rooms.Add(new Persistence.Room
             {
-                _context.rooms.Add(new Persistence.Room
-                {
-                    RoomId = dto.RoomId,
-                    RoomName = dto.RoomName
-                });
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
-            await Task.CompletedTask;
+                RoomId = dto.RoomId,
+                RoomName = dto.RoomName
+            });
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
+
             return dto;
         }
 
         public async Task<NewTicketTypeDto> NewTicketType(NewTicketTypeDto dto)
         {
-            if (_context.ticketsForHTML.Any(x => x.TicketId == dto.TicketId))
-            {
+            if (dto.TicketId != 0 && await _context.ticketsForHTML.AnyAsync(x => x.TicketId == dto.TicketId))
                 throw new InvalidOperationException("Already exists");
-            }
-            using var trx = _context.Database.BeginTransaction();
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.ticketsForHTML.Add(new Persistence.TicketForHTML
             {
-                _context.ticketsForHTML.Add(new Persistence.TicketForHTML
-                {
-                    TicketType = dto.Name,
-                    TicketPrice = dto.Price
-                });
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
-            await Task.CompletedTask;
+                TicketType = dto.Name,
+                TicketPrice = dto.Price
+            });
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
+
             return dto;
         }
 
         public async Task<NewCategDto> NewCategDto(NewCategDto dto)
         {
-            if (_context.categoriesForHTML.Any(x => x.CategoryId == dto.CategId))
-            {
+            if (dto.CategId != 0 && await _context.categoriesForHTML.AnyAsync(x => x.CategoryId == dto.CategId))
                 throw new InvalidOperationException("Already exists");
-            }
-            using var trx = _context.Database.BeginTransaction();
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.categoriesForHTML.Add(new Persistence.CategoriesForHTML
             {
-                _context.categoriesForHTML.Add(new Persistence.CategoriesForHTML
-                {
-                    CategoryName = dto.Name,
-                    CategoryDescription = dto.Description
-                });
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
-            await Task.CompletedTask;
+                CategoryName = dto.Name,
+                CategoryDescription = dto.Description
+            });
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
+
             return dto;
         }
 
         public async Task ModifyMovie(ModifyMovieDto dto)
         {
-            var movie = _context.movies.First(x => x.MovieId == dto.MovieId);
+            var movie = await _context.movies.FirstOrDefaultAsync(x => x.MovieId == dto.MovieId);
             if (movie == null)
-            {
                 throw new InvalidOperationException("Movie not found");
-            }
-            int imageId = _context.images.Where(x => x.ImageId == dto.ImageId).First().ImageId;
-            using var trx = _context.Database.BeginTransaction();
-            {
-                movie.MovieTitle = dto.MovieTitle;
-                movie.Duration = dto.Duration;
-                movie.Genre = dto.Genre;
-                movie.Director = dto.Director;
-                movie.Description = dto.Description;
-                movie.ImageId = imageId;
-                movie.Status = dto.Status;
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+
+            var imageId = await _context.images.Where(x => x.ImageId == dto.ImageId).Select(x => x.ImageId).FirstOrDefaultAsync();
+
+            if (imageId == 0)
+                throw new InvalidOperationException("Image not found");
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            movie.MovieTitle = dto.MovieTitle;
+            movie.Duration = dto.Duration;
+            movie.Genre = dto.Genre;
+            movie.Director = dto.Director;
+            movie.Description = dto.Description;
+            movie.ImageId = imageId;
+            movie.Status = dto.Status;
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task ModifyFilmScreening(ModifyFilmScreeningDto dto, int screeningId)
         {
-            var screening = _context.filmScreenings.First(x => x.FilmScreeningId == screeningId);
+            var screening = await _context.filmScreenings.FirstOrDefaultAsync(x => x.FilmScreeningId == screeningId);
             if (screening == null)
-            {
                 throw new InvalidOperationException("Screening not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                screening.MovieId = dto.MovieId;
-                screening.MovieTitle = dto.MovieTitle;
-                screening.RoomId = dto.RoomId;
-                screening.Date = dto.Date;
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            screening.MovieId = dto.MovieId;
+            screening.MovieTitle = dto.MovieTitle;
+            screening.RoomId = dto.RoomId;
+            screening.RoomName = dto.RoomName;
+            screening.Date = dto.Date.ToUniversalTime();
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task ModifyReservation(ModifyReservationDto dto, int reservationId)
         {
             var reservation = await _context.paymentReservations
                 .Include(p => p.Cart)
-                    .ThenInclude(c => c.Seats)
-                .FirstOrDefaultAsync(p => p.PaymentReservationId == reservationId);
+                    .ThenInclude(c => c.Seats).FirstOrDefaultAsync(p => p.PaymentReservationId == reservationId);
 
             if (reservation == null)
-                throw new Exception("Reservation not found");
+                throw new InvalidOperationException("Reservation not found");
+
+            var ticket = await _context.tickets.FirstOrDefaultAsync(t => t.TicketId == reservation.Cart.TicketId);
+            if (ticket == null)
+                throw new InvalidOperationException("Ticket not found");
+
+            if (dto.Amount <= 0)
+                throw new InvalidOperationException("Amount must be greater than 0");
+
+            if (dto.Seats == null || !dto.Seats.Any())
+                throw new InvalidOperationException("At least one seat must be selected");
+
+            if (dto.Amount != dto.Seats.Count)
+                throw new InvalidOperationException("The number of selected seats must match the ticket amount");
+
+            var newSeatIds = dto.Seats.Select(s => s.SeatId).Distinct().ToList();
+
+            if (newSeatIds.Count != dto.Seats.Count)
+                throw new InvalidOperationException("Duplicate seat selection is not allowed");
+
+            var conflictingSeatIds = await _context.carts.Where(c => c.FilmScreeningId == reservation.FilmScreeningId && c.CartId != reservation.CartId).SelectMany(c => c.Seats.Select(s => s.SeatId)).Where(seatId => newSeatIds.Contains(seatId)).Distinct().ToListAsync();
+
+            if (conflictingSeatIds.Any())
+                throw new InvalidOperationException("One or more selected seats are already reserved by another reservation");
+
+            var seats = await _context.seats.Where(s => newSeatIds.Contains(s.SeatId)).ToListAsync();
+
+            if (seats.Count != newSeatIds.Count)
+                throw new InvalidOperationException("One or more selected seats were not found");
+
 
             reservation.IsPaid = dto.IsPaid;
             reservation.Date = dto.Date;
             reservation.Cart.Amount = dto.Amount;
-
-            var ticket = await _context.tickets.FirstAsync(t => t.TicketId == reservation.Cart.TicketId);
-
             reservation.Cart.TotalPrice = ticket.TicketPrice * dto.Amount;
-
-            var seatIds = dto.Seats.Select(s => s.SeatId).ToList();
-
-            var seats = await _context.seats.Where(s => seatIds.Contains(s.SeatId)).ToListAsync();
 
             foreach (var oldSeat in reservation.Cart.Seats)
             {
@@ -248,198 +280,197 @@ namespace CinemaProject.Model
 
         public async Task ModifyTicket(ModifyTicketDto dto, int ticketId)
         {
-            var ticket = _context.tickets.First(x => x.TicketId == ticketId);
+            var ticket = await _context.tickets.FirstOrDefaultAsync(x => x.TicketId == ticketId);
             if (ticket == null)
-            {
                 throw new InvalidOperationException("TicketType not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                ticket.TicketType = dto.TicketType;
-                ticket.TicketPrice = dto.TicketPrice;
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            ticket.TicketType = dto.TicketType;
+            ticket.TicketPrice = dto.TicketPrice;
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task ModifyRoom(ModifyRoomDto dto, int roomId)
         {
-            var room = _context.rooms.First(x => x.RoomId == roomId);
+            var room = await _context.rooms.FirstOrDefaultAsync(x => x.RoomId == roomId);
             if (room == null)
-            {
                 throw new InvalidOperationException("Room not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                room.RoomName = dto.RoomName;
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            room.RoomName = dto.RoomName;
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task ModifyTicketType(ModifyTicketTypeDto dto, int ticketTId)
         {
-            var ticketT = _context.ticketsForHTML.First(x => x.TicketId == ticketTId);
+            var ticketT = await _context.ticketsForHTML.FirstOrDefaultAsync(x => x.TicketId == ticketTId);
             if (ticketT == null)
-            {
-                throw new InvalidOperationException("Room not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                ticketT.TicketType = dto.TicketName;
-                ticketT.TicketPrice = dto.Price;
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+                throw new InvalidOperationException("TicketType not found");
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            ticketT.TicketType = dto.TicketName;
+            ticketT.TicketPrice = dto.Price;
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task ModifyCateg(ModifyCategDto dto, int categId)
         {
-            var categ = _context.categoriesForHTML.First(x => x.CategoryId == categId);
+            var categ = await _context.categoriesForHTML.FirstOrDefaultAsync(x => x.CategoryId == categId);
             if (categ == null)
-            {
-                throw new InvalidOperationException("Room not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                categ.CategoryName = dto.CategName;
-                categ.CategoryDescription = dto.Description;
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+                throw new InvalidOperationException("Category not found");
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            categ.CategoryName = dto.CategName;
+            categ.CategoryDescription = dto.Description;
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task DeleteUser(int userId)
         {
-            if (!_context.users.Any(x => x.UserId == userId))
-            {
+            var user = await _context.users.FirstOrDefaultAsync(x => x.UserId == userId);
+            if (user == null)
                 throw new InvalidOperationException("User not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.users.Remove(_context.users.Where(x => x.UserId == userId).First());
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.users.Remove(user);
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task DeleteMovie(int movieId)
         {
-            if (!_context.movies.Any(x => x.MovieId == movieId))
-            {
+            var movie = await _context.movies.FirstOrDefaultAsync(x => x.MovieId == movieId);
+            if (movie == null)
                 throw new InvalidOperationException("Movie not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.movies.Remove(_context.movies.Where(x => x.MovieId == movieId).First());
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
-            await Task.CompletedTask;
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.movies.Remove(movie);
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task DeleteScreening(int screeningId)
         {
-            if (!_context.filmScreenings.Any(x => x.FilmScreeningId == screeningId))
-            {
+            var screening = await _context.filmScreenings.FirstOrDefaultAsync(x => x.FilmScreeningId == screeningId);
+            if (screening == null)
                 throw new InvalidOperationException("Screening not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.filmScreenings.Remove(_context.filmScreenings.Where(x => x.FilmScreeningId == screeningId).First());
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
 
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.filmScreenings.Remove(screening);
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task DeleteRoom(int roomId)
         {
-            if (!_context.rooms.Any(x => x.RoomId == roomId))
-            {
+            var room = await _context.rooms.FirstOrDefaultAsync(x => x.RoomId == roomId);
+            if (room == null)
                 throw new InvalidOperationException("Room not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.rooms.Remove(_context.rooms.Where(x => x.RoomId == roomId).First());
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.rooms.Remove(room);
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task DeleteReservation(int reservationId)
         {
-            if (!_context.paymentReservations.Any(x => x.PaymentReservationId == reservationId))
-            {
+            var reservation = await _context.paymentReservations.FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
+            if (reservation == null)
                 throw new InvalidOperationException("Reservation not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.paymentReservations.Remove(_context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).First());
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.paymentReservations.Remove(reservation);
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task DeleteTicketT(int ticketTId)
         {
-            if (!_context.ticketsForHTML.Any(x => x.TicketId == ticketTId))
-            {
+            var ticketType = await _context.ticketsForHTML.FirstOrDefaultAsync(x => x.TicketId == ticketTId);
+            if (ticketType == null)
                 throw new InvalidOperationException("Ticket type not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.ticketsForHTML.Remove(_context.ticketsForHTML.Where(x => x.TicketId == ticketTId).First());
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
-        }
-        public async Task DeleteCateg(int categId)
-        {
-            if (!_context.categoriesForHTML.Any(x => x.CategoryId == categId))
-            {
-                throw new InvalidOperationException("User not found");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.categoriesForHTML.Remove(_context.categoriesForHTML.Where(x => x.CategoryId == categId).First());
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.ticketsForHTML.Remove(ticketType);
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
-        public async Task UploadImage(ImageDto dto)
+        public async Task DeleteCateg(int categId)
         {
-            using var trx = _context.Database.BeginTransaction();
+            var categ = await _context.categoriesForHTML.FirstOrDefaultAsync(x => x.CategoryId == categId);
+            if (categ == null)
+                throw new InvalidOperationException("Category not found");
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.categoriesForHTML.Remove(categ);
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
+        }
+
+        public async Task<ImageDto> UploadImage(ImageDto dto)
+        {
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            var image = new Image
             {
-                var image = new Image
-                {
-                    ImageContent = dto.ImageContent
-                };
-                _context.images.Add(image);
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+                ImageContent = dto.ImageContent
+            };
+
+            _context.images.Add(image);
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
+
+            return new ImageDto
+            {
+                ImageId = image.ImageId,
+                ImageContent = image.ImageContent
+            };
         }
 
         public async Task DeleteImage(int imageId)
         {
-            var image = _context.images.FirstOrDefault(x => x.ImageId == imageId);
+            var image = await _context.images.FirstOrDefaultAsync(x => x.ImageId == imageId);
             if (image == null)
-            {
                 throw new InvalidOperationException("Image not found");
-            }
-            if (_context.movies.Any(m => m.ImageId == imageId))
-            {
-                throw new InvalidOperationException("Image is already exist");
-            }
 
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.images.Remove(image);
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+            if (await _context.movies.AnyAsync(m => m.ImageId == imageId))
+                throw new InvalidOperationException("Image is already exist");
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.images.Remove(image);
+
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
         }
 
         public async Task ChangeRole(int userId, string newRole, int actAdminId)
@@ -456,7 +487,6 @@ namespace CinemaProject.Model
 
             user.Role = newRole;
             await _context.SaveChangesAsync();
-            await Task.CompletedTask;
         }
     }
 }

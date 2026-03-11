@@ -2,33 +2,31 @@
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CinemaProject.Model
 {
     public class Payment_ReservationModel
     {
         private readonly CinemaDbContext _context;
+
         public Payment_ReservationModel(CinemaDbContext context)
         {
             _context = context;
         }
+
         public async Task<ConfirmationDto> CreateReservation(int cartId)
         {
-            var cart = _context.carts
-                .Where(c => c.CartId == cartId)
-                .FirstOrDefault();
+            var cart = await _context.carts.FirstOrDefaultAsync(c => c.CartId == cartId);
 
             if (cart == null)
-                throw new Exception("Cart not found");
+                throw new InvalidOperationException("Cart not found");
+
+            using var trx = await _context.Database.BeginTransactionAsync();
 
             var reservation = new PaymentReservation
             {
                 CartId = cart.CartId,
-                Date = DateTime.UtcNow,
+                Date = DateTimeOffset.UtcNow,
                 IsPaid = false,
                 UserId = cart.UserId,
                 FilmScreeningId = cart.FilmScreeningId,
@@ -36,10 +34,11 @@ namespace CinemaProject.Model
             };
 
             _context.paymentReservations.Add(reservation);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            return _context.paymentReservations
-                .Where(x => x.PaymentReservationId == reservation.PaymentReservationId)
+            await trx.CommitAsync();
+
+            return await _context.paymentReservations.Where(x => x.PaymentReservationId == reservation.PaymentReservationId)
                 .Select(x => new ConfirmationDto
                 {
                     ReservationId = x.PaymentReservationId,
@@ -51,138 +50,106 @@ namespace CinemaProject.Model
                     Amount = x.Cart.Amount,
                     TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
                     UserEmail = x.Cart.User.Email
-                })
-                .First();
+                }).FirstAsync();
         }
 
         public async Task CancelReservation(int reservationId)
         {
-            var reservation = _context.paymentReservations.FirstOrDefault(x => x.PaymentReservationId == reservationId);
+            var reservation = await _context.paymentReservations.FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
+
             if (reservation == null)
-            {
                 throw new InvalidOperationException("Reservation not found");
-            }
+
             if (reservation.IsPaid)
-            {
                 throw new InvalidOperationException("Cannot cancel a paid reservation");
-            }
-            using var trx = _context.Database.BeginTransaction();
-            {
-                _context.paymentReservations.Remove(reservation);
-                await _context.SaveChangesAsync();
-                await trx.CommitAsync();
-            }
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
+            _context.paymentReservations.Remove(reservation);
+            await _context.SaveChangesAsync();
+
+            await trx.CommitAsync();
         }
 
         public async Task<ReceiptDto> PayReservation(int reservationId)
         {
-            var reservation = _context.paymentReservations.FirstOrDefault(x => x.PaymentReservationId == reservationId);
+            var reservation = await _context.paymentReservations.FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
+
             if (reservation == null)
-            {
                 throw new InvalidOperationException("Reservation not found");
-            }
+
+            using var trx = await _context.Database.BeginTransactionAsync();
+
             reservation.IsPaid = true;
-            reservation.Date = DateTime.UtcNow;
+            reservation.Date = DateTimeOffset.UtcNow;
 
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+            await trx.CommitAsync();
 
-            return _context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).Select(x => new ReceiptDto
-            {
-                ReceiptId = x.PaymentReservationId,
-                PaymentReservationId = x.PaymentReservationId,
-                MovieTitle = x.Cart.FilmScreening.Movie.MovieTitle,
-                ScreeningDate = x.Cart.FilmScreening.Date,
-                RoomName = x.Cart.FilmScreening.Room.RoomName,
-                Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
-                TicketId = x.Cart.TicketId,
-                Amount = x.Cart.Amount,
-                TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
-                PaymentDate = x.Date,
-                UserEmail = x.Cart.User.Email
-            }).First();
-
+            return await _context.paymentReservations.Where(x => x.PaymentReservationId == reservationId)
+                .Select(x => new ReceiptDto
+                {
+                    ReceiptId = x.PaymentReservationId,
+                    PaymentReservationId = x.PaymentReservationId,
+                    MovieTitle = x.Cart.FilmScreening.Movie.MovieTitle,
+                    ScreeningDate = x.Cart.FilmScreening.Date,
+                    RoomName = x.Cart.FilmScreening.Room.RoomName,
+                    Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
+                    TicketId = x.Cart.TicketId,
+                    Amount = x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    PaymentDate = x.Date,
+                    UserEmail = x.Cart.User.Email
+                }).FirstAsync();
         }
 
         public async Task<ReceiptDto?> GetReceipt(int reservationId)
         {
-            return _context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).Select(x => new ReceiptDto
-            {
-                ReceiptId = x.PaymentReservationId,
-                PaymentReservationId = x.PaymentReservationId,
-                MovieTitle = x.Cart.FilmScreening.Movie.MovieTitle,
-                ScreeningDate = x.Cart.FilmScreening.Date,
-                RoomName = x.Cart.FilmScreening.Room.RoomName,
-                Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
-                TicketId = x.Cart.TicketId,
-                Amount = x.Cart.Amount,
-                TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
-                PaymentDate = x.Date,
-                UserEmail = x.Cart.User.Email
-            }).FirstOrDefault();
+            return await _context.paymentReservations.Where(x => x.PaymentReservationId == reservationId)
+                .Select(x => new ReceiptDto
+                {
+                    ReceiptId = x.PaymentReservationId,
+                    PaymentReservationId = x.PaymentReservationId,
+                    MovieTitle = x.Cart.FilmScreening.Movie.MovieTitle,
+                    ScreeningDate = x.Cart.FilmScreening.Date,
+                    RoomName = x.Cart.FilmScreening.Room.RoomName,
+                    Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
+                    TicketId = x.Cart.TicketId,
+                    Amount = x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    PaymentDate = x.Date,
+                    UserEmail = x.Cart.User.Email
+                }).FirstOrDefaultAsync();
         }
 
         public async Task<ConfirmationDto?> GetConfirmation(int reservationId)
         {
-            return _context.paymentReservations.Where(x => x.PaymentReservationId == reservationId).Select(x => new ConfirmationDto
-            {
-                ReservationId = x.PaymentReservationId,
-                MovieTitle = x.Cart.FilmScreening.Movie.MovieTitle,
-                ScreeningDate = x.Cart.FilmScreening.Date,
-                RoomName = x.Cart.FilmScreening.Room.RoomName,
-                Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
-                TicketId = x.Cart.TicketId,
-                Amount = x.Cart.Amount,
-                TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
-                UserEmail = x.Cart.User.Email
-            }).FirstOrDefault();
+            return await _context.paymentReservations.Where(x => x.PaymentReservationId == reservationId)
+                .Select(x => new ConfirmationDto
+                {
+                    ReservationId = x.PaymentReservationId,
+                    MovieTitle = x.Cart.FilmScreening.Movie.MovieTitle,
+                    ScreeningDate = x.Cart.FilmScreening.Date,
+                    RoomName = x.Cart.FilmScreening.Room.RoomName,
+                    Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
+                    TicketId = x.Cart.TicketId,
+                    Amount = x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    UserEmail = x.Cart.User.Email
+                }).FirstOrDefaultAsync();
         }
 
         public async Task<List<PaymentReservationDto>> ViewUpcomigReservations(int userId)
         {
-            var now = DateTime.UtcNow;
+            var now = DateTimeOffset.UtcNow;
 
-            return _context.paymentReservations.Include(p => p.Cart)
-                .ThenInclude(c => c.Ticket)
+            return await _context.paymentReservations
                 .Include(p => p.Cart)
-                    .ThenInclude(c => c.Seats)
-                .Include(p => p.Cart)
-                    .ThenInclude(c => c.FilmScreening)
-                .AsEnumerable()
-                .Where(x => x.Cart.UserId == userId
-                            && x.Cart.FilmScreening.Date >= now)
-                .Select(x => new PaymentReservationDto
-                {
-                    PaymentReservationId = x.PaymentReservationId,
-                    CartId = x.CartId,
-                    Date = x.Date,
-                    IsPaid = x.IsPaid,
-                    Amount = x.Cart.Amount,
-                    Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
-                    Seats = x.Cart.Seats.Select(s => new SeatDto
-                    {
-                        SeatId = s.SeatId,
-                        RowNumber = s.RowNumber,
-                        SeatNumber = s.SeatNumber,
-                        RoomId = s.RoomId,
-                        IsReserved = s.IsReserved
-                    }).ToList()
-                })
-                .ToList();
-        }
-
-        public async Task<List<PaymentReservationDto>> ViewPastReservations(int userId)
-        {
-            var now = DateTime.UtcNow;
-
-            return _context.paymentReservations.Include(p => p.Cart)
                     .ThenInclude(c => c.Ticket)
                 .Include(p => p.Cart)
                     .ThenInclude(c => c.Seats)
                 .Include(p => p.Cart)
-                    .ThenInclude(c => c.FilmScreening)
-                .AsEnumerable()
-                .Where(x => x.Cart.UserId == userId
-                            && x.Cart.FilmScreening.Date < now)
+                    .ThenInclude(c => c.FilmScreening).Where(x => x.Cart.UserId == userId && x.Cart.FilmScreening.Date >= now)
                 .Select(x => new PaymentReservationDto
                 {
                     PaymentReservationId = x.PaymentReservationId,
@@ -199,8 +166,37 @@ namespace CinemaProject.Model
                         RoomId = s.RoomId,
                         IsReserved = s.IsReserved
                     }).ToList()
-                })
-                .ToList();
+                }).ToListAsync();
+        }
+
+        public async Task<List<PaymentReservationDto>> ViewPastReservations(int userId)
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            return await _context.paymentReservations
+                .Include(p => p.Cart)
+                    .ThenInclude(c => c.Ticket)
+                .Include(p => p.Cart)
+                    .ThenInclude(c => c.Seats)
+                .Include(p => p.Cart)
+                    .ThenInclude(c => c.FilmScreening).Where(x => x.Cart.UserId == userId && x.Cart.FilmScreening.Date < now)
+                .Select(x => new PaymentReservationDto
+                {
+                    PaymentReservationId = x.PaymentReservationId,
+                    CartId = x.CartId,
+                    Date = x.Date,
+                    IsPaid = x.IsPaid,
+                    Amount = x.Cart.Amount,
+                    Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    Seats = x.Cart.Seats.Select(s => new SeatDto
+                    {
+                        SeatId = s.SeatId,
+                        RowNumber = s.RowNumber,
+                        SeatNumber = s.SeatNumber,
+                        RoomId = s.RoomId,
+                        IsReserved = s.IsReserved
+                    }).ToList()
+                }).ToListAsync();
         }
     }
 }

@@ -2,173 +2,182 @@
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace CinemaProject.Model
 {
     public class CinemaModel
     {
         private readonly CinemaDbContext _context;
+
         public CinemaModel(CinemaDbContext context)
         {
             _context = context;
         }
+
         public async Task<IEnumerable<MovieDto>> GetAllMovies()
         {
-            return _context.movies.Include(x => x.Image).Include(x => x.FilmScreenings).Select(x => new MovieDto
-            {
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                Duration = x.Duration,
-                Genre = x.Genre,
-                Director = x.Director,
-                Description = x.Description,
-                ImageId = x.Image.ImageId,
-                Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
+            return await _context.movies
+                .Include(x => x.Image)
+                .Include(x => x.FilmScreenings)
+                .Select(x => new MovieDto
                 {
-                    FilmScreeningId = y.FilmScreeningId,
-                    MovieId = y.MovieId,
-                    RoomId = y.RoomId,
-                    Date = y.Date
-                }).ToList()
-            }).ToList();
+                    MovieId = x.MovieId,
+                    MovieTitle = x.MovieTitle,
+                    Duration = x.Duration,
+                    Genre = x.Genre,
+                    Director = x.Director,
+                    Description = x.Description,
+                    ImageId = x.Image.ImageId,
+                    Status = x.Status,
+                    Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
+                    {
+                        FilmScreeningId = y.FilmScreeningId,
+                        MovieId = y.MovieId,
+                        MovieTitle = y.MovieTitle,
+                        RoomId = y.RoomId,
+                        Date = y.Date
+                    }).ToList()
+                }).ToListAsync();
         }
 
         public async Task<IEnumerable<FilmScreeningDto>> GetAllScreenings()
         {
-            return _context.filmScreenings.Select(x => new FilmScreeningDto
+            return await _context.filmScreenings.Select(x => new FilmScreeningDto
             {
                 FilmScreeningId = x.FilmScreeningId,
                 MovieId = x.MovieId,
                 MovieTitle = x.MovieTitle,
                 RoomId = x.RoomId,
                 Date = x.Date
-            }).ToList();
+            }).ToListAsync();
         }
 
         public async Task<IEnumerable<TicketDto>> GetAllTickets()
         {
-            return _context.tickets.Select(x => new TicketDto
+            return await _context.tickets.Select(x => new TicketDto
             {
                 TicketId = x.TicketId,
                 TicketType = x.TicketType,
-                TicketPrice = x.TicketPrice,
-            }).ToList();
+                TicketPrice = x.TicketPrice
+            }).ToListAsync();
         }
 
         public async Task<IEnumerable<RoomDto>> GetAllRooms()
         {
-            return _context.rooms.Select(x => new RoomDto
+            return await _context.rooms.Select(x => new RoomDto
             {
                 RoomId = x.RoomId,
-                RoomName = x.RoomName,
-            }).ToList();
+                RoomName = x.RoomName
+            }).ToListAsync();
         }
 
         public async Task<IEnumerable<TicketTypeDto>> GetAllTicketType()
         {
-            return _context.ticketsForHTML.Select(x => new TicketTypeDto
+            return await _context.ticketsForHTML.Select(x => new TicketTypeDto
             {
                 Id = x.TicketId,
                 TicketName = x.TicketType,
-                Price = x.TicketPrice,
-            }).ToList();
+                Price = x.TicketPrice
+            }).ToListAsync();
         }
 
         public async Task<IEnumerable<CategoriesDto>> GetAllCategories()
         {
-            return _context.categoriesForHTML.Select(x => new CategoriesDto
+            return await _context.categoriesForHTML.Select(x => new CategoriesDto
             {
                 Id = x.CategoryId,
                 CategName = x.CategoryName,
-                Description = x.CategoryDescription,
-            }).ToList();
+                Description = x.CategoryDescription
+            }).ToListAsync();
         }
 
         public async Task<IEnumerable<MovieDto>> SearchMovieByTitle(string item)
         {
-            return _context.movies.Include(x => x.Image).Include(x => x.FilmScreenings).Where(x => x.MovieTitle.ToLower().Contains(item.ToLower())).Select(x => new MovieDto
-            {
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                Duration = x.Duration,
-                Genre = x.Genre,
-                Director = x.Director,
-                Description = x.Description,
-                ImageId = x.Image.ImageId,
-                Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
+            item = item.ToLower();
+
+            return await _context.movies
+                .Include(x => x.Image)
+                .Include(x => x.FilmScreenings).Where(x => x.MovieTitle.ToLower().Contains(item))
+                .Select(x => new MovieDto
                 {
-                    FilmScreeningId = y.FilmScreeningId,
-                    MovieId = y.MovieId,
-                    RoomId = y.RoomId,
-                    Date = y.Date
-                }).ToList()
-            }).ToList();
+                    MovieId = x.MovieId,
+                    MovieTitle = x.MovieTitle,
+                    Duration = x.Duration,
+                    Genre = x.Genre,
+                    Director = x.Director,
+                    Description = x.Description,
+                    ImageId = x.Image.ImageId,
+                    Status = x.Status,
+                    Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
+                    {
+                        FilmScreeningId = y.FilmScreeningId,
+                        MovieId = y.MovieId,
+                        MovieTitle = y.MovieTitle,
+                        RoomId = y.RoomId,
+                        Date = y.Date
+                    }).ToList()
+                }).ToListAsync();
         }
 
         public async Task<IEnumerable<MovieDto>> SearchMovieByGenre(string item)
         {
-            return _context.movies.Include(x => x.Image).Include(x => x.FilmScreenings).Where(x => x.Genre.ToLower().Contains(item.ToLower())).Select(x => new MovieDto
-            {
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                Duration = x.Duration,
-                Genre = x.Genre,
-                Director = x.Director,
-                Description = x.Description,
-                ImageId = x.Image.ImageId,
-                Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
+            item = item.ToLower();
+
+            return await _context.movies
+                .Include(x => x.Image)
+                .Include(x => x.FilmScreenings).Where(x => x.Genre.ToLower().Contains(item))
+                .Select(x => new MovieDto
                 {
-                    FilmScreeningId = y.FilmScreeningId,
-                    MovieId = y.MovieId,
-                    RoomId = y.RoomId,
-                    Date = y.Date
-                }).ToList()
-            }).ToList();
+                    MovieId = x.MovieId,
+                    MovieTitle = x.MovieTitle,
+                    Duration = x.Duration,
+                    Genre = x.Genre,
+                    Director = x.Director,
+                    Description = x.Description,
+                    ImageId = x.Image.ImageId,
+                    Status = x.Status,
+                    Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
+                    {
+                        FilmScreeningId = y.FilmScreeningId,
+                        MovieId = y.MovieId,
+                        MovieTitle = y.MovieTitle,
+                        RoomId = y.RoomId,
+                        Date = y.Date
+                    }).ToList()
+                }).ToListAsync();
         }
 
         public async Task<IEnumerable<MovieDto>> SearchMovieByDirector(string item)
         {
-            return _context.movies.Include(x => x.Image).Include(x => x.FilmScreenings).Where(x => x.Director.ToLower().Contains(item.ToLower())).Select(x => new MovieDto
-            {
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                Duration = x.Duration,
-                Genre = x.Genre,
-                Director = x.Director,
-                Description = x.Description,
-                ImageId = x.Image.ImageId,
-                Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
+            item = item.ToLower();
+
+            return await _context.movies
+                .Include(x => x.Image)
+                .Include(x => x.FilmScreenings).Where(x => x.Director.ToLower().Contains(item))
+                .Select(x => new MovieDto
                 {
-                    FilmScreeningId = y.FilmScreeningId,
-                    MovieId = y.MovieId,
-                    RoomId = y.RoomId,
-                    Date = y.Date
-                }).ToList()
-            }).ToList();
+                    MovieId = x.MovieId,
+                    MovieTitle = x.MovieTitle,
+                    Duration = x.Duration,
+                    Genre = x.Genre,
+                    Director = x.Director,
+                    Description = x.Description,
+                    ImageId = x.Image.ImageId,
+                    Status = x.Status,
+                    Screenings = x.FilmScreenings.Select(y => new FilmScreeningDto
+                    {
+                        FilmScreeningId = y.FilmScreeningId,
+                        MovieId = y.MovieId,
+                        MovieTitle = y.MovieTitle,
+                        RoomId = y.RoomId,
+                        Date = y.Date
+                    }).ToList()
+                }).ToListAsync();
         }
 
         public async Task<IEnumerable<FilmScreeningDto>> GetScreeningDetails(DateTimeOffset time)
         {
-            return await _context.filmScreenings.Where(x => x.Date == time).Select(x => new FilmScreeningDto
-            {
-                FilmScreeningId = x.FilmScreeningId,
-                MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
-                RoomId = x.RoomId,
-                Date = x.Date,
-            }).ToListAsync();
-        }
-
-        public async Task<List<FilmScreeningDto>> GetUpcomingScreenings()
-        {
-            var now = DateTime.UtcNow;
-
-            return _context.filmScreenings.AsEnumerable()
-                .Where(x => x.Date >= now)
-                .Where(x => _context.movies
-                    .Any(m => m.MovieId == x.MovieId &&
-                              m.Status == MovieStatus.NowRunning))
+            return await _context.filmScreenings.Where(x => x.Date == time)
                 .Select(x => new FilmScreeningDto
                 {
                     FilmScreeningId = x.FilmScreeningId,
@@ -176,59 +185,75 @@ namespace CinemaProject.Model
                     MovieTitle = x.MovieTitle,
                     RoomId = x.RoomId,
                     Date = x.Date
-                })
-                .ToList();
+                }).ToListAsync();
+        }
+
+        public async Task<List<FilmScreeningDto>> GetUpcomingScreenings()
+        {
+            var nowUtc = DateTimeOffset.UtcNow;
+
+            return await _context.filmScreenings.Where(x => x.Date >= nowUtc).Where(x => _context.movies.Any(m => m.MovieId == x.MovieId && m.Status == MovieStatus.NowRunning))
+                .Select(x => new FilmScreeningDto
+                {
+                    FilmScreeningId = x.FilmScreeningId,
+                    MovieId = x.MovieId,
+                    MovieTitle = x.MovieTitle,
+                    RoomId = x.RoomId,
+                    Date = x.Date
+                }).ToListAsync();
         }
 
         public async Task<bool> IsMovieNowRunning(string movieTitle)
         {
-            var movie = _context.movies.FirstOrDefault(x => x.MovieTitle.ToLower() == movieTitle.ToLower());
-            if (movie != null)
-            {
-                return movie.Status == MovieStatus.NowRunning;
-            }
-            return false;
+            movieTitle = movieTitle.ToLower();
+
+            var movie = await _context.movies.FirstOrDefaultAsync(x => x.MovieTitle.ToLower() == movieTitle);
+
+            return movie != null && movie.Status == MovieStatus.NowRunning;
         }
 
         public async Task<int> GetRoomCapacity(int roomId)
         {
-            var room = _context.rooms.Include(x => x.Seats).FirstOrDefault(x => x.RoomId == roomId);
-            if (room != null)
-            {
-                return room.Seats.Count;
-            }
-            else
-            {
+            var room = await _context.rooms.Include(x => x.Seats).FirstOrDefaultAsync(x => x.RoomId == roomId);
+
+            if (room == null)
                 throw new InvalidOperationException("Room not found");
-            }
+
+            return room.Seats.Count;
         }
 
         public async Task<List<SeatDto>> GetSeats(int roomId, int screeningId)
         {
-            var reservedSeatIds = _context.seats.Where(s => s.CartId != null && s.Cart.FilmScreeningId == screeningId).Select(s => s.SeatId).ToList();
-            return _context.seats.Where(x => x.RoomId == roomId).Select(x => new SeatDto
+            var reservedSeatIds = await _context.seats.Where(s => s.CartId != null && s.Cart != null && s.Cart.FilmScreeningId == screeningId).Select(s => s.SeatId).ToListAsync();
+
+            return await _context.seats.Where(x => x.RoomId == roomId).Select(x => new SeatDto
             {
                 SeatId = x.SeatId,
                 RowNumber = x.RowNumber,
                 SeatNumber = x.SeatNumber,
+                RoomId = x.RoomId,
                 IsReserved = reservedSeatIds.Contains(x.SeatId)
-            }).ToList();
+            }).ToListAsync();
         }
 
         public async Task<bool> IsSeatAvailable(int seatId, int screeningId)
         {
-            var reserved = _context.carts.Any(x => x.FilmScreeningId == screeningId && x.Seats.Any(x => x.SeatId == seatId));
+            var reserved = await _context.carts.AnyAsync(x => x.FilmScreeningId == screeningId && x.Seats.Any(s => s.SeatId == seatId));
+
             return !reserved;
         }
 
-        public bool HasFreeSeats(int screeningId, int requiredSeats)
+        public async Task<bool> HasFreeSeats(int screeningId, int requiredSeats)
         {
-            var screening = _context.filmScreenings.Include(x => x.Room).ThenInclude(x => x.Seats).FirstOrDefault(x => x.FilmScreeningId == screeningId);
+            var screening = await _context.filmScreenings
+                .Include(x => x.Room)
+                    .ThenInclude(x => x.Seats).FirstOrDefaultAsync(x => x.FilmScreeningId == screeningId);
+
             if (screening == null)
-            {
                 throw new InvalidOperationException("Screening not found");
-            }
-            var reservedSeatIds = _context.carts.Where(x => x.FilmScreeningId == screeningId).SelectMany(x => x.Seats.Select(x => x.SeatId)).ToList();
+
+            var reservedSeatIds = await _context.carts.Where(x => x.FilmScreeningId == screeningId).SelectMany(x => x.Seats.Select(s => s.SeatId)).ToListAsync();
+
             var freeSeatsCount = screening.Room.Seats.Count(x => !reservedSeatIds.Contains(x.SeatId));
 
             return freeSeatsCount >= requiredSeats;
@@ -236,17 +261,18 @@ namespace CinemaProject.Model
 
         public async Task<TicketDto?> SelectTicketType(int screeningId)
         {
-            return _context.tickets.Where(x => x.FilmScreeningId == screeningId).Select(x => new TicketDto
-            {
-                TicketId = x.TicketId,
-                TicketType = x.TicketType,
-                TicketPrice = x.TicketPrice,
-            }).FirstOrDefault();
+            return await _context.tickets.Where(x => x.FilmScreeningId == screeningId)
+                .Select(x => new TicketDto
+                {
+                    TicketId = x.TicketId,
+                    TicketType = x.TicketType,
+                    TicketPrice = x.TicketPrice
+                }).FirstOrDefaultAsync();
         }
 
         public async Task SetQuantity(int cartId, int amount)
         {
-            var cart = _context.carts.Include(x => x.Ticket).FirstOrDefault(x => x.CartId == cartId);
+            var cart = await _context.carts.Include(x => x.Ticket).FirstOrDefaultAsync(x => x.CartId == cartId);
 
             if (cart == null)
                 throw new InvalidOperationException("Cart not found");
@@ -255,21 +281,19 @@ namespace CinemaProject.Model
                 throw new ArgumentException("Quantity must be greater than zero");
 
             cart.Amount = amount;
+            cart.TotalPrice = cart.Ticket.TicketPrice * amount;
 
-            var ticketPrice = cart.Ticket.TicketPrice;
-            var totalPrice = ticketPrice * amount;
-
-            cart.TotalPrice = totalPrice;
             await _context.SaveChangesAsync();
         }
 
         public async Task<ImageDto?> GetImage(int movieId)
         {
-            return _context.movies.Include(x => x.Image).Where(x => x.MovieId == movieId).Select(x => new ImageDto
-            {
-                ImageId = x.Image.ImageId,
-                ImageContent = x.Image.ImageContent
-            }).FirstOrDefault();
+            return await _context.movies.Include(x => x.Image).Where(x => x.MovieId == movieId)
+                .Select(x => new ImageDto
+                {
+                    ImageId = x.Image.ImageId,
+                    ImageContent = x.Image.ImageContent
+                }).FirstOrDefaultAsync();
         }
     }
 }
