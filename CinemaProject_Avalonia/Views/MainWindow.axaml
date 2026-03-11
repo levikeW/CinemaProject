@@ -278,12 +278,22 @@
 
 			</Border>
 		</Border>
-		<!-- ================= USERS PANEL (OVERLAY) ================= -->
+		<!-- ================= USERSPANEL (OVERLAY) ================= -->
 		<Border Grid.RowSpan="4" Background="White" ZIndex="200" IsVisible="{Binding IsUsersPageOpen}">
-			<Grid RowDefinitions="Auto, *, Auto" Margin="20">
+			<Grid RowDefinitions="Auto,Auto,*,Auto" Margin="20">
+
 				<TextBlock Grid.Row="0" Text="Felhasználók" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
 
-				<ScrollViewer Grid.Row="1">
+				<StackPanel Grid.Row="1" Spacing="8" Margin="0,0,0,15">
+					<TextBox Text="{Binding UserSearchText, Mode=TwoWay}" Watermark="Keresés email vagy név alapján"/>
+
+					<StackPanel Orientation="Horizontal" Spacing="10">
+						<Button Content="Keresés" Command="{Binding SearchUserCommand}" Background="#C8E6C9" Width="120"/>
+						<Button Content="Törlés" Command="{Binding ClearUserSearchCommand}" Background="LightGray" Width="120"/>
+					</StackPanel>
+				</StackPanel>
+
+				<ScrollViewer Grid.Row="2">
 					<ItemsControl ItemsSource="{Binding Users}">
 						<ItemsControl.ItemTemplate>
 							<DataTemplate>
@@ -310,11 +320,12 @@
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
 				</ScrollViewer>
-				<StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
 
-					<TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" IsVisible="{Binding HasError}"/>
+				<StackPanel Grid.Row="3" Spacing="10" Margin="0,20,0,0">
+					<TextBlock Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="Bold" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" IsVisible="{Binding HasError}"/>
 					<Button Content="Vissza a főoldalra" Command="{Binding CloseUsersPageCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Background="LightGray"/>
 				</StackPanel>
+
 			</Grid>
 		</Border>
 		<!-- ================= TICKETTYPE PANEL (OVERLAY) ================= -->

@@ -345,6 +345,32 @@ namespace CinemaProject.Model
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
+            // user cartjai
+            var userCarts = await _context.carts.Include(c => c.Seats).Where(c => c.UserId == userId).ToListAsync();
+
+            var userCartIds = userCarts.Select(c => c.CartId).ToList();
+
+            // user foglalásai
+            var reservations = await _context.paymentReservations.Where(r => r.UserId == userId).ToListAsync();
+
+            // seat-ek leválasztása a cartokról
+            var seats = await _context.seats.Where(s => s.CartId != null && userCartIds.Contains(s.CartId.Value)).ToListAsync();
+
+            foreach (var seat in seats)
+            {
+                seat.CartId = null;
+                seat.IsReserved = false;
+            }
+
+            // foglalások törlése
+            if (reservations.Any())
+                _context.paymentReservations.RemoveRange(reservations);
+
+            // cartok törlése
+            if (userCarts.Any())
+                _context.carts.RemoveRange(userCarts);
+
+            // user törlése
             _context.users.Remove(user);
 
             await _context.SaveChangesAsync();

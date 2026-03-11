@@ -51,6 +51,7 @@ namespace CinemaProject_Avalonia.ViewModels
         private string _selectedRoom;
         private DateTimeOffset _selectedDate = DateTime.Today;
         private string _searchText = "";
+        private string _userSearchText = "";
         private string _errorMessage;
 
 
@@ -137,6 +138,9 @@ namespace CinemaProject_Avalonia.ViewModels
 
         public RelayCommand<DateTimeOffset> DeleteDateSelectedMovieCommand { get; set; }
 
+        public AsyncRelayCommand SearchUserCommand { get; set; }
+
+        public AsyncRelayCommand ClearUserSearchCommand { get; set; }
         public RelayCommand ClearFiltersCommand { get; set; }
 
         public AsyncRelayCommand Logout { get; set; }
@@ -183,7 +187,12 @@ namespace CinemaProject_Avalonia.ViewModels
 
         public ScreeningsViewModel? SelectedScreening
         {
-            get => _selectedScreening;
+            get => _selectedScreening ??= new ScreeningsViewModel(this)
+            {
+                Title= string.Empty,
+                Room= string.Empty,
+                ShowTimes = new ObservableCollection<DateTimeOffset>()
+            };
             set
             {
                 _selectedScreening = value;
@@ -220,6 +229,17 @@ namespace CinemaProject_Avalonia.ViewModels
             set
             {
                 _searchText = value;
+                OnPropertyChanged();
+                ApplyFilters();
+            }
+        }
+
+        public string UserSearchText
+        {
+            get => _userSearchText;
+            set
+            {
+                _userSearchText = value;
                 OnPropertyChanged();
                 ApplyFilters();
             }
@@ -540,6 +560,9 @@ namespace CinemaProject_Avalonia.ViewModels
 
             DeleteDateSelectedMovieCommand = new RelayCommand<DateTimeOffset>(DeleteDateSelectedMovie);
 
+            SearchUserCommand = new AsyncRelayCommand(SearchUsersAsync);
+
+            ClearUserSearchCommand = new AsyncRelayCommand(ClearUserSearchAsync);
             ClearFiltersCommand = new RelayCommand(ClearFilters);
 
             Logout = new AsyncRelayCommand(LogOut);
@@ -1034,6 +1057,62 @@ namespace CinemaProject_Avalonia.ViewModels
             }
         }
 
+        private async Task SearchUsersAsync()
+        {
+            try
+            {
+                Users.Clear();
+
+                if (string.IsNullOrWhiteSpace(UserSearchText))
+                {
+                    await LoadUsersAsync();
+                    ErrorMessage = "";
+                    return;
+                }
+
+                var foundUsers = await _mainWindowModel.SearchUser(UserSearchText);
+
+                foreach (var ember in foundUsers)
+                {
+                    var vm = new UserViewModel(this, _mainWindowModel)
+                    {
+                        UserId = ember.UserId,
+                        Email = ember.Email,
+                        Name = ember.FullName,
+                        Role = ember.Role
+                    };
+
+                    vm.UserDeleted += async (s, e) =>
+                    { 
+                        await DeleteUserAsync(vm.UserId);
+                        await SearchUsersAsync();
+                    };
+
+                    Users.Add(vm);
+                }
+
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a felhasználó keresésekor: " + ex.Message;
+            }
+        }
+
+        private async Task ClearUserSearchAsync()
+        {
+            try
+            {
+                UserSearchText = "";
+                await LoadUsersAsync();
+                ErrorMessage = "";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = "Hiba a keresés törlésekor: " + ex.Message;
+            }
+        }
+
         // ===================== RESERVATIONS =====================
 
         private async Task LoadReservationAsync()
@@ -1386,7 +1465,6 @@ namespace CinemaProject_Avalonia.ViewModels
         private void CloseEditPanel()
         {
             IsScreeningEditPanelOpen = false;
-            SelectedScreening = null;
             ErrorMessage = "";
             ApplyFilters();
         }
@@ -1510,7 +1588,6 @@ namespace CinemaProject_Avalonia.ViewModels
             IsUsersPageOpen = false;
             IsScreeningEditPanelOpen = false;
             SelectedUserItem = null;
-            SelectedScreening = null;
         }
 
         private void OpenRoomAddPanel()
@@ -1578,7 +1655,6 @@ namespace CinemaProject_Avalonia.ViewModels
             IsReservationPageOpen = false;
             IsScreeningEditPanelOpen = false;
             SelectedReservationItem = null;
-            SelectedScreening = null;
         }
 
         private void CloseReservationPanel()
