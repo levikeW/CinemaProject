@@ -189,8 +189,8 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             get => _selectedScreening ??= new ScreeningsViewModel(this)
             {
-                Title= string.Empty,
-                Room= string.Empty,
+                Title = string.Empty,
+                Room = string.Empty,
                 ShowTimes = new ObservableCollection<DateTimeOffset>()
             };
             set
@@ -1083,7 +1083,7 @@ namespace CinemaProject_Avalonia.ViewModels
                     };
 
                     vm.UserDeleted += async (s, e) =>
-                    { 
+                    {
                         await DeleteUserAsync(vm.UserId);
                         await SearchUsersAsync();
                     };
@@ -1135,7 +1135,14 @@ namespace CinemaProject_Avalonia.ViewModels
                         Amount = foglalas.Amount,
                         Price = foglalas.Price,
                         UserId = foglalas.UserId,
-                        Seats = foglalas.Seats ?? new List<SeatDto>()
+                        Seats = foglalas.Seats?.Select(s => new SeatDto
+                        {
+                            SeatId = s.SeatId,
+                            RowNumber = s.RowNumber,
+                            SeatNumber = s.SeatNumber,
+                            RoomId = s.RoomId,
+                            IsReserved = s.IsReserved
+                        }).ToList() ?? new List<SeatDto>(),
                     };
                     reservationVM.ReservationSaved += async (s, dto) =>
                     {

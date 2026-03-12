@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CinemaProject.Migrations
 {
     [DbContext(typeof(CinemaDbContext))]
-    [Migration("20260310150535_initialcreate")]
+    [Migration("20260312081635_initialcreate")]
     partial class initialcreate
     {
         /// <inheritdoc />

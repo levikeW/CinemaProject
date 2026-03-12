@@ -2,6 +2,7 @@
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -16,6 +17,8 @@ namespace CinemaProject.Model
             _context = context;
         }
 
+        private const int MinPasswordLength = 6;
+
         private string HashPass(string password)
         {
             using var sha = SHA256.Create();
@@ -24,8 +27,32 @@ namespace CinemaProject.Model
             return Convert.ToBase64String(hash);
         }
 
+        private bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void ValidatePassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password) || password.Length < MinPasswordLength)
+                throw new InvalidOperationException($"Password must be at least {MinPasswordLength} characters long.");
+        }
+
         public async Task Regist(RegistDto dto, string role = "User")
         {
+            if (!IsValidEmail(dto.Email))
+                throw new InvalidOperationException("Invalid email format");
+
+            ValidatePassword(dto.Password);
+
             if (await _context.users.AnyAsync(x => x.Email == dto.Email))
                 throw new InvalidOperationException("Already exists");
 
@@ -80,6 +107,14 @@ namespace CinemaProject.Model
             if (user == null)
                 throw new InvalidOperationException("User not found");
 
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+            {
+                if (!IsValidEmail(dto.Email))
+                    throw new InvalidOperationException("Invalid email format");
+
+                user.Email = dto.Email;
+            }
+
             using var trx = await _context.Database.BeginTransactionAsync();
 
             if (!string.IsNullOrWhiteSpace(dto.Email))
@@ -104,6 +139,8 @@ namespace CinemaProject.Model
             var oldHash = HashPass(oldPass);
             if (user.Password != oldHash)
                 throw new InvalidOperationException("Old password is incorrect");
+
+            ValidatePassword(newPass);
 
             var newHash = HashPass(newPass);
 
