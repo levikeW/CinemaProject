@@ -134,6 +134,7 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 _seats = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SeatsDisplay));
             }
         }
 
@@ -183,7 +184,7 @@ namespace CinemaProject_Avalonia.ViewModels
                         RowNumber = x.RowNumber,
                         SeatNumber = x.SeatNumber,
                         RoomId = x.RoomId,
-                        IsReserved = x.IsReserved
+                        IsReserved = x.IsReserved,
                     }).ToList();
 
                 var dto = new ModifyReservationDto
@@ -199,6 +200,7 @@ namespace CinemaProject_Avalonia.ViewModels
                     Seats = selectedSeats
                 };
 
+                Seats = selectedSeats;
                 ReservationSaved?.Invoke(this, dto);
 
                 ErrorMessage = "";
@@ -207,6 +209,7 @@ namespace CinemaProject_Avalonia.ViewModels
             {
                 ErrorMessage = "Hiba a foglalás mentésekor: " + ex.Message;
             }
+            await Task.CompletedTask;
         }
 
         private async Task OpenEditPanel()
