@@ -2,9 +2,9 @@ const API_BASE = "http://localhost:5067";
 
 // DTO
 interface TicketTypeDto {
-    ticketId: number;
-    ticketType: string;
-    ticketPrice: number;
+    Id: number;
+    ticketName: string;
+    price: number;
 }
 
 interface FilmScreeningDto {
@@ -25,6 +25,11 @@ interface MovieDto {
     description: string;
     imageId: number;
     screenings: FilmScreeningDto[];
+}
+
+interface ImageDto {
+    imageId: number;
+    imageContent : number[];
 }
 
 interface CurrentUserDto {
@@ -221,8 +226,8 @@ async function renderjegyekTable(): Promise<void> {
         for (const jegy of jegyek) {
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${jegy.ticketType}</td>
-                <td>${jegy.ticketPrice} Ft</td>
+                <td>${jegy.ticketName}</td>
+                <td>${jegy.price} Ft</td>
             `;
             jegyekTbody.appendChild(row);
         }
@@ -305,7 +310,11 @@ function getFilteredMovies(): MovieDto[] {
         })
         .filter((movie) => movie.screenings.length > 0 || !selectedDate);
 }
-
+async function fetcImages(id : number): Promise<ImageDto[]> {
+    const response = await fetch(`${API_BASE}/api/cinema/getimage?movieId=${id}`);
+    if (!response.ok) throw new Error("Nem sikerült lekérni a képet.");
+    return await response.json() as ImageDto[];
+}
 async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<void> {
     if (!movieList) return;
 
@@ -324,13 +333,14 @@ async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<void> {
             `;
             return;
         }
-
-        for (const movie of movies) {
+      
+        for (const movie of movies) { 
+             var image = await fetcImages(movie.movieId); 
             const movieCard = document.createElement("div");
             movieCard.className = "row movie-card my-3";
             movieCard.innerHTML = `
                 <div class="col">
-                    <img src="cinemaniabackground1.png" alt="${movie.movieTitle}" style="width: 100%; height: 250px; object-fit: cover;">
+                    <img src=${image} alt="${movie.movieTitle}" style="width: 100%; height: 250px; object-fit: cover;">
                 </div>
                 <div class="col">
                     <h3>Cím: ${movie.movieTitle}</h3>
@@ -497,7 +507,7 @@ async function handleRegisterSubmit(event: Event): Promise<void> {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/api/user/register`, {
+        const response = await fetch(`${API_BASE}/api/user/Regist`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
