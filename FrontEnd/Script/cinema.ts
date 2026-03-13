@@ -47,6 +47,15 @@ interface StoredUserProfile {
     billingAddress: string;
 }
 
+interface CategoriesDto {
+    id?: number;
+    categName?: string;
+    description?: string;
+    categoryId?: number;
+    categoryName?: string;
+    categoryDescription?: string;
+}
+
 
 const jegyekTbody = document.getElementById("jegyekTbody") as HTMLTableSectionElement | null;
 const movieList = document.getElementById("movieList") as HTMLElement | null;
@@ -55,6 +64,7 @@ const locationFilter = document.getElementById("locationFilter") as HTMLSelectEl
 const genreFilter = document.getElementById("genreFilter") as HTMLSelectElement | null;
 const movieFilter = document.getElementById("movieFilter") as HTMLSelectElement | null;
 const dateFilter = document.getElementById("dateFilter") as HTMLInputElement | null;
+const categoriesGrid = document.getElementById("categoriesGrid") as HTMLElement | null;
 
 let allMovies: MovieDto[] = [];
 
@@ -69,6 +79,14 @@ const actorNamedRooms = [
 
 function getActorRoomValue(roomLabel: string): string {
     return roomLabel.toLowerCase().replace(/\s+/g, "-");
+}
+
+function getCategoryName(category: CategoriesDto): string {
+    return (category.categoryName ?? category.categName ?? "").trim();
+}
+
+function getCategoryDescription(category: CategoriesDto): string {
+    return (category.categoryDescription ?? category.description ?? "").trim();
 }
 
 function getStoredProfiles(): StoredUserProfile[] {
@@ -250,6 +268,20 @@ async function fetchMoviesList(): Promise<MovieDto[]> {
     return await response.json() as MovieDto[];
 }
 
+async function fetchCategoriesList(): Promise<CategoriesDto[]> {
+    const response = await fetch(`${API_BASE}/api/cinema/getallcateg`);
+    if (!response.ok) throw new Error("Nem sikerült lekérni a kategóriák listáját.");
+    return await response.json() as CategoriesDto[];
+}
+
+async function ensureMoviesLoaded(): Promise<MovieDto[]> {
+    if (allMovies.length === 0) {
+        allMovies = await fetchMoviesList();
+    }
+
+    return allMovies;
+}
+
 function renderMovieOptions(
     select: HTMLSelectElement | null,
     values: string[],
@@ -320,7 +352,7 @@ async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<void> {
 
     try {
         if (allMovies.length === 0) {
-            allMovies = await fetchMoviesList();
+            await ensureMoviesLoaded();
             populateMovieFilters(allMovies);
         }
 
@@ -369,6 +401,40 @@ async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<void> {
                 <div class="alert alert-danger">Hiba történt a filmek betöltésekor.</div>
             `;
         }
+    }
+}
+
+async function renderCategoriesPage(): Promise<void> {
+    if (!categoriesGrid) return;
+
+    try {
+        const categories = (await fetchCategoriesList())
+            .filter((category) => Boolean(getCategoryName(category)))
+            .sort((left, right) => getCategoryName(left).localeCompare(getCategoryName(right), "hu"));
+
+        if (categories.length === 0) {
+            categoriesGrid.innerHTML = '<div class="category-empty card-like-panel">Még nem érkezett kategóriaadat a backendből.</div>';
+            return;
+        }
+
+        categoriesGrid.innerHTML = "";
+
+        for (const [index, category] of categories.entries()) {
+            const categoryCard = document.createElement("article");
+            categoryCard.className = `category-card category-accent-${(index % 4) + 1}`;
+            categoryCard.innerHTML = `
+                <div class="category-card-header">
+                    <div>
+                        <h2>${getCategoryName(category)}</h2>
+                        <p class="category-description">${getCategoryDescription(category) || "Ehhez a kategóriához még nem lett leírás megadva az adatbázisban."}</p>
+                    </div>
+                </div>
+            `;
+            categoriesGrid.appendChild(categoryCard);
+        }
+    } catch (error) {
+        console.error(error);
+        categoriesGrid.innerHTML = '<div class="category-empty card-like-panel">Hiba történt a kategóriák betöltésekor.</div>';
     }
 }
 
@@ -631,6 +697,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (movieList) {
         initializeMovieFilters();
         renderMoviesList();
+    }
+    if (categoriesGrid) {
+        renderCategoriesPage();
     }
     if (screeningsTbody) {
         renderScreeningsTable();
