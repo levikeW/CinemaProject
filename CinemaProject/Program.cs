@@ -37,6 +37,11 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     .AddCookie(options => {
         options.LoginPath = "/api/User/login";
         options.LogoutPath = "/api/User/logout";
+
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
         options.Events = new CookieAuthenticationEvents
         {
             OnRedirectToLogin = ctx =>
@@ -80,7 +85,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
+app.UseRouting();
 //app.UseHttpsRedirection();
 //ADD CORS
 app.UseCors("AllowFrontend");

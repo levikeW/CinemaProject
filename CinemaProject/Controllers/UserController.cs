@@ -67,7 +67,7 @@ namespace CinemaProject.Controllers
                 var id = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var principal = new ClaimsPrincipal(id);
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-                return Ok(new { role = user.Role });
+                return Ok(new { userId = user.UserId ,role = user.Role });
             }
             catch
             {

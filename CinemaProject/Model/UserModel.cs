@@ -63,7 +63,8 @@ namespace CinemaProject.Model
                 Email = dto.Email,
                 Password = HashPass(dto.Password),
                 Role = role,
-                FullName = dto.FullName
+                FullName = dto.FullName,
+                BillingAddress = dto.BillingAddress
             });
 
             await _context.SaveChangesAsync();
