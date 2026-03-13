@@ -1,8 +1,24 @@
-const Admin_API_BASE = "http://localhost:5067";
+//npx tsc adminApi.ts adminCinema.ts adminTickets.ts --target ES2020 --lib ES2020,DOM
+//http://localhost:5500/AdminFrontEnd/AdminBejelentkezes.html
+// ===================== DTO =====================
 // ===================== AUTH / SESSION =====================
 function Admin_getAdminId() {
     const raw = localStorage.getItem("adminUserId");
     return raw ? Number(raw) : 0;
+}
+function Admin_setCurrentUserRole(role) {
+    localStorage.setItem("currentUserRole", role);
+}
+function Admin_getCurrentUserRole() {
+    return localStorage.getItem("currentUserRole") || "";
+}
+function Admin_setCurrentUserId(userId) {
+    localStorage.setItem("currentUserId", String(userId));
+}
+function Admin_clearAuthData() {
+    localStorage.removeItem("currentUserId");
+    localStorage.removeItem("currentUserRole");
+    localStorage.removeItem("adminUserId");
 }
 function Admin_setAdminId(id) {
     localStorage.setItem("adminUserId", String(id));
@@ -13,59 +29,6 @@ function Admin_showMessage(targetId, message, isError = false) {
         return;
     target.textContent = message;
     target.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
-}
-// ===================== API =====================
-async function Admin_apiGet(url) {
-    const response = await fetch(`${Admin_API_BASE}${url}`, {
-        credentials: "include"
-    });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `GET hiba: ${url}`);
-    }
-    return await response.json();
-}
-async function Admin_apiPost(url, body) {
-    const response = await fetch(`${Admin_API_BASE}${url}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(body)
-    });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `POST hiba: ${url}`);
-    }
-    if (response.headers.get("content-type")?.includes("application/json")) {
-        return await response.json();
-    }
-    return undefined;
-}
-async function Admin_apiPut(url, body) {
-    const response = await fetch(`${Admin_API_BASE}${url}`, {
-        method: "PUT",
-        headers: body ? { "Content-Type": "application/json" } : undefined,
-        credentials: "include",
-        body: body ? JSON.stringify(body) : null
-    });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `PUT hiba: ${url}`);
-    }
-    if (response.headers.get("content-type")?.includes("application/json")) {
-        return await response.json();
-    }
-    return undefined;
-}
-async function Admin_apiDelete(url) {
-    const response = await fetch(`${Admin_API_BASE}${url}`, {
-        method: "DELETE",
-        credentials: "include"
-    });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `DELETE hiba: ${url}`);
-    }
 }
 // ===================== MOVIES =====================
 async function Admin_getAllMovies() {
@@ -278,101 +241,6 @@ async function Admin_removeScreening(screeningId) {
     }
     catch (error) {
         Admin_showMessage("adminScreeningMessage", error.message, true);
-    }
-}
-// ===================== TICKETS =====================
-async function Admin_getAllTicketTypes() {
-    return await Admin_apiGet("http://localhost:5067/api/cinema/getalltickettype");
-}
-async function Admin_createTicketType(dto) {
-    await Admin_apiPost("/api/admin/newtickettype", dto);
-}
-async function Admin_updateTicketType(ticketTId, dto) {
-    await Admin_apiPut(`/api/admin/modifytickettype?ticketTId=${ticketTId}`, dto);
-}
-async function Admin_deleteTicketType(ticketTId) {
-    await Admin_apiDelete(`/api/admin/deletetickettype?ticketTId=${ticketTId}`);
-}
-async function Admin_renderTicketsAdminTable() {
-    const tbody = document.getElementById("adminTicketsTbody");
-    if (!tbody)
-        return;
-    try {
-        const tickets = await Admin_getAllTicketTypes();
-        tbody.innerHTML = "";
-        for (const ticket of tickets) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${ticket.ticketId}</td>
-                <td>${ticket.ticketType}</td>
-                <td>${ticket.ticketPrice} Ft</td>
-                <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editTicket(${ticket.ticketId}, '${Admin_escapeJs(ticket.ticketType)}', ${ticket.ticketPrice})">
-                        Módosítás
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="Admin_removeTicket(${ticket.ticketId})">
-                        Törlés
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    }
-    catch (error) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="4" class="text-danger text-center">Nem sikerült a jegytípusok betöltése.</td>
-            </tr>
-        `;
-    }
-}
-async function Admin_handleTicketCreate(event) {
-    event.preventDefault();
-    try {
-        const dto = {
-            ticketType: document.getElementById("ticketType").value.trim(),
-            ticketPrice: Number(document.getElementById("ticketPrice").value)
-        };
-        await Admin_createTicketType(dto);
-        Admin_showMessage("adminTicketMessage", "Jegytípus létrehozva.");
-        document.getElementById("ticketForm")?.reset();
-        await Admin_renderTicketsAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminTicketMessage", error.message, true);
-    }
-}
-function Admin_editTicket(ticketId, ticketType, ticketPrice) {
-    document.getElementById("editTicketId").value = String(ticketId);
-    document.getElementById("editTicketType").value = ticketType;
-    document.getElementById("editTicketPrice").value = String(ticketPrice);
-}
-async function Admin_handleTicketUpdate(event) {
-    event.preventDefault();
-    try {
-        const ticketId = Number(document.getElementById("editTicketId").value);
-        const dto = {
-            ticketType: document.getElementById("editTicketType").value.trim(),
-            ticketPrice: Number(document.getElementById("editTicketPrice").value)
-        };
-        await Admin_updateTicketType(ticketId, dto);
-        Admin_showMessage("adminTicketEditMessage", "Jegytípus módosítva.");
-        await Admin_renderTicketsAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminTicketEditMessage", error.message, true);
-    }
-}
-async function Admin_removeTicket(ticketId) {
-    if (!confirm("Biztosan törlöd ezt a jegytípust?"))
-        return;
-    try {
-        await Admin_deleteTicketType(ticketId);
-        Admin_showMessage("adminTicketMessage", "Jegytípus törölve.");
-        await Admin_renderTicketsAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminTicketMessage", error.message, true);
     }
 }
 // ===================== CATEGORIES =====================
@@ -769,6 +637,155 @@ async function Admin_handleImageDelete(event) {
         Admin_showMessage("adminImageMessage", error.message, true);
     }
 }
+// ===================== LOGIN =====================
+async function Admin_handleLoginSubmit(event) {
+    event.preventDefault();
+    const emailInput = document.getElementById("loginEmail");
+    const passwordInput = document.getElementById("loginPassword");
+    const loginMessage = document.getElementById("loginMessage");
+    if (!emailInput || !passwordInput)
+        return;
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    if (loginMessage) {
+        loginMessage.className = "mb-3";
+        loginMessage.textContent = "";
+    }
+    try {
+        const response = await fetch(`${Admin_API_BASE}/api/user/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+            credentials: "include"
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            if (loginMessage) {
+                loginMessage.className = "text-danger mb-3";
+                loginMessage.textContent = text || "Hibás email vagy jelszó.";
+            }
+            return;
+        }
+        const data = await response.json();
+        Admin_setCurrentUserId(data.userId);
+        Admin_setCurrentUserRole(data.role);
+        if (data.role === "Admin") {
+            Admin_setAdminId(data.userId);
+        }
+        if (loginMessage) {
+            loginMessage.className = "text-success mb-3";
+            loginMessage.textContent = "Sikeres bejelentkezés!";
+        }
+        if (data.role === "Admin") {
+            window.location.replace("AdminCinema.html");
+        }
+        else {
+            window.location.replace("Profile.html");
+        }
+    }
+    catch (err) {
+        if (loginMessage) {
+            loginMessage.className = "text-danger mb-3";
+            loginMessage.textContent = "Hiba a bejelentkezés során.";
+        }
+    }
+}
+// ===================== LOGOUT =====================
+async function Admin_handleLogout() {
+    Admin_clearAuthData();
+    try {
+        await fetch(`${Admin_API_BASE}/api/user/logout`, {
+            method: "POST",
+            credentials: "include"
+        });
+    }
+    catch { }
+    window.location.href = "Bejelentkezes.html";
+}
+// ===================== REGIST =====================
+async function Admin_handleRegisterSubmit(event) {
+    event.preventDefault();
+    const emailInput = document.getElementById("registerEmail");
+    const fullNameInput = document.getElementById("registerFullName");
+    const addressInput = document.getElementById("registerAddress");
+    const passwordInput = document.getElementById("registerPassword");
+    const passwordConfirmInput = document.getElementById("registerPasswordConfirm");
+    const registerMessage = document.getElementById("registerMessage");
+    if (!emailInput || !fullNameInput || !addressInput || !passwordInput || !passwordConfirmInput)
+        return;
+    if (registerMessage) {
+        registerMessage.className = "mb-3";
+        registerMessage.textContent = "";
+    }
+    if (passwordInput.value !== passwordConfirmInput.value) {
+        if (registerMessage) {
+            registerMessage.className = "text-danger mb-3";
+            registerMessage.textContent = "A két jelszó nem egyezik.";
+        }
+        return;
+    }
+    try {
+        const response = await fetch(`${Admin_API_BASE}/api/user/Regist`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+                Email: emailInput.value.trim(),
+                FullName: fullNameInput.value.trim(),
+                Password: passwordInput.value,
+                BillingAddress: addressInput.value.trim()
+            })
+        });
+        const text = await response.text();
+        if (!response.ok) {
+            if (registerMessage) {
+                registerMessage.className = "text-danger mb-3";
+                registerMessage.textContent = text || "Sikertelen regisztráció.";
+            }
+            return;
+        }
+        if (registerMessage) {
+            registerMessage.className = "text-success mb-3";
+            registerMessage.textContent = "Sikeres regisztráció!";
+        }
+        emailInput.value = "";
+        fullNameInput.value = "";
+        addressInput.value = "";
+        passwordInput.value = "";
+        passwordConfirmInput.value = "";
+    }
+    catch (err) {
+        if (registerMessage) {
+            registerMessage.className = "text-danger mb-3";
+            registerMessage.textContent = "Hiba történt a regisztráció során.";
+        }
+    }
+}
+// ===================== PROFILE =====================
+async function Admin_loadProfileData() {
+    const emailField = document.getElementById("profileEmail");
+    const fullNameField = document.getElementById("profileFullName");
+    const billingField = document.getElementById("profileBilling");
+    if (!emailField || !fullNameField || !billingField)
+        return;
+    try {
+        const response = await fetch(`${Admin_API_BASE}/api/user/current`, {
+            credentials: "include"
+        });
+        if (!response.ok)
+            return;
+        const user = await response.json();
+        Admin_setCurrentUserId(user.userId);
+        Admin_setCurrentUserRole(user.role);
+        if (user.role === "Admin") {
+            Admin_setAdminId(user.userId);
+        }
+        emailField.textContent = user.email;
+        fullNameField.textContent = user.fullName;
+        billingField.textContent = user.billingAddress;
+    }
+    catch { }
+}
 // ===================== SELECT SEGÉDEK =====================
 async function Admin_renderScreeningsMovieSelect() {
     const createSelect = document.getElementById("screeningMovieId");
@@ -803,13 +820,6 @@ async function Admin_renderScreeningsRoomSelect() {
     }
 }
 // ===================== UTIL =====================
-function Admin_escapeJs(value) {
-    return value
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, "&quot;")
-        .replace(/\n/g, " ");
-}
 function Admin_toDateTimeLocalValue(date) {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -836,14 +846,6 @@ window.Admin_handleScreeningUpdate = Admin_handleScreeningUpdate;
 window.Admin_removeScreening = Admin_removeScreening;
 // @ts-ignore
 window.Admin_editScreening = Admin_editScreening;
-// @ts-ignore
-window.Admin_handleTicketCreate = Admin_handleTicketCreate;
-// @ts-ignore
-window.Admin_handleTicketUpdate = Admin_handleTicketUpdate;
-// @ts-ignore
-window.Admin_removeTicket = Admin_removeTicket;
-// @ts-ignore
-window.Admin_editTicket = Admin_editTicket;
 // @ts-ignore
 window.Admin_handleCategoryCreate = Admin_handleCategoryCreate;
 // @ts-ignore
@@ -874,13 +876,18 @@ window.Admin_editReservation = Admin_editReservation;
 window.Admin_handleImageUpload = Admin_handleImageUpload;
 // @ts-ignore
 window.Admin_handleImageDelete = Admin_handleImageDelete;
+// @ts-ignore
+window.Admin_handleLoginSubmit = Admin_handleLoginSubmit;
+// @ts-ignore
+window.Admin_handleLogout = Admin_handleLogout;
+//@ts-ignore
+window.Admin_handleRegisterSubmit = Admin_handleRegisterSubmit;
 // ===================== INIT =====================
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         await Promise.all([
             Admin_renderMoviesAdminTable(),
             Admin_renderScreeningsAdminTable(),
-            Admin_renderTicketsAdminTable(),
             Admin_renderCategoriesAdminTable(),
             Admin_renderRoomsAdminTable(),
             Admin_renderUsersAdminTable(),

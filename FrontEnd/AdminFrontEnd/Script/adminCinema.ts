@@ -1,5 +1,5 @@
-const Admin_API_BASE = "http://localhost:5067";
-
+//npx tsc adminApi.ts adminCinema.ts adminTickets.ts --target ES2020 --lib ES2020,DOM
+//http://localhost:5500/AdminFrontEnd/AdminBejelentkezes.html
 // ===================== DTO =====================
 
 interface MovieDto {
@@ -50,22 +50,6 @@ interface ModifyFilmScreeningDto {
     movieId: number;
     roomId: number;
     date: string;
-}
-
-interface TicketTypeDto {
-    ticketId: number;
-    ticketType: string;
-    ticketPrice: number;
-}
-
-interface NewTicketTypeDto {
-    ticketType: string;
-    ticketPrice: number;
-}
-
-interface ModifyTicketTypeDto {
-    ticketType: string;
-    ticketPrice: number;
 }
 
 interface CategoriesDto {
@@ -149,6 +133,24 @@ function Admin_getAdminId(): number {
     return raw ? Number(raw) : 0;
 }
 
+function Admin_setCurrentUserRole(role: string): void {
+    localStorage.setItem("currentUserRole", role);
+}
+
+function Admin_getCurrentUserRole(): string {
+    return localStorage.getItem("currentUserRole") || "";
+}
+
+function Admin_setCurrentUserId(userId: number): void {
+    localStorage.setItem("currentUserId", String(userId));
+}
+
+function Admin_clearAuthData(): void {
+    localStorage.removeItem("currentUserId");
+    localStorage.removeItem("currentUserRole");
+    localStorage.removeItem("adminUserId");
+}
+
 function Admin_setAdminId(id: number): void {
     localStorage.setItem("adminUserId", String(id));
 }
@@ -159,73 +161,6 @@ function Admin_showMessage(targetId: string, message: string, isError = false): 
 
     target.textContent = message;
     target.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
-}
-
-// ===================== API =====================
-
-async function Admin_apiGet<T>(url: string): Promise<T> {
-    const response = await fetch(`${Admin_API_BASE}${url}`, {
-        credentials: "include"
-    });
-
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `GET hiba: ${url}`);
-    }
-
-    return await response.json() as T;
-}
-
-async function Admin_apiPost<TBody, TResult = void>(url: string, body: TBody): Promise<TResult> {
-    const response = await fetch(`${Admin_API_BASE}${url}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `POST hiba: ${url}`);
-    }
-
-    if (response.headers.get("content-type")?.includes("application/json")) {
-        return await response.json() as TResult;
-    }
-
-    return undefined as TResult;
-}
-
-async function Admin_apiPut<TBody, TResult = void>(url: string, body?: TBody): Promise<TResult> {
-    const response = await fetch(`${Admin_API_BASE}${url}`, {
-        method: "PUT",
-        headers: body ? { "Content-Type": "application/json" } : undefined,
-        credentials: "include",
-        body: body ? JSON.stringify(body) : null
-    });
-
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `PUT hiba: ${url}`);
-    }
-
-    if (response.headers.get("content-type")?.includes("application/json")) {
-        return await response.json() as TResult;
-    }
-
-    return undefined as TResult;
-}
-
-async function Admin_apiDelete(url: string): Promise<void> {
-    const response = await fetch(`${Admin_API_BASE}${url}`, {
-        method: "DELETE",
-        credentials: "include"
-    });
-
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `DELETE hiba: ${url}`);
-    }
 }
 
 // ===================== MOVIES =====================
@@ -472,113 +407,6 @@ async function Admin_removeScreening(screeningId: number): Promise<void> {
         Admin_showMessage("adminScreeningMessage", (error as Error).message, true);
     }
 }
-
-// ===================== TICKETS =====================
-
-async function Admin_getAllTicketTypes(): Promise<TicketTypeDto[]> {
-    return await Admin_apiGet<TicketTypeDto[]>("http://localhost:5067/api/cinema/getalltickettype");
-}
-
-async function Admin_createTicketType(dto: NewTicketTypeDto): Promise<void> {
-    await Admin_apiPost<NewTicketTypeDto>("/api/admin/newtickettype", dto);
-}
-
-async function Admin_updateTicketType(ticketTId: number, dto: ModifyTicketTypeDto): Promise<void> {
-    await Admin_apiPut<ModifyTicketTypeDto>(`/api/admin/modifytickettype?ticketTId=${ticketTId}`, dto);
-}
-
-async function Admin_deleteTicketType(ticketTId: number): Promise<void> {
-    await Admin_apiDelete(`/api/admin/deletetickettype?ticketTId=${ticketTId}`);
-}
-
-async function Admin_renderTicketsAdminTable(): Promise<void> {
-    const tbody = document.getElementById("adminTicketsTbody") as HTMLTableSectionElement | null;
-    if (!tbody) return;
-
-    try {
-        const tickets = await Admin_getAllTicketTypes();
-        tbody.innerHTML = "";
-
-        for (const ticket of tickets) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${ticket.ticketId}</td>
-                <td>${ticket.ticketType}</td>
-                <td>${ticket.ticketPrice} Ft</td>
-                <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editTicket(${ticket.ticketId}, '${Admin_escapeJs(ticket.ticketType)}', ${ticket.ticketPrice})">
-                        Módosítás
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="Admin_removeTicket(${ticket.ticketId})">
-                        Törlés
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    } catch (error) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="4" class="text-danger text-center">Nem sikerült a jegytípusok betöltése.</td>
-            </tr>
-        `;
-    }
-}
-
-async function Admin_handleTicketCreate(event: Event): Promise<void> {
-    event.preventDefault();
-
-    try {
-        const dto: NewTicketTypeDto = {
-            ticketType: (document.getElementById("ticketType") as HTMLInputElement).value.trim(),
-            ticketPrice: Number((document.getElementById("ticketPrice") as HTMLInputElement).value)
-        };
-
-        await Admin_createTicketType(dto);
-        Admin_showMessage("adminTicketMessage", "Jegytípus létrehozva.");
-        (document.getElementById("ticketForm") as HTMLFormElement | null)?.reset();
-        await Admin_renderTicketsAdminTable();
-    } catch (error) {
-        Admin_showMessage("adminTicketMessage", (error as Error).message, true);
-    }
-}
-
-function Admin_editTicket(ticketId: number, ticketType: string, ticketPrice: number): void {
-    (document.getElementById("editTicketId") as HTMLInputElement).value = String(ticketId);
-    (document.getElementById("editTicketType") as HTMLInputElement).value = ticketType;
-    (document.getElementById("editTicketPrice") as HTMLInputElement).value = String(ticketPrice);
-}
-
-async function Admin_handleTicketUpdate(event: Event): Promise<void> {
-    event.preventDefault();
-
-    try {
-        const ticketId = Number((document.getElementById("editTicketId") as HTMLInputElement).value);
-        const dto: ModifyTicketTypeDto = {
-            ticketType: (document.getElementById("editTicketType") as HTMLInputElement).value.trim(),
-            ticketPrice: Number((document.getElementById("editTicketPrice") as HTMLInputElement).value)
-        };
-
-        await Admin_updateTicketType(ticketId, dto);
-        Admin_showMessage("adminTicketEditMessage", "Jegytípus módosítva.");
-        await Admin_renderTicketsAdminTable();
-    } catch (error) {
-        Admin_showMessage("adminTicketEditMessage", (error as Error).message, true);
-    }
-}
-
-async function Admin_removeTicket(ticketId: number): Promise<void> {
-    if (!confirm("Biztosan törlöd ezt a jegytípust?")) return;
-
-    try {
-        await Admin_deleteTicketType(ticketId);
-        Admin_showMessage("adminTicketMessage", "Jegytípus törölve.");
-        await Admin_renderTicketsAdminTable();
-    } catch (error) {
-        Admin_showMessage("adminTicketMessage", (error as Error).message, true);
-    }
-}
-
 // ===================== CATEGORIES =====================
 
 async function Admin_getAllCategories(): Promise<CategoriesDto[]> {
@@ -1029,6 +857,199 @@ async function Admin_handleImageDelete(event: Event): Promise<void> {
     }
 }
 
+// ===================== LOGIN =====================
+
+async function Admin_handleLoginSubmit(event: Event) {
+    event.preventDefault();
+
+    const emailInput = document.getElementById("loginEmail") as HTMLInputElement;
+    const passwordInput = document.getElementById("loginPassword") as HTMLInputElement;
+    const loginMessage = document.getElementById("loginMessage") as HTMLElement | null;
+
+    if (!emailInput || !passwordInput) return;
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (loginMessage) {
+        loginMessage.className = "mb-3";
+        loginMessage.textContent = "";
+    }
+
+    try {
+        const response = await fetch(`${Admin_API_BASE}/api/user/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+
+            if (loginMessage) {
+                loginMessage.className = "text-danger mb-3";
+                loginMessage.textContent = text || "Hibás email vagy jelszó.";
+            }
+
+            return;
+        }
+
+        const data = await response.json() as { userId: number; role: string };
+
+        Admin_setCurrentUserId(data.userId);
+        Admin_setCurrentUserRole(data.role);
+
+        if (data.role === "Admin") {
+            Admin_setAdminId(data.userId);
+        }
+
+        if (loginMessage) {
+            loginMessage.className = "text-success mb-3";
+            loginMessage.textContent = "Sikeres bejelentkezés!";
+        }
+
+        if (data.role === "Admin") {
+            window.location.replace("AdminCinema.html");
+        } else {
+            window.location.replace("Profile.html");
+        }
+
+    } catch (err) {
+
+        if (loginMessage) {
+            loginMessage.className = "text-danger mb-3";
+            loginMessage.textContent = "Hiba a bejelentkezés során.";
+        }
+
+    }
+}
+
+// ===================== LOGOUT =====================
+
+async function Admin_handleLogout(): Promise<void> {
+
+    Admin_clearAuthData();
+
+    try {
+        await fetch(`${Admin_API_BASE}/api/user/logout`, {
+            method: "POST",
+            credentials: "include"
+        });
+    } catch {}
+
+    window.location.href = "Bejelentkezes.html";
+}
+
+// ===================== REGIST =====================
+
+async function Admin_handleRegisterSubmit(event: Event): Promise<void> {
+    event.preventDefault();
+
+    const emailInput = document.getElementById("registerEmail") as HTMLInputElement;
+    const fullNameInput = document.getElementById("registerFullName") as HTMLInputElement;
+    const addressInput = document.getElementById("registerAddress") as HTMLInputElement;
+    const passwordInput = document.getElementById("registerPassword") as HTMLInputElement;
+    const passwordConfirmInput = document.getElementById("registerPasswordConfirm") as HTMLInputElement;
+    const registerMessage = document.getElementById("registerMessage") as HTMLElement | null;
+
+    if (!emailInput || !fullNameInput || !addressInput || !passwordInput || !passwordConfirmInput) return;
+
+    if (registerMessage) {
+        registerMessage.className = "mb-3";
+        registerMessage.textContent = "";
+    }
+
+    if (passwordInput.value !== passwordConfirmInput.value) {
+        if (registerMessage) {
+            registerMessage.className = "text-danger mb-3";
+            registerMessage.textContent = "A két jelszó nem egyezik.";
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch(`${Admin_API_BASE}/api/user/Regist`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+                Email: emailInput.value.trim(),
+                FullName: fullNameInput.value.trim(),
+                Password: passwordInput.value,
+                BillingAddress: addressInput.value.trim()
+            })
+        });
+
+        const text = await response.text();
+
+        if (!response.ok) {
+            if (registerMessage) {
+                registerMessage.className = "text-danger mb-3";
+                registerMessage.textContent = text || "Sikertelen regisztráció.";
+            }
+            return;
+        }
+
+        if (registerMessage) {
+            registerMessage.className = "text-success mb-3";
+            registerMessage.textContent = "Sikeres regisztráció!";
+        }
+
+        emailInput.value = "";
+        fullNameInput.value = "";
+        addressInput.value = "";
+        passwordInput.value = "";
+        passwordConfirmInput.value = "";
+    } catch (err) {
+        if (registerMessage) {
+            registerMessage.className = "text-danger mb-3";
+            registerMessage.textContent = "Hiba történt a regisztráció során.";
+        }
+    }
+}
+
+// ===================== PROFILE =====================
+
+async function Admin_loadProfileData(): Promise<void> {
+
+    const emailField = document.getElementById("profileEmail");
+    const fullNameField = document.getElementById("profileFullName");
+    const billingField = document.getElementById("profileBilling");
+
+    if (!emailField || !fullNameField || !billingField) return;
+
+    try {
+
+        const response = await fetch(`${Admin_API_BASE}/api/user/current`, {
+            credentials: "include"
+        });
+
+        if (!response.ok) return;
+
+        const user = await response.json() as {
+            userId: number
+            email: string
+            fullName: string
+            billingAddress: string
+            role: string
+        };
+
+        Admin_setCurrentUserId(user.userId);
+        Admin_setCurrentUserRole(user.role);
+
+        if (user.role === "Admin") {
+            Admin_setAdminId(user.userId);
+        }
+
+        emailField.textContent = user.email;
+        fullNameField.textContent = user.fullName;
+        billingField.textContent = user.billingAddress;
+
+    } catch {}
+
+}
+
 // ===================== SELECT SEGÉDEK =====================
 
 async function Admin_renderScreeningsMovieSelect(): Promise<void> {
@@ -1068,15 +1089,6 @@ async function Admin_renderScreeningsRoomSelect(): Promise<void> {
 }
 
 // ===================== UTIL =====================
-
-function Admin_escapeJs(value: string): string {
-    return value
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, "&quot;")
-        .replace(/\n/g, " ");
-}
-
 function Admin_toDateTimeLocalValue(date: string): string {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -1106,15 +1118,6 @@ window.Admin_handleScreeningUpdate = Admin_handleScreeningUpdate;
 window.Admin_removeScreening = Admin_removeScreening;
 // @ts-ignore
 window.Admin_editScreening = Admin_editScreening;
-
-// @ts-ignore
-window.Admin_handleTicketCreate = Admin_handleTicketCreate;
-// @ts-ignore
-window.Admin_handleTicketUpdate = Admin_handleTicketUpdate;
-// @ts-ignore
-window.Admin_removeTicket = Admin_removeTicket;
-// @ts-ignore
-window.Admin_editTicket = Admin_editTicket;
 
 // @ts-ignore
 window.Admin_handleCategoryCreate = Admin_handleCategoryCreate;
@@ -1151,6 +1154,15 @@ window.Admin_handleImageUpload = Admin_handleImageUpload;
 // @ts-ignore
 window.Admin_handleImageDelete = Admin_handleImageDelete;
 
+// @ts-ignore
+window.Admin_handleLoginSubmit = Admin_handleLoginSubmit;
+
+// @ts-ignore
+window.Admin_handleLogout = Admin_handleLogout;
+
+//@ts-ignore
+window.Admin_handleRegisterSubmit = Admin_handleRegisterSubmit;
+
 // ===================== INIT =====================
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -1158,7 +1170,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         await Promise.all([
             Admin_renderMoviesAdminTable(),
             Admin_renderScreeningsAdminTable(),
-            Admin_renderTicketsAdminTable(),
             Admin_renderCategoriesAdminTable(),
             Admin_renderRoomsAdminTable(),
             Admin_renderUsersAdminTable(),
