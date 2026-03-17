@@ -72,3 +72,6 @@ async function Admin_apiDelete(url: string): Promise<void> {
         throw new Error(text || `DELETE hiba: ${url}`);
     }
 }
+
+// @ts-ignore
+window.Admin_escapeJs = Admin_escapeJs;
