@@ -287,33 +287,9 @@ header {
     font-weight: 600;
 }
 
-/* Arak.html */
+/* ===================== ADMIN COMMON ===================== */
 
-.Arakh1 {
-    margin: 0 0 0.75rem;
-    text-align: left;
-    font-size: clamp(2rem, 4vw, 3rem);
-    line-height: 1.1;
-    color: #e4b5ff;
-    text-shadow:
-        1px 1px 0 rgba(111, 42, 168, 0.82),
-        2px 2px 0 rgba(86, 22, 139, 0.64),
-        0 10px 26px rgba(0, 0, 0, 0.22);
-}
-
-.Arakkeret {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    border-radius: 28px;
-}
-
-.arak-table tr td {
-    margin: auto;
-    padding: 15px;
-}
-
-.Arakall {
+.admin-page {
     position: relative;
     isolation: isolate;
     min-height: calc(100vh - 84px);
@@ -327,31 +303,35 @@ header {
     background-attachment: fixed;
 }
 
-.Arakall::before {
-    content: "💸   💰   💵   💸\A\A   💰   💵   💸   💰\A\A💵   💸   💰   💵";
+.admin-page::before {
+    content: "";
     position: absolute;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    white-space: pre;
-    font-size: clamp(2rem, 4vw, 3.5rem);
-    line-height: 2.4;
-    letter-spacing: 1rem;
-    opacity: 0.08;
-    transform: rotate(-12deg);
     pointer-events: none;
     user-select: none;
+    opacity: 0.08;
 }
 
-.arak-hero {
+.admin-hero {
     max-width: 1180px;
     margin: 0 auto 1.5rem;
     padding: 1.5rem 1rem 0.5rem;
     text-align: left;
 }
 
-.arak-lead {
+.admin-title {
+    margin: 0 0 0.75rem;
+    text-align: left;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.1;
+    color: #e4b5ff;
+    text-shadow:
+        1px 1px 0 rgba(111, 42, 168, 0.82),
+        2px 2px 0 rgba(86, 22, 139, 0.64),
+        0 10px 26px rgba(0, 0, 0, 0.22);
+}
+
+.admin-lead {
     max-width: 760px;
     margin: 0;
     font-size: 1.05rem;
@@ -363,11 +343,7 @@ header {
         0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
-body.arak-page footer {
-    margin-top: 0;
-}
-
-.arak-card {
+.admin-card {
     border: 1px solid rgba(199, 164, 238, 0.65);
     border-radius: 28px;
     box-shadow: 0 18px 40px rgba(48, 22, 73, 0.22);
@@ -377,18 +353,18 @@ body.arak-page footer {
     height: 100%;
 }
 
-.arak-card .card-header {
+.admin-card .card-header {
     background: #39224f;
     color: #f7efff;
     border-bottom: 1px solid rgba(187, 153, 223, 0.35);
     padding: 1rem 1.25rem;
 }
 
-.arak-card .card-body {
+.admin-card .card-body {
     padding: 1.25rem;
 }
 
-.arak-card .table {
+.admin-card .table {
     --bs-table-bg: rgba(250, 245, 255, 0.5);
     --bs-table-striped-bg: rgba(226, 207, 247, 0.3);
     --bs-table-hover-bg: rgba(214, 186, 246, 0.34);
@@ -396,54 +372,67 @@ body.arak-page footer {
     border: 1px solid rgba(139, 90, 189, 0.35);
 }
 
-.arak-card .table-dark,
-.arak-card .table-dark th {
+.admin-card .table-dark,
+.admin-card .table-dark th {
     background: #39224f !important;
     color: #f7efff;
 }
 
-.arak-card thead th {
+.admin-card thead th {
     border: 1px solid rgba(187, 153, 223, 0.45);
 }
 
-.arak-card tbody tr {
+.admin-card tbody tr {
     border-bottom: 1px solid rgba(187, 153, 223, 0.35);
 }
 
-.arak-card td,
-.arak-card th {
+.admin-card td,
+.admin-card th {
     padding: 1rem;
     text-align: center;
     border: 1px solid rgba(187, 153, 223, 0.35);
 }
 
-.arak-card h4,
-.arak-card h5 {
+.admin-card h4{
+    color: #e4b5ff;
+    font-weight: 700;
+}
+
+.admin-card h5 {
     color: #4a235f;
     font-weight: 700;
 }
 
-.arak-card .form-label {
+.admin-card .form-label {
     font-weight: 600;
     color: #4a235f;
 }
 
-.arak-card .form-control {
+.admin-card .form-control,
+.admin-card .form-select,
+.admin-card textarea {
     border-radius: 14px;
     border: 1px solid #cfb8f2;
     padding: 0.8rem 0.95rem;
     background: rgba(250, 245, 255, 0.66);
 }
 
-.arak-card .form-control:focus {
+.admin-card .form-control:focus,
+.admin-card .form-select:focus,
+.admin-card textarea:focus {
     outline: none;
     border-color: #b05cff;
     box-shadow: 0 0 0 4px rgba(176, 92, 255, 0.16);
 }
 
-.arak-card hr {
+.admin-card hr {
     border-color: rgba(187, 153, 223, 0.45);
     opacity: 1;
+}
+
+.admin-side-panel {
+    position: sticky;
+    top: 100px;
 }
 
 /* Kateg.html */
@@ -785,6 +774,12 @@ footer {
 
 .Fooldalall + footer {
     margin-top: 0;
+}
+
+@media (max-width: 991.98px) {
+    .admin-side-panel {
+        position: static;
+    }
 }
 
 @media (max-width: 768px) {
