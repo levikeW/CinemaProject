@@ -1,6 +1,5 @@
 //npx tsc adminApi.ts adminCinema.ts adminTickets.ts --target ES2020 --lib ES2020,DOM
 //http://localhost:5500/AdminFrontEnd/AdminBejelentkezes.html
-// ===================== DTO =====================
 // ===================== AUTH / SESSION =====================
 function Admin_getAdminId() {
     const raw = localStorage.getItem("adminUserId");
@@ -53,21 +52,21 @@ async function Admin_renderMoviesAdminTable() {
         for (const movie of movies) {
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${movie.movieId}</td>
-                <td>${movie.movieTitle}</td>
-                <td>${movie.genre}</td>
-                <td>${movie.director}</td>
-                <td>${movie.duration} perc</td>
-                <td>${movie.imageId ?? "-"}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editMovie(${movie.movieId}, '${Admin_escapeJs(movie.movieTitle)}', ${movie.duration}, '${Admin_escapeJs(movie.genre)}', '${Admin_escapeJs(movie.director)}', '${Admin_escapeJs(movie.description)}', ${movie.imageId ?? 0})">
-                        Módosítás
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="Admin_removeMovie(${movie.movieId})">
-                        Törlés
-                    </button>
-                </td>
-            `;
+            <td>${movie.movieId}</td>
+            <td>${movie.movieTitle}</td>
+            <td>${movie.genre}</td>
+            <td>${movie.director}</td>
+            <td>${movie.duration} perc</td>
+            <td>${movie.imageId ?? "-"}</td>
+            <td>
+                <button class="btn btn-warning btn-sm me-2" onclick="Admin_editMovie(${movie.movieId}, '${window.Admin_escapeJs(movie.movieTitle)}', ${movie.duration}, '${window.Admin_escapeJs(movie.genre)}', '${window.Admin_escapeJs(movie.director)}', '${window.Admin_escapeJs(movie.description)}', ${movie.imageId ?? 0})">
+                    Módosítás
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="Admin_removeMovie(${movie.movieId})">
+                    Törlés
+                </button>
+    </td>
+`;
             tbody.appendChild(row);
         }
     }
@@ -161,14 +160,19 @@ async function Admin_renderScreeningsAdminTable() {
     if (!tbody)
         return;
     try {
-        const screenings = await Admin_getAllScreenings();
+        const [screenings, rooms] = await Promise.all([
+            Admin_getAllScreenings(),
+            Admin_getAllRooms()
+        ]);
         tbody.innerHTML = "";
         for (const screening of screenings) {
+            const room = rooms.find(r => r.roomId === screening.roomId);
+            const roomName = screening.roomName ?? room?.roomName ?? `Terem #${screening.roomId}`;
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${screening.filmScreeningId}</td>
                 <td>${screening.movieTitle}</td>
-                <td>${screening.roomName}</td>
+                <td>${roomName}</td>
                 <td>${new Date(screening.date).toLocaleString("hu-HU")}</td>
                 <td>
                     <button class="btn btn-warning btn-sm me-2" onclick="Admin_editScreening(${screening.filmScreeningId}, ${screening.movieId}, ${screening.roomId}, '${screening.date}')">
@@ -191,18 +195,93 @@ async function Admin_renderScreeningsAdminTable() {
         `;
     }
 }
+async function Admin_renderScreeningsByMovie() {
+    const container = document.getElementById("movieScreeningsContainer");
+    if (!container)
+        return;
+    try {
+        const [movies, screenings, rooms] = await Promise.all([
+            Admin_getAllMovies(),
+            Admin_getAllScreenings(),
+            Admin_getAllRooms()
+        ]);
+        container.innerHTML = "";
+        if (!screenings.length) {
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    Jelenleg nincs egyetlen vetítés sem.
+                </div>
+            `;
+            return;
+        }
+        for (const screening of screenings) {
+            const movie = movies.find(m => m.movieId === screening.movieId);
+            const room = rooms.find(r => r.roomId === screening.roomId);
+            const movieTitle = screening.movieTitle ?? movie?.movieTitle ?? `Film #${screening.movieId}`;
+            const genre = movie?.genre ?? "-";
+            const duration = movie?.duration ?? 0;
+            const director = movie?.director ?? "-";
+            const description = movie?.description ?? "";
+            const roomName = screening.roomName ?? room?.roomName ?? `Terem #${screening.roomId}`;
+            const screeningDate = new Date(screening.date).toLocaleString("hu-HU");
+            const card = document.createElement("div");
+            card.className = "movie-card kartya";
+            card.innerHTML = `
+                <div class="row g-4 align-items-start">
+                    <div class="col-12 col-lg-8">
+                        <h3>${movieTitle}</h3>
+                        <p><strong>Vetítés ID:</strong> ${screening.filmScreeningId}</p>
+                        <p><strong>Movie ID:</strong> ${screening.movieId}</p>
+                        <p><strong>Kategória:</strong> ${genre}</p>
+                        <p><strong>Hossz:</strong> ${duration} perc</p>
+                        <p><strong>Rendező:</strong> ${director}</p>
+                        <p><strong>Terem:</strong> ${roomName}</p>
+                        <p><strong>Dátum:</strong> ${screeningDate}</p>
+                        <p>${description}</p>
+                    </div>
+
+                    <div class="col-12 col-lg-4 text-lg-end">
+                        <button class="btn btn-warning btn-sm me-2 mb-2"
+                            onclick="Admin_editScreening(${screening.filmScreeningId}, ${screening.movieId}, ${screening.roomId}, '${screening.date}')">
+                            Módosítás
+                        </button>
+
+                        <button class="btn btn-danger btn-sm mb-2"
+                            onclick="Admin_removeScreening(${screening.filmScreeningId})">
+                            Törlés
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+    }
+    catch (error) {
+        console.error(error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                Nem sikerült a vetítések betöltése.
+            </div>
+        `;
+    }
+}
 async function Admin_handleScreeningCreate(event) {
     event.preventDefault();
     try {
+        const movieSelect = document.getElementById("screeningMovieId");
+        const roomSelect = document.getElementById("screeningRoomId");
         const dto = {
-            movieId: Number(document.getElementById("screeningMovieId").value),
-            roomId: Number(document.getElementById("screeningRoomId").value),
+            movieId: Number(movieSelect.value),
+            movieTitle: movieSelect.options[movieSelect.selectedIndex].text,
+            roomId: Number(roomSelect.value),
+            roomName: roomSelect.options[roomSelect.selectedIndex].text,
             date: document.getElementById("screeningDate").value
         };
         await Admin_createScreening(dto);
         Admin_showMessage("adminScreeningMessage", "Vetítés létrehozva.");
         document.getElementById("screeningForm")?.reset();
         await Admin_renderScreeningsAdminTable();
+        await Admin_renderScreeningsByMovie();
     }
     catch (error) {
         Admin_showMessage("adminScreeningMessage", error.message, true);
@@ -218,14 +297,19 @@ async function Admin_handleScreeningUpdate(event) {
     event.preventDefault();
     try {
         const screeningId = Number(document.getElementById("editScreeningId").value);
+        const movieSelect = document.getElementById("editScreeningMovieId");
+        const roomSelect = document.getElementById("editScreeningRoomId");
         const dto = {
-            movieId: Number(document.getElementById("editScreeningMovieId").value),
-            roomId: Number(document.getElementById("editScreeningRoomId").value),
-            date: document.getElementById("editScreeningDate").value
+            movieId: Number(movieSelect.value),
+            movieTitle: movieSelect.options[movieSelect.selectedIndex].text,
+            roomId: Number(roomSelect.value),
+            roomName: roomSelect.options[roomSelect.selectedIndex].text,
+            date: Admin_toIsoDateTime(document.getElementById("editScreeningDate").value)
         };
         await Admin_updateScreening(screeningId, dto);
         Admin_showMessage("adminScreeningEditMessage", "Vetítés módosítva.");
         await Admin_renderScreeningsAdminTable();
+        await Admin_renderScreeningsByMovie();
     }
     catch (error) {
         Admin_showMessage("adminScreeningEditMessage", error.message, true);
@@ -238,6 +322,7 @@ async function Admin_removeScreening(screeningId) {
         await Admin_deleteScreening(screeningId);
         Admin_showMessage("adminScreeningMessage", "Vetítés törölve.");
         await Admin_renderScreeningsAdminTable();
+        await Admin_renderScreeningsByMovie();
     }
     catch (error) {
         Admin_showMessage("adminScreeningMessage", error.message, true);
@@ -270,7 +355,7 @@ async function Admin_renderCategoriesAdminTable() {
                 <td>${category.categoryName}</td>
                 <td>${category.categoryDescription}</td>
                 <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editCategory(${category.categoryId}, '${Admin_escapeJs(category.categoryName)}', '${Admin_escapeJs(category.categoryDescription)}')">
+                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editCategory(${category.categoryId}, '${window.Admin_escapeJs(category.categoryName)}', '${window.Admin_escapeJs(category.categoryDescription)}')">
                         Módosítás
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="Admin_removeCategory(${category.categoryId})">
@@ -364,7 +449,7 @@ async function Admin_renderRoomsAdminTable() {
                 <td>${room.roomId}</td>
                 <td>${room.roomName}</td>
                 <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editRoom(${room.roomId}, '${Admin_escapeJs(room.roomName)}')">
+                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editRoom(${room.roomId}, '${window.Admin_escapeJs(room.roomName)}')">
                         Módosítás
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="Admin_removeRoom(${room.roomId})">
@@ -819,6 +904,12 @@ async function Admin_renderScreeningsRoomSelect() {
         }
     }
 }
+// ===================== DATE =====================
+function Admin_toIsoDateTime(localValue) {
+    if (!localValue)
+        return "";
+    return new Date(localValue).toISOString();
+}
 // ===================== UTIL =====================
 function Admin_toDateTimeLocalValue(date) {
     const d = new Date(date);
@@ -888,6 +979,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         await Promise.all([
             Admin_renderMoviesAdminTable(),
             Admin_renderScreeningsAdminTable(),
+            Admin_renderScreeningsByMovie(),
             Admin_renderCategoriesAdminTable(),
             Admin_renderRoomsAdminTable(),
             Admin_renderUsersAdminTable(),
