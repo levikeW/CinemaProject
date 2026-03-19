@@ -1,36 +1,7 @@
-//npx tsc adminApi.ts adminCinema.ts adminTickets.ts --target ES2020 --lib ES2020,DOM
+//npx tsc adminApi.ts adminMovies.ts adminCinema.ts adminTickets.ts adminCategories.ts --target ES2020 --lib ES2020,DOM
 //http://localhost:5500/AdminFrontEnd/AdminBejelentkezes.html
 
 // ===================== DTO =====================
-
-interface MovieDto {
-    movieId: number;
-    movieTitle: string;
-    duration: number;
-    genre: string;
-    director: string;
-    description: string;
-    imageId: number;
-    screenings?: FilmScreeningDto[];
-}
-
-interface NewMovieDto {
-    movieTitle: string;
-    duration: number;
-    genre: string;
-    director: string;
-    description: string;
-    imageId: number;
-}
-
-interface ModifyMovieDto {
-    movieTitle: string;
-    duration: number;
-    genre: string;
-    director: string;
-    description: string;
-    imageId: number;
-}
 
 interface FilmScreeningDto {
     filmScreeningId: number;
@@ -55,22 +26,6 @@ interface ModifyFilmScreeningDto {
     roomId: number;
     roomName: string;
     date: string;
-}
-
-interface CategoriesDto {
-    categoryId: number;
-    categoryName: string;
-    categoryDescription: string;
-}
-
-interface NewCategDto {
-    categoryName: string;
-    categoryDescription: string;
-}
-
-interface ModifyCategDto {
-    categoryName: string;
-    categoryDescription: string;
 }
 
 interface RoomDto {
@@ -166,139 +121,6 @@ function Admin_showMessage(targetId: string, message: string, isError = false): 
 
     target.textContent = message;
     target.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
-}
-
-// ===================== MOVIES =====================
-
-async function Admin_getAllMovies(): Promise<MovieDto[]> {
-    return await Admin_apiGet<MovieDto[]>("/api/cinema/getallmovies");
-}
-
-async function Admin_createMovie(dto: NewMovieDto): Promise<void> {
-    await Admin_apiPost<NewMovieDto>("/api/admin/newmovie", dto);
-}
-
-async function Admin_updateMovie(movieId: number, dto: ModifyMovieDto): Promise<void> {
-    await Admin_apiPut<ModifyMovieDto>(`/api/admin/modifymovie?movieId=${movieId}`, dto);
-}
-
-async function Admin_deleteMovie(movieId: number): Promise<void> {
-    await Admin_apiDelete(`/api/admin/deletemovie?movieId=${movieId}`);
-}
-
-async function Admin_renderMoviesAdminTable(): Promise<void> {
-    const tbody = document.getElementById("adminMoviesTbody") as HTMLTableSectionElement | null;
-    if (!tbody) return;
-
-    try {
-        const movies = await Admin_getAllMovies();
-        tbody.innerHTML = "";
-
-        for (const movie of movies) {
-            const row = document.createElement("tr");
-           row.innerHTML = `
-            <td>${movie.movieId}</td>
-            <td>${movie.movieTitle}</td>
-            <td>${movie.genre}</td>
-            <td>${movie.director}</td>
-            <td>${movie.duration} perc</td>
-            <td>${movie.imageId ?? "-"}</td>
-            <td>
-                <button class="btn btn-warning btn-sm me-2" onclick="Admin_editMovie(${movie.movieId}, '${window.Admin_escapeJs(movie.movieTitle)}', ${movie.duration}, '${window.Admin_escapeJs(movie.genre)}', '${window.Admin_escapeJs(movie.director)}', '${window.Admin_escapeJs(movie.description)}', ${movie.imageId ?? 0})">
-                    Módosítás
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="Admin_removeMovie(${movie.movieId})">
-                    Törlés
-                </button>
-    </td>
-`;
-            tbody.appendChild(row);
-        }
-    } catch (error) {
-        console.error(error);
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-danger text-center">Nem sikerült a filmek betöltése.</td>
-            </tr>
-        `;
-    }
-}
-
-async function Admin_handleMovieCreate(event: Event): Promise<void> {
-    event.preventDefault();
-
-    try {
-        const dto: NewMovieDto = {
-            movieTitle: (document.getElementById("movieTitle") as HTMLInputElement).value.trim(),
-            duration: Number((document.getElementById("movieDuration") as HTMLInputElement).value),
-            genre: (document.getElementById("movieGenre") as HTMLInputElement).value.trim(),
-            director: (document.getElementById("movieDirector") as HTMLInputElement).value.trim(),
-            description: (document.getElementById("movieDescription") as HTMLInputElement).value.trim(),
-            imageId: Number((document.getElementById("movieImageId") as HTMLInputElement).value || "0")
-        };
-
-        await Admin_createMovie(dto);
-        Admin_showMessage("adminMovieMessage", "Film sikeresen létrehozva.");
-        (document.getElementById("movieForm") as HTMLFormElement | null)?.reset();
-        await Admin_renderMoviesAdminTable();
-        await Admin_renderScreeningsMovieSelect();
-    } catch (error) {
-        Admin_showMessage("adminMovieMessage", (error as Error).message, true);
-    }
-}
-
-async function Admin_removeMovie(movieId: number): Promise<void> {
-    if (!confirm("Biztosan törlöd ezt a filmet?")) return;
-
-    try {
-        await Admin_deleteMovie(movieId);
-        Admin_showMessage("adminMovieMessage", "Film törölve.");
-        await Admin_renderMoviesAdminTable();
-    } catch (error) {
-        Admin_showMessage("adminMovieMessage", (error as Error).message, true);
-    }
-}
-
-function Admin_editMovie(
-    movieId: number,
-    movieTitle: string,
-    duration: number,
-    genre: string,
-    director: string,
-    description: string,
-    imageId: number
-): void {
-    (document.getElementById("editMovieId") as HTMLInputElement).value = String(movieId);
-    (document.getElementById("editMovieTitle") as HTMLInputElement).value = movieTitle;
-    (document.getElementById("editMovieDuration") as HTMLInputElement).value = String(duration);
-    (document.getElementById("editMovieGenre") as HTMLInputElement).value = genre;
-    (document.getElementById("editMovieDirector") as HTMLInputElement).value = director;
-    (document.getElementById("editMovieDescription") as HTMLInputElement).value = description;
-    (document.getElementById("editMovieImageId") as HTMLInputElement).value = String(imageId);
-}
-
-async function Admin_handleMovieUpdate(event: Event): Promise<void> {
-    event.preventDefault();
-
-    try {
-        const movieId = Number((document.getElementById("editMovieId") as HTMLInputElement).value);
-
-        const dto: ModifyMovieDto = {
-            movieTitle: (document.getElementById("editMovieTitle") as HTMLInputElement).value.trim(),
-            duration: Number((document.getElementById("editMovieDuration") as HTMLInputElement).value),
-            genre: (document.getElementById("editMovieGenre") as HTMLInputElement).value.trim(),
-            director: (document.getElementById("editMovieDirector") as HTMLInputElement).value.trim(),
-            description: (document.getElementById("editMovieDescription") as HTMLInputElement).value.trim(),
-            imageId: Number((document.getElementById("editMovieImageId") as HTMLInputElement).value || "0")
-        };
-
-        await Admin_updateMovie(movieId, dto);
-        Admin_showMessage("adminMovieEditMessage", "Film módosítva.");
-        await Admin_renderMoviesAdminTable();
-        await Admin_renderScreeningsMovieSelect();
-    } catch (error) {
-        Admin_showMessage("adminMovieEditMessage", (error as Error).message, true);
-    }
 }
 
 // ===================== SCREENINGS =====================
@@ -514,112 +336,6 @@ async function Admin_removeScreening(screeningId: number): Promise<void> {
         Admin_showMessage("adminScreeningMessage", (error as Error).message, true);
     }
 }
-// ===================== CATEGORIES =====================
-
-async function Admin_getAllCategories(): Promise<CategoriesDto[]> {
-    return await Admin_apiGet<CategoriesDto[]>("/api/cinema/getallcateg");
-}
-
-async function Admin_createCategory(dto: NewCategDto): Promise<void> {
-    await Admin_apiPost<NewCategDto>("/api/admin/newcateg", dto);
-}
-
-async function Admin_updateCategory(categId: number, dto: ModifyCategDto): Promise<void> {
-    await Admin_apiPut<ModifyCategDto>(`/api/admin/modifycateg?categId=${categId}`, dto);
-}
-
-async function Admin_deleteCategory(categId: number): Promise<void> {
-    await Admin_apiDelete(`/api/admin/deletecateg?categId=${categId}`);
-}
-
-async function Admin_renderCategoriesAdminTable(): Promise<void> {
-    const tbody = document.getElementById("adminCategoriesTbody") as HTMLTableSectionElement | null;
-    if (!tbody) return;
-
-    try {
-        const categories = await Admin_getAllCategories();
-        tbody.innerHTML = "";
-
-        for (const category of categories) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${category.categoryId}</td>
-                <td>${category.categoryName}</td>
-                <td>${category.categoryDescription}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editCategory(${category.categoryId}, '${window.Admin_escapeJs(category.categoryName)}', '${window.Admin_escapeJs(category.categoryDescription)}')">
-                        Módosítás
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="Admin_removeCategory(${category.categoryId})">
-                        Törlés
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    } catch (error) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="4" class="text-danger text-center">Nem sikerült a kategóriák betöltése.</td>
-            </tr>
-        `;
-    }
-}
-
-async function Admin_handleCategoryCreate(event: Event): Promise<void> {
-    event.preventDefault();
-
-    try {
-        const dto: NewCategDto = {
-            categoryName: (document.getElementById("categoryName") as HTMLInputElement).value.trim(),
-            categoryDescription: (document.getElementById("categoryDescription") as HTMLInputElement).value.trim()
-        };
-
-        await Admin_createCategory(dto);
-        Admin_showMessage("adminCategoryMessage", "Kategória létrehozva.");
-        (document.getElementById("categoryForm") as HTMLFormElement | null)?.reset();
-        await Admin_renderCategoriesAdminTable();
-    } catch (error) {
-        Admin_showMessage("adminCategoryMessage", (error as Error).message, true);
-    }
-}
-
-function Admin_editCategory(categoryId: number, categoryName: string, categoryDescription: string): void {
-    (document.getElementById("editCategoryId") as HTMLInputElement).value = String(categoryId);
-    (document.getElementById("editCategoryName") as HTMLInputElement).value = categoryName;
-    (document.getElementById("editCategoryDescription") as HTMLInputElement).value = categoryDescription;
-}
-
-async function Admin_handleCategoryUpdate(event: Event): Promise<void> {
-    event.preventDefault();
-
-    try {
-        const categoryId = Number((document.getElementById("editCategoryId") as HTMLInputElement).value);
-        const dto: ModifyCategDto = {
-            categoryName: (document.getElementById("editCategoryName") as HTMLInputElement).value.trim(),
-            categoryDescription: (document.getElementById("editCategoryDescription") as HTMLInputElement).value.trim()
-        };
-
-        await Admin_updateCategory(categoryId, dto);
-        Admin_showMessage("adminCategoryEditMessage", "Kategória módosítva.");
-        await Admin_renderCategoriesAdminTable();
-    } catch (error) {
-        Admin_showMessage("adminCategoryEditMessage", (error as Error).message, true);
-    }
-}
-
-async function Admin_removeCategory(categoryId: number): Promise<void> {
-    if (!confirm("Biztosan törlöd ezt a kategóriát?")) return;
-
-    try {
-        await Admin_deleteCategory(categoryId);
-        Admin_showMessage("adminCategoryMessage", "Kategória törölve.");
-        await Admin_renderCategoriesAdminTable();
-    } catch (error) {
-        Admin_showMessage("adminCategoryMessage", (error as Error).message, true);
-    }
-}
-
 // ===================== ROOMS =====================
 
 async function Admin_getAllRooms(): Promise<RoomDto[]> {
@@ -1019,7 +735,7 @@ async function Admin_handleLoginSubmit(event: Event) {
         if (data.role === "Admin") {
             window.location.replace("AdminCinema.html");
         } else {
-            window.location.replace("Profile.html");
+            window.location.replace("AdminProfile.html");
         }
 
     } catch (err) {
@@ -1216,15 +932,6 @@ function Admin_toDateTimeLocalValue(date: string): string {
 // ===================== WINDOW EXPORT =====================
 
 // @ts-ignore
-window.Admin_handleMovieCreate = Admin_handleMovieCreate;
-// @ts-ignore
-window.Admin_handleMovieUpdate = Admin_handleMovieUpdate;
-// @ts-ignore
-window.Admin_removeMovie = Admin_removeMovie;
-// @ts-ignore
-window.Admin_editMovie = Admin_editMovie;
-
-// @ts-ignore
 window.Admin_handleScreeningCreate = Admin_handleScreeningCreate;
 // @ts-ignore
 window.Admin_handleScreeningUpdate = Admin_handleScreeningUpdate;
@@ -1232,15 +939,6 @@ window.Admin_handleScreeningUpdate = Admin_handleScreeningUpdate;
 window.Admin_removeScreening = Admin_removeScreening;
 // @ts-ignore
 window.Admin_editScreening = Admin_editScreening;
-
-// @ts-ignore
-window.Admin_handleCategoryCreate = Admin_handleCategoryCreate;
-// @ts-ignore
-window.Admin_handleCategoryUpdate = Admin_handleCategoryUpdate;
-// @ts-ignore
-window.Admin_removeCategory = Admin_removeCategory;
-// @ts-ignore
-window.Admin_editCategory = Admin_editCategory;
 
 // @ts-ignore
 window.Admin_handleRoomCreate = Admin_handleRoomCreate;
@@ -1282,10 +980,7 @@ window.Admin_handleRegisterSubmit = Admin_handleRegisterSubmit;
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         await Promise.all([
-            Admin_renderMoviesAdminTable(),
             Admin_renderScreeningsAdminTable(),
-            Admin_renderScreeningsByMovie(),
-            Admin_renderCategoriesAdminTable(),
             Admin_renderRoomsAdminTable(),
             Admin_renderUsersAdminTable(),
             Admin_renderReservationsAdminTable(),

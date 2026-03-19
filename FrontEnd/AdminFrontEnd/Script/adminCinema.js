@@ -1,4 +1,4 @@
-//npx tsc adminApi.ts adminCinema.ts adminTickets.ts --target ES2020 --lib ES2020,DOM
+//npx tsc adminApi.ts adminMovies.ts adminCinema.ts adminTickets.ts adminCategories.ts --target ES2020 --lib ES2020,DOM
 //http://localhost:5500/AdminFrontEnd/AdminBejelentkezes.html
 // ===================== AUTH / SESSION =====================
 function Admin_getAdminId() {
@@ -28,119 +28,6 @@ function Admin_showMessage(targetId, message, isError = false) {
         return;
     target.textContent = message;
     target.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
-}
-// ===================== MOVIES =====================
-async function Admin_getAllMovies() {
-    return await Admin_apiGet("/api/cinema/getallmovies");
-}
-async function Admin_createMovie(dto) {
-    await Admin_apiPost("/api/admin/newmovie", dto);
-}
-async function Admin_updateMovie(movieId, dto) {
-    await Admin_apiPut(`/api/admin/modifymovie?movieId=${movieId}`, dto);
-}
-async function Admin_deleteMovie(movieId) {
-    await Admin_apiDelete(`/api/admin/deletemovie?movieId=${movieId}`);
-}
-async function Admin_renderMoviesAdminTable() {
-    const tbody = document.getElementById("adminMoviesTbody");
-    if (!tbody)
-        return;
-    try {
-        const movies = await Admin_getAllMovies();
-        tbody.innerHTML = "";
-        for (const movie of movies) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-            <td>${movie.movieId}</td>
-            <td>${movie.movieTitle}</td>
-            <td>${movie.genre}</td>
-            <td>${movie.director}</td>
-            <td>${movie.duration} perc</td>
-            <td>${movie.imageId ?? "-"}</td>
-            <td>
-                <button class="btn btn-warning btn-sm me-2" onclick="Admin_editMovie(${movie.movieId}, '${window.Admin_escapeJs(movie.movieTitle)}', ${movie.duration}, '${window.Admin_escapeJs(movie.genre)}', '${window.Admin_escapeJs(movie.director)}', '${window.Admin_escapeJs(movie.description)}', ${movie.imageId ?? 0})">
-                    Módosítás
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="Admin_removeMovie(${movie.movieId})">
-                    Törlés
-                </button>
-    </td>
-`;
-            tbody.appendChild(row);
-        }
-    }
-    catch (error) {
-        console.error(error);
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-danger text-center">Nem sikerült a filmek betöltése.</td>
-            </tr>
-        `;
-    }
-}
-async function Admin_handleMovieCreate(event) {
-    event.preventDefault();
-    try {
-        const dto = {
-            movieTitle: document.getElementById("movieTitle").value.trim(),
-            duration: Number(document.getElementById("movieDuration").value),
-            genre: document.getElementById("movieGenre").value.trim(),
-            director: document.getElementById("movieDirector").value.trim(),
-            description: document.getElementById("movieDescription").value.trim(),
-            imageId: Number(document.getElementById("movieImageId").value || "0")
-        };
-        await Admin_createMovie(dto);
-        Admin_showMessage("adminMovieMessage", "Film sikeresen létrehozva.");
-        document.getElementById("movieForm")?.reset();
-        await Admin_renderMoviesAdminTable();
-        await Admin_renderScreeningsMovieSelect();
-    }
-    catch (error) {
-        Admin_showMessage("adminMovieMessage", error.message, true);
-    }
-}
-async function Admin_removeMovie(movieId) {
-    if (!confirm("Biztosan törlöd ezt a filmet?"))
-        return;
-    try {
-        await Admin_deleteMovie(movieId);
-        Admin_showMessage("adminMovieMessage", "Film törölve.");
-        await Admin_renderMoviesAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminMovieMessage", error.message, true);
-    }
-}
-function Admin_editMovie(movieId, movieTitle, duration, genre, director, description, imageId) {
-    document.getElementById("editMovieId").value = String(movieId);
-    document.getElementById("editMovieTitle").value = movieTitle;
-    document.getElementById("editMovieDuration").value = String(duration);
-    document.getElementById("editMovieGenre").value = genre;
-    document.getElementById("editMovieDirector").value = director;
-    document.getElementById("editMovieDescription").value = description;
-    document.getElementById("editMovieImageId").value = String(imageId);
-}
-async function Admin_handleMovieUpdate(event) {
-    event.preventDefault();
-    try {
-        const movieId = Number(document.getElementById("editMovieId").value);
-        const dto = {
-            movieTitle: document.getElementById("editMovieTitle").value.trim(),
-            duration: Number(document.getElementById("editMovieDuration").value),
-            genre: document.getElementById("editMovieGenre").value.trim(),
-            director: document.getElementById("editMovieDirector").value.trim(),
-            description: document.getElementById("editMovieDescription").value.trim(),
-            imageId: Number(document.getElementById("editMovieImageId").value || "0")
-        };
-        await Admin_updateMovie(movieId, dto);
-        Admin_showMessage("adminMovieEditMessage", "Film módosítva.");
-        await Admin_renderMoviesAdminTable();
-        await Admin_renderScreeningsMovieSelect();
-    }
-    catch (error) {
-        Admin_showMessage("adminMovieEditMessage", error.message, true);
-    }
 }
 // ===================== SCREENINGS =====================
 async function Admin_getAllScreenings() {
@@ -326,101 +213,6 @@ async function Admin_removeScreening(screeningId) {
     }
     catch (error) {
         Admin_showMessage("adminScreeningMessage", error.message, true);
-    }
-}
-// ===================== CATEGORIES =====================
-async function Admin_getAllCategories() {
-    return await Admin_apiGet("/api/cinema/getallcateg");
-}
-async function Admin_createCategory(dto) {
-    await Admin_apiPost("/api/admin/newcateg", dto);
-}
-async function Admin_updateCategory(categId, dto) {
-    await Admin_apiPut(`/api/admin/modifycateg?categId=${categId}`, dto);
-}
-async function Admin_deleteCategory(categId) {
-    await Admin_apiDelete(`/api/admin/deletecateg?categId=${categId}`);
-}
-async function Admin_renderCategoriesAdminTable() {
-    const tbody = document.getElementById("adminCategoriesTbody");
-    if (!tbody)
-        return;
-    try {
-        const categories = await Admin_getAllCategories();
-        tbody.innerHTML = "";
-        for (const category of categories) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${category.categoryId}</td>
-                <td>${category.categoryName}</td>
-                <td>${category.categoryDescription}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editCategory(${category.categoryId}, '${window.Admin_escapeJs(category.categoryName)}', '${window.Admin_escapeJs(category.categoryDescription)}')">
-                        Módosítás
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="Admin_removeCategory(${category.categoryId})">
-                        Törlés
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    }
-    catch (error) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="4" class="text-danger text-center">Nem sikerült a kategóriák betöltése.</td>
-            </tr>
-        `;
-    }
-}
-async function Admin_handleCategoryCreate(event) {
-    event.preventDefault();
-    try {
-        const dto = {
-            categoryName: document.getElementById("categoryName").value.trim(),
-            categoryDescription: document.getElementById("categoryDescription").value.trim()
-        };
-        await Admin_createCategory(dto);
-        Admin_showMessage("adminCategoryMessage", "Kategória létrehozva.");
-        document.getElementById("categoryForm")?.reset();
-        await Admin_renderCategoriesAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminCategoryMessage", error.message, true);
-    }
-}
-function Admin_editCategory(categoryId, categoryName, categoryDescription) {
-    document.getElementById("editCategoryId").value = String(categoryId);
-    document.getElementById("editCategoryName").value = categoryName;
-    document.getElementById("editCategoryDescription").value = categoryDescription;
-}
-async function Admin_handleCategoryUpdate(event) {
-    event.preventDefault();
-    try {
-        const categoryId = Number(document.getElementById("editCategoryId").value);
-        const dto = {
-            categoryName: document.getElementById("editCategoryName").value.trim(),
-            categoryDescription: document.getElementById("editCategoryDescription").value.trim()
-        };
-        await Admin_updateCategory(categoryId, dto);
-        Admin_showMessage("adminCategoryEditMessage", "Kategória módosítva.");
-        await Admin_renderCategoriesAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminCategoryEditMessage", error.message, true);
-    }
-}
-async function Admin_removeCategory(categoryId) {
-    if (!confirm("Biztosan törlöd ezt a kategóriát?"))
-        return;
-    try {
-        await Admin_deleteCategory(categoryId);
-        Admin_showMessage("adminCategoryMessage", "Kategória törölve.");
-        await Admin_renderCategoriesAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminCategoryMessage", error.message, true);
     }
 }
 // ===================== ROOMS =====================
@@ -765,7 +557,7 @@ async function Admin_handleLoginSubmit(event) {
             window.location.replace("AdminCinema.html");
         }
         else {
-            window.location.replace("Profile.html");
+            window.location.replace("AdminProfile.html");
         }
     }
     catch (err) {
@@ -922,14 +714,6 @@ function Admin_toDateTimeLocalValue(date) {
 }
 // ===================== WINDOW EXPORT =====================
 // @ts-ignore
-window.Admin_handleMovieCreate = Admin_handleMovieCreate;
-// @ts-ignore
-window.Admin_handleMovieUpdate = Admin_handleMovieUpdate;
-// @ts-ignore
-window.Admin_removeMovie = Admin_removeMovie;
-// @ts-ignore
-window.Admin_editMovie = Admin_editMovie;
-// @ts-ignore
 window.Admin_handleScreeningCreate = Admin_handleScreeningCreate;
 // @ts-ignore
 window.Admin_handleScreeningUpdate = Admin_handleScreeningUpdate;
@@ -937,14 +721,6 @@ window.Admin_handleScreeningUpdate = Admin_handleScreeningUpdate;
 window.Admin_removeScreening = Admin_removeScreening;
 // @ts-ignore
 window.Admin_editScreening = Admin_editScreening;
-// @ts-ignore
-window.Admin_handleCategoryCreate = Admin_handleCategoryCreate;
-// @ts-ignore
-window.Admin_handleCategoryUpdate = Admin_handleCategoryUpdate;
-// @ts-ignore
-window.Admin_removeCategory = Admin_removeCategory;
-// @ts-ignore
-window.Admin_editCategory = Admin_editCategory;
 // @ts-ignore
 window.Admin_handleRoomCreate = Admin_handleRoomCreate;
 // @ts-ignore
@@ -977,10 +753,7 @@ window.Admin_handleRegisterSubmit = Admin_handleRegisterSubmit;
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         await Promise.all([
-            Admin_renderMoviesAdminTable(),
             Admin_renderScreeningsAdminTable(),
-            Admin_renderScreeningsByMovie(),
-            Admin_renderCategoriesAdminTable(),
             Admin_renderRoomsAdminTable(),
             Admin_renderUsersAdminTable(),
             Admin_renderReservationsAdminTable(),
