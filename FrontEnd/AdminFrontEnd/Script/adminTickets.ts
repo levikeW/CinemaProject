@@ -1,20 +1,20 @@
 // ===================== DTO =====================
 
 interface TicketTypeDto {
-    id: number;
-    ticketName: string;
+    ticketTypeId: number;
+    name: string;
     price: number;
 }
 
 interface NewTicketTypeDto {
-    ticketId : number;
+    ticketTypeId : number;
     name: string;
     price: number;
 }
 
 interface ModifyTicketTypeDto {
-    id: number;
-    ticketName: string;
+    ticketTypeId: number;
+    name: string;
     price: number;
 }
 
@@ -46,28 +46,26 @@ async function Admin_renderTicketsAdminTable(): Promise<void> {
 
         for (const ticket of tickets) {
             const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${ticket.id}</td>
-                <td>${ticket.ticketName}</td>
+            row.innerHTML = 
+            `<td>${ticket.ticketTypeId}</td>
+                <td>${ticket.name}</td>
                 <td>${ticket.price} Ft</td>
                 <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editTicket(${ticket.id}, '${Admin_escapeJs(ticket.ticketName)}', ${ticket.price})">
+                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editTicket(${ticket.ticketTypeId}, '${Admin_escapeJs(ticket.name)}', ${ticket.price})">
                         Módosítás
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="Admin_removeTicket(${ticket.id})">
+                    <button class="btn btn-danger btn-sm" onclick="Admin_removeTicket(${ticket.ticketTypeId})">
                         Törlés
                     </button>
-                </td>
-            `;
+                </td>`;
             tbody.appendChild(row);
         }
     } catch (error) {
         console.error("Jegytípusok betöltési hiba:", error);
-        tbody.innerHTML = `
-            <tr>
+        tbody.innerHTML = 
+            `<tr>
                 <td colspan="4" class="text-danger text-center">Nem sikerült a jegytípusok betöltése.</td>
-            </tr>
-        `;
+            </tr>`;
     }
 }
 
@@ -76,7 +74,7 @@ async function Admin_handleTicketCreate(event: Event): Promise<void> {
 
     try {
         const dto: NewTicketTypeDto = {
-            ticketId: 0,
+            ticketTypeId: 0,
             name: (document.getElementById("ticketType") as HTMLInputElement).value,
             price: Number((document.getElementById("ticketPrice") as HTMLInputElement).value)
         };
@@ -103,8 +101,8 @@ async function Admin_handleTicketUpdate(event: Event): Promise<void> {
         const ticketId = Number((document.getElementById("editTicketId") as HTMLInputElement).value);
 
         const dto: ModifyTicketTypeDto = {
-            id: ticketId,
-            ticketName: (document.getElementById("editTicketType") as HTMLInputElement).value.trim(),
+            ticketTypeId: ticketId,
+            name: (document.getElementById("editTicketType") as HTMLInputElement).value.trim(),
             price: Number((document.getElementById("editTicketPrice") as HTMLInputElement).value)
         };
 
