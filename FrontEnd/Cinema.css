@@ -22,6 +22,8 @@ body.home-page {
 }
 
 body.cinema-page {
+    overflow-y: auto;
+    overflow-x: hidden;
     background-color: #100c1d;
     background-image:
         radial-gradient(circle at 16% 18%, rgba(212, 121, 255, 0.3) 0%, transparent 24%),
@@ -36,19 +38,15 @@ body.cinema-page {
 }
 
 body.arak-page {
-    background-color: #15111d;
-    background-image:
-        radial-gradient(circle at top left, rgba(210, 126, 255, 0.14) 0%, transparent 28%),
-        radial-gradient(circle at bottom left, rgba(115, 47, 182, 0.18) 0%, transparent 34%),
-        linear-gradient(180deg, #1a1327 0%, #2a193b 52%, #17111f 100%);
+    background-color: #0e1622;
+    background-image: none;
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
     background-attachment: fixed;
 }
 
-body.auth-page,
-body.profile-page {
+body.auth-page {
     background-color: #171124;
     background-image:
         radial-gradient(circle at top left, rgba(196, 110, 255, 0.12) 0%, transparent 28%),
@@ -60,12 +58,17 @@ body.profile-page {
     background-attachment: fixed;
 }
 
+body.profile-page,
 body.rolunk-page {
-    background-color: #13101d;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #100c1d;
     background-image:
-        radial-gradient(circle at top left, rgba(196, 110, 255, 0.14) 0%, transparent 28%),
-        radial-gradient(circle at bottom right, rgba(103, 41, 164, 0.18) 0%, transparent 34%),
-        linear-gradient(180deg, #171124 0%, #251738 52%, #130f1d 100%);
+        radial-gradient(circle at 16% 18%, rgba(212, 121, 255, 0.3) 0%, transparent 24%),
+        radial-gradient(circle at 84% 16%, rgba(120, 68, 255, 0.24) 0%, transparent 22%),
+        radial-gradient(circle at 50% 82%, rgba(255, 96, 186, 0.14) 0%, transparent 28%),
+        linear-gradient(140deg, rgba(35, 17, 56, 0.92) 0%, rgba(18, 14, 37, 0.88) 48%, rgba(9, 10, 20, 0.96) 100%),
+        linear-gradient(180deg, #1c1230 0%, #140f24 52%, #0b0c16 100%);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
@@ -154,6 +157,42 @@ header {
     background: rgba(255, 255, 255, 0.14);
 }
 
+.floating-cart-button {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 1200;
+    width: 62px;
+    height: 62px;
+    border: 1px solid rgba(196, 88, 255, 0.45);
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(209, 103, 255, 0.92), rgba(122, 44, 255, 0.9));
+    box-shadow:
+        0 14px 30px rgba(34, 11, 61, 0.3),
+        0 0 24px rgba(200, 92, 255, 0.26);
+    color: #ffffff;
+    font-size: 1.7rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.floating-cart-button:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow:
+        0 18px 34px rgba(34, 11, 61, 0.34),
+        0 0 28px rgba(200, 92, 255, 0.32);
+    filter: brightness(1.03);
+}
+
+.floating-cart-button:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 3px;
+}
+
 .page-section {
     padding: 2rem 1rem 4rem;
 }
@@ -182,8 +221,7 @@ header {
     z-index: -1;
     background:
         radial-gradient(circle at 50% -8%, rgba(255, 233, 174, 0.2) 0%, rgba(224, 146, 255, 0.1) 18%, transparent 42%),
-        linear-gradient(115deg, transparent 0%, rgba(199, 104, 255, 0.08) 34%, transparent 52%),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0, rgba(0, 0, 0, 0.2) 5%, transparent 5%, transparent 11%, rgba(0, 0, 0, 0.1) 11%, rgba(0, 0, 0, 0.1) 17%, transparent 17%, transparent 100%);
+        linear-gradient(115deg, transparent 0%, rgba(199, 104, 255, 0.08) 34%, transparent 52%);
     opacity: 0.34;
     pointer-events: none;
 }
@@ -292,6 +330,10 @@ header {
 }
 
 .movie-card {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 2rem;
     width: 100%;
     margin: 0 auto 1.5rem;
     padding: 1.25rem;
@@ -302,13 +344,30 @@ header {
     backdrop-filter: blur(6px);
 }
 
+.movie-card-poster {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .movie-card img {
     width: 100%;
-    height: 320px;
+    max-width: 280px;
+    aspect-ratio: 2 / 3;
+    height: auto;
     border-radius: 18px;
     object-fit: cover;
     background-color: #ccd6df;
-    margin-bottom: 1rem;
+    margin: 0 auto;
+    box-shadow: 0 18px 32px rgba(27, 13, 43, 0.22);
+}
+
+.movie-card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100%;
+    padding: 0.5rem 0;
 }
 
 .movie-card h3 {
@@ -318,11 +377,66 @@ header {
 }
 
 .movie-card p {
+    margin-bottom: 1rem;
     text-align: left;
 }
 
-.movie-card button {
+.screenings-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
     margin-top: 0.5rem;
+}
+
+.room-page-shell {
+    max-width: 920px;
+    margin: 1rem auto 0;
+    padding: 0 1rem 2rem;
+}
+
+.room-page-card {
+    border: 1px solid rgba(196, 88, 255, 0.26);
+    border-radius: 28px;
+    background: rgba(18, 14, 37, 0.78);
+    box-shadow: 0 18px 40px rgba(20, 8, 34, 0.28);
+    backdrop-filter: blur(8px);
+    padding: 2rem;
+    color: #f3e9ff;
+}
+
+.room-page-eyebrow {
+    margin: 0 0 0.85rem;
+    color: rgba(226, 194, 255, 0.78);
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.room-page-card h1 {
+    margin: 0 0 1.25rem;
+    color: #e4b5ff;
+    text-shadow:
+        1px 1px 0 rgba(111, 42, 168, 0.82),
+        2px 2px 0 rgba(86, 22, 139, 0.64),
+        0 10px 26px rgba(0, 0, 0, 0.22);
+}
+
+.room-page-meta {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.room-page-meta p {
+    margin: 0;
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(196, 88, 255, 0.16);
+    border-radius: 18px;
+    background: rgba(244, 234, 255, 0.08);
+}
+
+.movie-card button {
+    margin-top: 0;
     border-radius: 999px;
     padding: 0.75rem 1.25rem;
     font-weight: 600;
@@ -359,10 +473,7 @@ header {
     position: relative;
     isolation: isolate;
     min-height: calc(100vh - 84px);
-    background-image:
-        radial-gradient(circle at top left, rgba(210, 126, 255, 0.14) 0%, transparent 28%),
-        radial-gradient(circle at bottom left, rgba(115, 47, 182, 0.18) 0%, transparent 34%),
-        linear-gradient(180deg, #1a1327 0%, #2a193b 52%, #17111f 100%);
+    background-image: none;
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
@@ -370,40 +481,23 @@ header {
 }
 
 .Arakall::before {
-    content: "💰";
+    content: "";
     position: absolute;
-    left: 6%;
-    top: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(2rem, 4vw, 3.5rem);
-    opacity: 0.08;
-    transform: rotate(-12deg);
+    inset: 0;
+    z-index: -1;
+    background: none;
+    opacity: 0;
     pointer-events: none;
-    user-select: none;
 }
 
 .Arakall::after {
-    content: "💰";
-    position: absolute;
-    right: 6%;
-    top: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(2rem, 4vw, 3.5rem);
-    opacity: 0.08;
-    transform: rotate(12deg);
-    pointer-events: none;
-    user-select: none;
+    content: none;
 }
 
 .arak-hero {
     max-width: 1180px;
     margin: 0 auto 1.5rem;
     padding: 1.5rem 1rem 0.5rem;
-    text-align: center;
 }
 
 .arak-lead {
@@ -411,48 +505,119 @@ header {
     margin: 0 auto;
     font-size: 1.05rem;
     line-height: 1.6;
-    color: #e4b5ff;
+    color: #d6ebf8;
     text-shadow:
-        1px 1px 0 rgba(111, 42, 168, 0.82),
-        2px 2px 0 rgba(86, 22, 139, 0.64),
-        0 8px 24px rgba(0, 0, 0, 0.22);
+        0 2px 0 rgba(37, 121, 150, 0.64),
+        0 10px 30px rgba(0, 0, 0, 0.28),
+        0 0 18px rgba(127, 233, 255, 0.16);
+}
+
+.arak-shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 1rem 2rem;
 }
 
 .arak-panel {
-    border: 1px solid rgba(199, 164, 238, 0.65);
-    box-shadow: 0 18px 40px rgba(48, 22, 73, 0.22);
-    background: rgba(239, 226, 255, 0.61);
-    backdrop-filter: blur(6px);
+    position: relative;
+    isolation: isolate;
+    border: 1px solid rgba(173, 230, 255, 0.2);
+    border-radius: 28px;
+    box-shadow: 0 18px 40px rgba(5, 17, 27, 0.28);
+    background: rgba(8, 25, 40, 0.72);
+    backdrop-filter: blur(8px);
+    overflow: visible;
+    padding: 1.35rem;
+    color: #eff8ff;
+}
+
+.arak-panel::before {
+    content: "";
+    position: absolute;
+    inset: -16px;
+    z-index: -1;
+    border-radius: 38px;
+    opacity: 0.34;
+    filter: blur(28px);
+    background:
+        radial-gradient(ellipse at 18% 50%, rgba(126, 240, 255, 0.6) 0%, transparent 38%),
+        radial-gradient(ellipse at 82% 50%, rgba(126, 240, 255, 0.6) 0%, transparent 38%);
+}
+
+.arak-panel::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    z-index: -1;
+    border-radius: 30px;
+    box-shadow:
+        0 0 0 1px rgba(126, 240, 255, 0.16),
+        0 0 24px rgba(126, 240, 255, 0.18),
+        0 0 48px rgba(126, 240, 255, 0.14);
+    pointer-events: none;
+}
+
+.arak-panel-header {
+    padding: 0.25rem 0 1.25rem;
+    text-align: center;
+}
+
+.arak-panel-header h2 {
+    margin: 0 0 0.65rem;
+    font-size: 1.5rem;
+    color: #ffffff;
+}
+
+.arak-panel-header p {
+    max-width: 52ch;
+    margin: 0 auto;
+    color: rgba(226, 240, 248, 0.86);
+    line-height: 1.6;
+}
+
+.arak-table-wrap {
     overflow: hidden;
-    padding-bottom: 1.5rem;
+    border: 1px solid rgba(173, 230, 255, 0.16);
+    border-radius: 22px;
+    background: rgba(13, 33, 51, 0.82);
 }
 
 .arak-panel .table {
-    --bs-table-bg: rgba(250, 245, 255, 0.5);
-    --bs-table-striped-bg: rgba(226, 207, 247, 0.3);
-    --bs-table-hover-bg: rgba(214, 186, 246, 0.34);
+    --bs-table-color: #eff8ff;
+    --bs-table-bg: rgba(13, 33, 51, 0.82);
+    --bs-table-striped-color: #eff8ff;
+    --bs-table-striped-bg: rgba(20, 45, 67, 0.9);
+    --bs-table-hover-color: #ffffff;
+    --bs-table-hover-bg: rgba(28, 61, 88, 0.95);
     margin-bottom: 0;
-    border: 1px solid rgba(139, 90, 189, 0.35);
+    border: 0;
 }
 
 .arak-panel .table-dark,
 .arak-panel .table-dark th {
-    background: #39224f !important;
-    color: #f7efff;
+    background: rgba(18, 54, 79, 0.98) !important;
+    color: #f4fbff;
 }
 
 .arak-panel thead th {
-    border: 1px solid rgba(187, 153, 223, 0.45);
+    border: 0;
+    border-bottom: 1px solid rgba(173, 230, 255, 0.18);
+    font-weight: 700;
+    letter-spacing: 0.04em;
 }
 
 .arak-panel tbody tr {
-    border-bottom: 1px solid rgba(187, 153, 223, 0.35);
+    border-bottom: 1px solid rgba(173, 230, 255, 0.12);
 }
 
 .arak-panel td,.arak-panel th {
     padding: 1rem;
     text-align: center;
-    border: 1px solid rgba(187, 153, 223, 0.35);
+    border: 0;
+}
+
+.arak-panel tbody td {
+    color: rgba(239, 248, 255, 0.92);
 }
 
 /* Kateg.html */
@@ -610,14 +775,7 @@ header {
 
 .Rolunk {
     min-height: calc(100vh - 84px);
-    background-image:
-        radial-gradient(circle at top left, rgba(196, 110, 255, 0.14) 0%, transparent 28%),
-        radial-gradient(circle at bottom right, rgba(103, 41, 164, 0.18) 0%, transparent 34%),
-        linear-gradient(180deg, #171124 0%, #251738 52%, #130f1d 100%);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-attachment: fixed;
+    background: transparent;
 }
 
 .Rolunkh1 {
@@ -932,7 +1090,17 @@ button {
     }
 
     .movie-card {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
         padding: 1rem;
+    }
+
+    .movie-card-content {
+        padding: 0;
+    }
+
+    .movie-card img {
+        max-width: min(100%, 320px);
     }
 
     .Arakkeret,
