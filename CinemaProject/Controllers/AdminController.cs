@@ -191,11 +191,11 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("modifyfilmscreening")]
-        public async Task<ActionResult> ModifyFilmScreening([FromBody] ModifyFilmScreeningDto dto, [FromQuery] int screeningId)
+        public async Task<ActionResult> ModifyFilmScreening([FromBody] ModifyFilmScreeningDto dto)
         {
             try
             {
-                await _adminModel.ModifyFilmScreening(dto, screeningId);
+                await _adminModel.ModifyFilmScreening(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)

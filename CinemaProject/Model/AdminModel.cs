@@ -100,12 +100,17 @@ namespace CinemaProject.Model
                 throw new InvalidOperationException("Already exists");
             }
 
+            if (!_context.movies.Any(x => x.MovieTitle == dto.MovieTitle))
+            {
+                throw new InvalidOperationException("Not Found");
+            }
+
+            var MovieId = await _context.movies.FirstAsync(x => x.MovieTitle == dto.MovieTitle);
             using var trx = await _context.Database.BeginTransactionAsync();
 
             _context.filmScreenings.Add(new Persistence.FilmScreening
             {
-                MovieId = dto.MovieId,
-                MovieTitle = dto.MovieTitle,
+                MovieId = MovieId.MovieId,
                 RoomId = dto.RoomId,
                 RoomName = dto.RoomName,
                 Date = dto.Date.ToUniversalTime()
@@ -138,7 +143,7 @@ namespace CinemaProject.Model
 
         public async Task<NewTicketTypeDto> NewTicketType(NewTicketTypeDto dto)
         {
-            if (dto.TicketId != 0 && await _context.ticketsForHTML.AnyAsync(x => x.TicketId == dto.TicketId))
+            if (dto.TicketTypeId != 0 && await _context.ticketsForHTML.AnyAsync(x => x.TicketId == dto.TicketTypeId))
                 throw new InvalidOperationException("Already exists");
 
             using var trx = await _context.Database.BeginTransactionAsync();
@@ -195,20 +200,22 @@ namespace CinemaProject.Model
             movie.ImageId = imageId;
             movie.Status = dto.Status;
 
+
             await _context.SaveChangesAsync();
             await trx.CommitAsync();
         }
 
-        public async Task ModifyFilmScreening(ModifyFilmScreeningDto dto, int screeningId)
+        public async Task ModifyFilmScreening(ModifyFilmScreeningDto dto)
         {
-            var screening = await _context.filmScreenings.FirstOrDefaultAsync(x => x.FilmScreeningId == screeningId);
+            var screening = await _context.filmScreenings.FirstOrDefaultAsync(x => x.FilmScreeningId == dto.FilmScreeningId);
             if (screening == null)
                 throw new InvalidOperationException("Screening not found");
 
+            var MovieId = await _context.movies.FirstAsync(x => x.MovieTitle == dto.MovieTitle);
+
             using var trx = await _context.Database.BeginTransactionAsync();
 
-            screening.MovieId = dto.MovieId;
-            screening.MovieTitle = dto.MovieTitle;
+            screening.MovieId = MovieId.MovieId;
             screening.RoomId = dto.RoomId;
             screening.RoomName = dto.RoomName;
             screening.Date = dto.Date.ToUniversalTime();
@@ -315,7 +322,7 @@ namespace CinemaProject.Model
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
-            ticketT.TicketType = dto.TicketName;
+            ticketT.TicketType = dto.Name;
             ticketT.TicketPrice = dto.Price;
 
             await _context.SaveChangesAsync();
@@ -330,7 +337,7 @@ namespace CinemaProject.Model
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
-            categ.CategoryName = dto.CategName;
+            categ.CategoryName = dto.Name;
             categ.CategoryDescription = dto.Description;
 
             await _context.SaveChangesAsync();

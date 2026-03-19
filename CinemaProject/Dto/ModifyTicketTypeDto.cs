@@ -2,8 +2,8 @@
 {
     public class ModifyTicketTypeDto
     {
-        public int Id { get; set; }
-        public string TicketName { get; set; }
+        public int TicketTypeId { get; set; }
+        public string Name { get; set; }
         public int Price { get; set; }
     }
 }

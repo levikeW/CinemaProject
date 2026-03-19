@@ -33,7 +33,7 @@ namespace CinemaProject.Model
                     {
                         FilmScreeningId = y.FilmScreeningId,
                         MovieId = y.MovieId,
-                        MovieTitle = y.MovieTitle,
+                        MovieTitle = x.MovieTitle,
                         RoomId = y.RoomId,
                         Date = y.Date
                     }).ToList()
@@ -42,11 +42,11 @@ namespace CinemaProject.Model
 
         public async Task<IEnumerable<FilmScreeningDto>> GetAllScreenings()
         {
-            return await _context.filmScreenings.Select(x => new FilmScreeningDto
+            return await _context.filmScreenings.Include(x=> x.Movie).Select(x => new FilmScreeningDto
             {
                 FilmScreeningId = x.FilmScreeningId,
                 MovieId = x.MovieId,
-                MovieTitle = x.MovieTitle,
+                MovieTitle = x.Movie.MovieTitle,
                 RoomId = x.RoomId,
                 Date = x.Date
             }).ToListAsync();
@@ -75,8 +75,8 @@ namespace CinemaProject.Model
         {
             return await _context.ticketsForHTML.Select(x => new TicketTypeDto
             {
-                Id = x.TicketId,
-                TicketName = x.TicketType,
+                TicketTypeId = x.TicketId,
+                Name = x.TicketType,
                 Price = x.TicketPrice
             }).ToListAsync();
         }
@@ -85,8 +85,8 @@ namespace CinemaProject.Model
         {
             return await _context.categoriesForHTML.Select(x => new CategoriesDto
             {
-                Id = x.CategoryId,
-                CategName = x.CategoryName,
+                CategId = x.CategoryId,
+                Name = x.CategoryName,
                 Description = x.CategoryDescription
             }).ToListAsync();
         }
@@ -112,7 +112,7 @@ namespace CinemaProject.Model
                     {
                         FilmScreeningId = y.FilmScreeningId,
                         MovieId = y.MovieId,
-                        MovieTitle = y.MovieTitle,
+                        MovieTitle = x.MovieTitle,
                         RoomId = y.RoomId,
                         Date = y.Date
                     }).ToList()
@@ -140,7 +140,7 @@ namespace CinemaProject.Model
                     {
                         FilmScreeningId = y.FilmScreeningId,
                         MovieId = y.MovieId,
-                        MovieTitle = y.MovieTitle,
+                        MovieTitle = x.MovieTitle,
                         RoomId = y.RoomId,
                         Date = y.Date
                     }).ToList()
@@ -168,7 +168,7 @@ namespace CinemaProject.Model
                     {
                         FilmScreeningId = y.FilmScreeningId,
                         MovieId = y.MovieId,
-                        MovieTitle = y.MovieTitle,
+                        MovieTitle = x.MovieTitle,
                         RoomId = y.RoomId,
                         Date = y.Date
                     }).ToList()
@@ -177,12 +177,12 @@ namespace CinemaProject.Model
 
         public async Task<IEnumerable<FilmScreeningDto>> GetScreeningDetails(DateTimeOffset time)
         {
-            return await _context.filmScreenings.Where(x => x.Date == time)
+            return await _context.filmScreenings.Include(x=> x.Movie).Where(x => x.Date == time)
                 .Select(x => new FilmScreeningDto
                 {
                     FilmScreeningId = x.FilmScreeningId,
                     MovieId = x.MovieId,
-                    MovieTitle = x.MovieTitle,
+                    MovieTitle = x.Movie.MovieTitle,
                     RoomId = x.RoomId,
                     Date = x.Date
                 }).ToListAsync();
@@ -192,12 +192,12 @@ namespace CinemaProject.Model
         {
             var nowUtc = DateTimeOffset.UtcNow;
 
-            return await _context.filmScreenings.Where(x => x.Date >= nowUtc).Where(x => _context.movies.Any(m => m.MovieId == x.MovieId && m.Status == MovieStatus.NowRunning))
+            return await _context.filmScreenings.Include(x=> x.Movie).Where(x => x.Date >= nowUtc).Where(x => _context.movies.Any(m => m.MovieId == x.MovieId && m.Status == MovieStatus.NowRunning))
                 .Select(x => new FilmScreeningDto
                 {
                     FilmScreeningId = x.FilmScreeningId,
                     MovieId = x.MovieId,
-                    MovieTitle = x.MovieTitle,
+                    MovieTitle = x.Movie.MovieTitle,
                     RoomId = x.RoomId,
                     Date = x.Date
                 }).ToListAsync();

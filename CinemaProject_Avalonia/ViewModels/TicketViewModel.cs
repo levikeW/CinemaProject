@@ -106,8 +106,8 @@ namespace CinemaProject_Avalonia.ViewModels
                 {
                     var dto = new ModifyTicketTypeDto
                     {
-                        Id = Id,
-                        TicketName = Name,
+                        TicketTypeId = Id,
+                        Name = Name,
                         Price = Price
                     };
 

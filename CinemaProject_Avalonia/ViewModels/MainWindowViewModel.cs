@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.TagHelpers;
 
 namespace CinemaProject_Avalonia.ViewModels
 {
@@ -785,6 +786,8 @@ namespace CinemaProject_Avalonia.ViewModels
                     return;
                 }
 
+                var movie = Movies.FirstOrDefault(x => x.MovieTitle == SelectedMovieItem.MovieTitle);
+
                 var room = Room.FirstOrDefault(r => r.Name == SelectedRoom);
 
                 if (room == null)
@@ -795,8 +798,8 @@ namespace CinemaProject_Avalonia.ViewModels
 
                 var newScreening = new NewScreeningDto
                 {
-                    MovieId = SelectedMovie.MovieId,
-                    MovieTitle = SelectedMovie.MovieTitle,
+                    FilmScreeningId = 0,
+                    MovieTitle = movie.MovieTitle,
                     RoomId = room.RoomId,
                     RoomName = SelectedRoom,
                     Date = SelectedDate.ToUniversalTime()
@@ -853,8 +856,8 @@ namespace CinemaProject_Avalonia.ViewModels
                 {
                     var ticketVM = new TicketViewModel(this)
                     {
-                        Id = ticket.Id,
-                        Name = ticket.TicketName,
+                        Id = ticket.TicketTypeId,
+                        Name = ticket.Name,
                         Price = ticket.Price
                     };
 
@@ -862,7 +865,7 @@ namespace CinemaProject_Avalonia.ViewModels
                     {
                         try
                         {
-                            await _mainWindowModel.ModifyTicketType(dto, dto.Id);
+                            await _mainWindowModel.ModifyTicketType(dto, dto.TicketTypeId);
                             await LoadTicketsAsync();
                             SelectedPriceItem = null;
                             IsTicketEditPanelOpen = false;
@@ -1277,8 +1280,8 @@ namespace CinemaProject_Avalonia.ViewModels
                 {
                     var categoryVM = new CategoryViewModel(this)
                     {
-                        Id = category.Id,
-                        Name = category.CategName,
+                        Id = category.CategId,
+                        Name = category.Name,
                         Description = category.Description
                     };
 
@@ -1286,7 +1289,7 @@ namespace CinemaProject_Avalonia.ViewModels
                     {
                         try
                         {
-                            await _mainWindowModel.ModifyCateg(dto, dto.Id);
+                            await _mainWindowModel.ModifyCateg(dto, dto.CategId);
                             await LoadCategoriesAsync();
                             SelectedCategoryItem = null;
                             IsCategoryEditPanelOpen = false;
