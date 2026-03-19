@@ -25,7 +25,7 @@ body.cinema-page {
     background-attachment: fixed;
 }
 
-body.arak-page {
+body.infos-page {
     background-color: #15111d;
     background-image:
         radial-gradient(circle at top left, rgba(210, 126, 255, 0.14) 0%, transparent 28%),

@@ -32,6 +32,9 @@
                         <a class="nav-link" href="AdminCinema.html">Főoldal</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="AdminFilmek.html">Filmek</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="AdminArak.html">Árak</a>
                     </li>
                     <li class="nav-item">
@@ -59,7 +62,7 @@
         <section class="container py-4">
             <div class="row g-4">
 
-                <!-- BAL OLDAL: VETÍTÉSEK LISTÁJA -->
+                <!-- BAL OLDAL: LISTA -->
                 <div class="col-lg-7">
                     <div class="card admin-card shadow-sm h-100">
                         <div class="card-header">
@@ -94,7 +97,7 @@
                     </div>
                 </div>
 
-                <!-- JOBB OLDAL: LÉTREHOZÁS + MÓDOSÍTÁS -->
+                <!-- JOBB OLDAL -->
                 <div class="col-lg-5 admin-side-panel">
                     <div class="card admin-card shadow-sm h-100">
                         <div class="card-header">
@@ -103,7 +106,7 @@
 
                         <div class="card-body">
 
-                            <!-- ÚJ VETÍTÉS -->
+                            <!-- ÚJ -->
                             <div class="mb-4">
                                 <h5>Új vetítés létrehozása</h5>
                                 <div id="adminScreeningMessage"></div>
@@ -132,7 +135,7 @@
 
                             <hr>
 
-                            <!-- VETÍTÉS MÓDOSÍTÁSA -->
+                            <!-- MÓDOSÍTÁS -->
                             <div class="mt-4">
                                 <h5>Vetítés módosítása</h5>
                                 <div id="adminScreeningEditMessage"></div>
@@ -169,6 +172,7 @@
         </section>
     </main>
     <script src="Script/adminApi.js"></script>
+    <script src="Script/adminMovies.js"></script>
     <script src="Script/adminCinema.js"></script>
 </body>
 </html>
