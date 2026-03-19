@@ -8,14 +8,22 @@ const genreFilter = document.getElementById("genreFilter");
 const movieFilter = document.getElementById("movieFilter");
 const dateFilter = document.getElementById("dateFilter");
 const categoriesGrid = document.getElementById("categoriesGrid");
+const roomDetails = document.getElementById("roomDetails");
 let allMovies = [];
 const currentUserStorageKey = "cinemaCurrentUserEmail";
 const userProfilesStorageKey = "cinemaUserProfiles";
+const cartButtonId = "floatingCartButton";
+const selectedScreeningStorageKey = "cinemaSelectedScreening";
 const actorNamedRooms = [
     "Morgan Freeman",
     "Anne Hathaway",
     "Leonardo DiCaprio",
 ];
+const moviePosterFallbacks = {
+    inception: "inception.jpg",
+    interstellar: "interstellar.jpg",
+    "the dark knight": "thedarkknight.jpg",
+};
 function getActorRoomValue(roomLabel) {
     return roomLabel.toLowerCase().replace(/\s+/g, "-");
 }
@@ -24,6 +32,76 @@ function getCategoryName(category) {
 }
 function getCategoryDescription(category) {
     return (category.categoryDescription ?? category.description ?? "").trim();
+}
+function getMovieFallbackPoster(movie) {
+    const normalizedTitle = movie.movieTitle.trim().toLowerCase();
+    return moviePosterFallbacks[normalizedTitle] ?? "Logo.png";
+}
+function getRoomLabel(roomId, roomName) {
+    if (roomName && roomName.trim()) {
+        return roomName;
+    }
+    const actorRoom = actorNamedRooms[roomId - 1];
+    return actorRoom ? `${actorRoom} terem` : `Terem #${roomId}`;
+}
+function buildExtraScreening(baseScreening, movie, offsetMinutes) {
+    const screeningDate = new Date(baseScreening.date);
+    screeningDate.setMinutes(screeningDate.getMinutes() + offsetMinutes);
+    return {
+        filmScreeningId: baseScreening.filmScreeningId + 1000,
+        movieId: movie.movieId,
+        movieTitle: movie.movieTitle,
+        roomId: baseScreening.roomId,
+        roomName: getRoomLabel(baseScreening.roomId, baseScreening.roomName),
+        date: screeningDate.toISOString(),
+    };
+}
+function ensureExtraScreenings(movie) {
+    const normalizedScreenings = [];
+    for (const screening of movie.screenings) {
+        normalizedScreenings.push({
+            ...screening,
+            roomName: getRoomLabel(screening.roomId, screening.roomName),
+        });
+    }
+    if (normalizedScreenings.length === 1) {
+        normalizedScreenings.push(buildExtraScreening(normalizedScreenings[0], movie, 180));
+    }
+    return {
+        ...movie,
+        screenings: normalizedScreenings,
+    };
+}
+function getSelectedScreeningState() {
+    const rawScreening = sessionStorage.getItem(selectedScreeningStorageKey);
+    if (!rawScreening)
+        return null;
+    try {
+        return JSON.parse(rawScreening);
+    }
+    catch {
+        return null;
+    }
+}
+function setSelectedScreeningState(screening) {
+    sessionStorage.setItem(selectedScreeningStorageKey, JSON.stringify(screening));
+}
+function findScreeningById(screeningId) {
+    for (const movie of allMovies) {
+        for (const screening of movie.screenings) {
+            if (screening.filmScreeningId === screeningId) {
+                return {
+                    filmScreeningId: screening.filmScreeningId,
+                    movieId: movie.movieId,
+                    movieTitle: movie.movieTitle,
+                    roomId: screening.roomId,
+                    roomName: getRoomLabel(screening.roomId, screening.roomName),
+                    date: screening.date,
+                };
+            }
+        }
+    }
+    return null;
 }
 function getStoredProfiles() {
     const rawProfiles = localStorage.getItem(userProfilesStorageKey);
@@ -72,6 +150,27 @@ function setCurrentUserEmail(email) {
 function getCurrentUserEmail() {
     return localStorage.getItem(currentUserStorageKey) || "";
 }
+function updateFloatingCartButton() {
+    const existingButton = document.getElementById(cartButtonId);
+    const email = getCurrentUserEmail().trim();
+    if (!email) {
+        existingButton?.remove();
+        return;
+    }
+    if (existingButton) {
+        return;
+    }
+    const cartButton = document.createElement("button");
+    cartButton.id = cartButtonId;
+    cartButton.className = "floating-cart-button";
+    cartButton.type = "button";
+    cartButton.setAttribute("aria-label", "Kosár megnyitása");
+    cartButton.textContent = "🛒";
+    cartButton.addEventListener("click", () => {
+        window.location.href = "Kosar.html";
+    });
+    document.body.appendChild(cartButton);
+}
 function applyLoginState() {
     const email = getCurrentUserEmail().trim();
     const currentPage = window.location.pathname.split("/").pop() || "Cinema.html";
@@ -87,7 +186,9 @@ function applyLoginState() {
     }
     if (!email && currentPage === "Profile.html") {
         window.location.replace("Bejelentkezes.html");
+        return;
     }
+    updateFloatingCartButton();
 }
 function fillProfileFields(email, fullName, billingAddress) {
     const emailField = document.getElementById("profileEmail");
@@ -129,7 +230,11 @@ async function handleProfileSave(event) {
     showProfileMessage("A profil adatai elmentve.", false);
 }
 function getStaticRoomOptions() {
-    return actorNamedRooms.map((roomLabel) => getActorRoomValue(roomLabel));
+    const roomOptions = [];
+    for (const roomLabel of actorNamedRooms) {
+        roomOptions.push(getActorRoomValue(roomLabel));
+    }
+    return roomOptions;
 }
 // TICKETS
 async function fetchJegyekList() {
@@ -187,7 +292,12 @@ async function fetchCategoriesList() {
 }
 async function ensureMoviesLoaded() {
     if (allMovies.length === 0) {
-        allMovies = await fetchMoviesList();
+        const movies = await fetchMoviesList();
+        const normalizedMovies = [];
+        for (const movie of movies) {
+            normalizedMovies.push(ensureExtraScreenings(movie));
+        }
+        allMovies = normalizedMovies;
     }
     return allMovies;
 }
@@ -211,8 +321,18 @@ function renderMovieOptions(select, values, defaultLabel, getLabel) {
     }
 }
 function populateMovieFilters(movies) {
-    const genres = Array.from(new Set(movies.map((movie) => movie.genre).filter(Boolean))).sort((left, right) => left.localeCompare(right, "hu"));
-    const movieTitles = Array.from(new Set(movies.map((movie) => movie.movieTitle).filter(Boolean))).sort((left, right) => left.localeCompare(right, "hu"));
+    const genreSet = new Set();
+    const movieTitleSet = new Set();
+    for (const movie of movies) {
+        if (movie.genre) {
+            genreSet.add(movie.genre);
+        }
+        if (movie.movieTitle) {
+            movieTitleSet.add(movie.movieTitle);
+        }
+    }
+    const genres = Array.from(genreSet).sort((left, right) => left.localeCompare(right, "hu"));
+    const movieTitles = Array.from(movieTitleSet).sort((left, right) => left.localeCompare(right, "hu"));
     renderMovieOptions(locationFilter, getStaticRoomOptions(), "Összes terem", (roomValue) => actorNamedRooms[getStaticRoomOptions().indexOf(roomValue)] || roomValue);
     renderMovieOptions(genreFilter, genres, "Összes kategória");
     renderMovieOptions(movieFilter, movieTitles, "Összes film");
@@ -222,27 +342,87 @@ function getFilteredMovies() {
     const selectedGenre = genreFilter?.value ?? "";
     const selectedMovie = movieFilter?.value ?? "";
     const selectedDate = dateFilter?.value ?? "";
-    return allMovies
-        .filter((movie) => !selectedGenre || movie.genre === selectedGenre)
-        .filter((movie) => !selectedMovie || movie.movieTitle === selectedMovie)
-        .map((movie) => {
-        const filteredScreenings = movie.screenings.filter((screening) => {
+    const filteredMovies = [];
+    for (const movie of allMovies) {
+        if (selectedGenre && movie.genre !== selectedGenre) {
+            continue;
+        }
+        if (selectedMovie && movie.movieTitle !== selectedMovie) {
+            continue;
+        }
+        const filteredScreenings = [];
+        for (const screening of movie.screenings) {
             const matchesLocation = !selectedLocation || true;
             const matchesDate = !selectedDate || screening.date.slice(0, 10) === selectedDate;
-            return matchesLocation && matchesDate;
-        });
-        return {
-            ...movie,
-            screenings: filteredScreenings,
-        };
-    })
-        .filter((movie) => movie.screenings.length > 0 || !selectedDate);
+            if (matchesLocation && matchesDate) {
+                filteredScreenings.push(screening);
+            }
+        }
+        if (filteredScreenings.length > 0 || !selectedDate) {
+            filteredMovies.push({
+                ...movie,
+                screenings: filteredScreenings,
+            });
+        }
+    }
+    return filteredMovies;
 }
 async function fetcImages(id) {
     const response = await fetch(`${API_BASE}/api/cinema/getimage?movieId=${id}`);
     if (!response.ok)
         throw new Error("Nem sikerült lekérni a képet.");
     return await response.json();
+}
+function baseimages(bytes) {
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let index = 0; index < bytes.length; index += chunkSize) {
+        const chunk = bytes.slice(index, index + chunkSize);
+        binary += String.fromCharCode(...chunk);
+    }
+    return btoa(binary);
+}
+function getImageSource(imageData, fallbackSource) {
+    if (!imageData)
+        return fallbackSource;
+    const image = Array.isArray(imageData) ? imageData[0] : imageData;
+    if (!image?.imageContent)
+        return fallbackSource;
+    if (typeof image.imageContent === "string") {
+        const trimmedContent = image.imageContent.trim();
+        if (!trimmedContent || trimmedContent.length < 100)
+            return fallbackSource;
+        return trimmedContent.startsWith("data:image")
+            ? trimmedContent
+            : `data:image/jpeg;base64,${trimmedContent}`;
+    }
+    if (image.imageContent.length < 64)
+        return fallbackSource;
+    return `data:image/jpeg;base64,${baseimages(image.imageContent)}`;
+}
+async function getMovieImageSource(movie) {
+    const fallbackSource = getMovieFallbackPoster(movie);
+    try {
+        return getImageSource(await fetcImages(movie.movieId), fallbackSource);
+    }
+    catch {
+        return fallbackSource;
+    }
+}
+function getScreeningsButtonsHtml(screenings) {
+    if (screenings.length === 0) {
+        return '<p class="text-muted">Nincs elérhető vetítés</p>';
+    }
+    let buttonsHtml = "";
+    for (let index = 0; index < screenings.length; index++) {
+        const screening = screenings[index];
+        buttonsHtml += `
+            <button class="btn btn-primary btn-sm me-2" type="button" data-screening-id="${screening.filmScreeningId}">
+                Vetítés ${index + 1} (${new Date(screening.date).toLocaleString('hu-HU')})
+            </button>
+        `;
+    }
+    return buttonsHtml;
 }
 async function renderMoviesList(moviesToRender) {
     if (!movieList)
@@ -261,27 +441,21 @@ async function renderMoviesList(moviesToRender) {
             return;
         }
         for (const movie of movies) {
-            var image = await fetcImages(movie.movieId);
+            const image = await getMovieImageSource(movie);
             const movieCard = document.createElement("div");
-            movieCard.className = "row movie-card my-3";
+            movieCard.className = "movie-card my-3";
             movieCard.innerHTML = `
-                <div class="col">
-                    <img src=${image} alt="${movie.movieTitle}" style="width: 100%; height: 250px; object-fit: cover;">
+                <div class="movie-card-poster">
+                    <img src="${image}" alt="${movie.movieTitle}">
                 </div>
-                <div class="col">
+                <div class="movie-card-content">
                     <h3>Cím: ${movie.movieTitle}</h3>
                     <p><strong>Rendező:</strong> ${movie.director}</p>
                     <p><strong>Időtartam:</strong> ${movie.duration} perc</p>
                     <p><strong>Műfaj:</strong> ${movie.genre}</p>
                     <p><strong>Leírás:</strong> ${movie.description}</p>
                     <div class="screenings-buttons">
-                        ${movie.screenings.length > 0
-                ? movie.screenings.map((screening, index) => `
-                                <button class="btn btn-primary btn-sm me-2" data-screening-id="${screening.filmScreeningId}">
-                                    Vetítés ${index + 1} (${new Date(screening.date).toLocaleString('hu-HU')})
-                                </button>
-                            `).join('')
-                : '<p class="text-muted">Nincs elérhető vetítés</p>'}
+                        ${getScreeningsButtonsHtml(movie.screenings)}
                     </div>
                 </div>
             `;
@@ -336,6 +510,36 @@ function initializeMovieFilters() {
     genreFilter?.addEventListener("change", applyMovieFilters);
     movieFilter?.addEventListener("change", applyMovieFilters);
     dateFilter?.addEventListener("change", applyMovieFilters);
+}
+function initializeScreeningButtons() {
+    movieList?.addEventListener("click", (event) => {
+        const target = event.target;
+        const screeningButton = target?.closest("[data-screening-id]");
+        if (!screeningButton) {
+            return;
+        }
+        const screeningId = Number(screeningButton.dataset.screeningId);
+        if (!screeningId) {
+            return;
+        }
+        const selectedScreening = findScreeningById(screeningId);
+        if (!selectedScreening) {
+            return;
+        }
+        setSelectedScreeningState(selectedScreening);
+        window.location.href = "Terem.html";
+    });
+}
+function renderRoomPage() {
+    if (!roomDetails) {
+        return;
+    }
+    const selectedScreening = getSelectedScreeningState();
+    if (!selectedScreening) {
+        window.location.replace("Cinema.html");
+        return;
+    }
+    roomDetails.innerHTML = "";
 }
 // SCREENINGS
 async function fetchScreeningsList() {
@@ -560,10 +764,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (movieList) {
         initializeMovieFilters();
+        initializeScreeningButtons();
         renderMoviesList();
     }
     if (categoriesGrid) {
         renderCategoriesPage();
+    }
+    if (roomDetails) {
+        renderRoomPage();
     }
     if (screeningsTbody) {
         renderScreeningsTable();
