@@ -15,9 +15,9 @@ namespace CinemaProject_Avalonia.ViewModels
     {
         public MainWindowViewModel _viewModel;
 
-        private int _id;
-        private string _name;
-        private int _price;
+        private int _ticketId;
+        private string _ticketType;
+        private int _ticketPrice;
 
         private string _errorMessage;
 
@@ -29,30 +29,30 @@ namespace CinemaProject_Avalonia.ViewModels
         public AsyncRelayCommand SaveTicketTypeCommand { get; }
         public RelayCommand DeleteCommand { get; }
 
-        public int Id
+        public int TicketId
         {
-            get => _id;
+            get => _ticketId;
             set
             {
-                _id = value;
+                _ticketId = value;
                 OnPropertyChanged();
             }
         }
-        public string Name
+        public string TicketType
         {
-            get => _name;
+            get => _ticketType;
             set
             {
-                _name = value;
+                _ticketType = value;
                 OnPropertyChanged();
             }
         }
-        public int Price
+        public int TicketPrice
         {
-            get => _price;
+            get => _ticketPrice;
             set
             {
-                _price = value;
+                _ticketPrice = value;
                 OnPropertyChanged();
             }
         }
@@ -80,24 +80,24 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(Name))
+                if (string.IsNullOrWhiteSpace(TicketType))
                 {
                     ErrorMessage = "A jegy nevét kötelező megadni.";
                     return;
                 }
 
-                if (Price <= 0)
+                if (TicketPrice <= 0)
                 {
                     ErrorMessage = "Az ár legyen nagyobb mint 0.";
                     return;
                 }
 
-                if (Id == 0)
+                if (TicketId == 0)
                 {
                     var addDto = new NewTicketTypeDto
                     {
-                        Name = Name,
-                        Price = Price
+                        TicketType = TicketType,
+                        TicketPrice = TicketPrice
                     };
 
                     TicketTypeAddSaved?.Invoke(this, addDto);
@@ -106,9 +106,9 @@ namespace CinemaProject_Avalonia.ViewModels
                 {
                     var dto = new ModifyTicketTypeDto
                     {
-                        TicketTypeId = Id,
-                        Name = Name,
-                        Price = Price
+                        TicketTypeId = TicketId,
+                        TicketType = TicketType,
+                        TicketPrice = TicketPrice
                     };
 
                     TicketTypeSaved?.Invoke(this, dto);
@@ -124,7 +124,7 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private void OpenEditPanel()
         {
-            _viewModel.SelectedPriceItem = this;
+            _viewModel.SelectedTicketTypeItem = this;
             _viewModel.IsTicketAddPanelOpen = false;
             _viewModel.IsTicketEditPanelOpen = true;
         }

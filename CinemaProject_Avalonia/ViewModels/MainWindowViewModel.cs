@@ -30,7 +30,7 @@ namespace CinemaProject_Avalonia.ViewModels
         public ObservableCollection<MovieViewModel> Movies { get; set; }
         public ObservableCollection<ScreeningsViewModel> Screenings { get; set; }
         public ObservableCollection<ScreeningsViewModel> FilteredScreenings { get; set; }
-        public ObservableCollection<TicketViewModel> Prices { get; set; }
+        public ObservableCollection<TicketViewModel> TicketTypes { get; set; }
         public ObservableCollection<UserViewModel> Users { get; set; }
         public ObservableCollection<RoomViewModel> Room { get; set; }
         public ObservableCollection<ReservationViewModel> Reservations { get; set; }
@@ -43,7 +43,7 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private MovieViewModel? _selectedMovieItem { get; set; }
         private UserViewModel? _selectedUserItem { get; set; }
-        private TicketViewModel? _selectedPriceItem { get; set; }
+        private TicketViewModel? _selectedTicketTypeItem { get; set; }
         private RoomViewModel? _selectedRoomItem { get; set; }
         private ReservationViewModel? _selectedReservationItem { get; set; }
         private CategoryViewModel? _selectedCategoryItem { get; set; }
@@ -428,12 +428,12 @@ namespace CinemaProject_Avalonia.ViewModels
                 ApplyFilters();
             }
         }
-        public TicketViewModel? SelectedPriceItem
+        public TicketViewModel? SelectedTicketTypeItem
         {
-            get => _selectedPriceItem;
+            get => _selectedTicketTypeItem;
             set
             {
-                _selectedPriceItem = value;
+                _selectedTicketTypeItem = value;
                 OnPropertyChanged();
             }
         }
@@ -494,7 +494,7 @@ namespace CinemaProject_Avalonia.ViewModels
             Screenings = new ObservableCollection<ScreeningsViewModel>();
             FilteredScreenings = new ObservableCollection<ScreeningsViewModel>();
 
-            Prices = new ObservableCollection<TicketViewModel>();
+            TicketTypes = new ObservableCollection<TicketViewModel>();
             Users = new ObservableCollection<UserViewModel>();
             Room = new ObservableCollection<RoomViewModel>();
             Reservations = new ObservableCollection<ReservationViewModel>();
@@ -786,8 +786,6 @@ namespace CinemaProject_Avalonia.ViewModels
                     return;
                 }
 
-                var movie = Movies.FirstOrDefault(x => x.MovieTitle == SelectedMovieItem.MovieTitle);
-
                 var room = Room.FirstOrDefault(r => r.Name == SelectedRoom);
 
                 if (room == null)
@@ -799,7 +797,7 @@ namespace CinemaProject_Avalonia.ViewModels
                 var newScreening = new NewScreeningDto
                 {
                     FilmScreeningId = 0,
-                    MovieTitle = movie.MovieTitle,
+                    MovieTitle = SelectedMovie.MovieTitle,
                     RoomId = room.RoomId,
                     RoomName = SelectedRoom,
                     Date = SelectedDate.ToUniversalTime()
@@ -848,7 +846,7 @@ namespace CinemaProject_Avalonia.ViewModels
         {
             try
             {
-                Prices.Clear();
+                TicketTypes.Clear();
 
                 var tickets = await _mainWindowModel.GetAllTicketT();
 
@@ -856,9 +854,9 @@ namespace CinemaProject_Avalonia.ViewModels
                 {
                     var ticketVM = new TicketViewModel(this)
                     {
-                        Id = ticket.TicketTypeId,
-                        Name = ticket.Name,
-                        Price = ticket.Price
+                        TicketId = ticket.TicketTypeId,
+                        TicketType = ticket.TicketType,
+                        TicketPrice = ticket.TicketPrice
                     };
 
                     ticketVM.TicketTypeSaved += async (s, dto) =>
@@ -867,7 +865,7 @@ namespace CinemaProject_Avalonia.ViewModels
                         {
                             await _mainWindowModel.ModifyTicketType(dto, dto.TicketTypeId);
                             await LoadTicketsAsync();
-                            SelectedPriceItem = null;
+                            SelectedTicketTypeItem = null;
                             IsTicketEditPanelOpen = false;
                             ErrorMessage = "";
                         }
@@ -881,7 +879,7 @@ namespace CinemaProject_Avalonia.ViewModels
                     {
                         try
                         {
-                            await DeleteTicketTypeAsync(ticketVM.Id);
+                            await DeleteTicketTypeAsync(ticketVM.TicketId);
                         }
                         catch (Exception ex)
                         {
@@ -889,7 +887,7 @@ namespace CinemaProject_Avalonia.ViewModels
                         }
                     };
 
-                    Prices.Add(ticketVM);
+                    TicketTypes.Add(ticketVM);
                 }
             }
             catch (Exception ex)
@@ -1535,15 +1533,15 @@ namespace CinemaProject_Avalonia.ViewModels
 
         private void OpenTicketAddPanel()
         {
-            SelectedPriceItem = new TicketViewModel(this);
+            SelectedTicketTypeItem = new TicketViewModel(this);
 
-            SelectedPriceItem.TicketTypeAddSaved += async (s, dto) =>
+            SelectedTicketTypeItem.TicketTypeAddSaved += async (s, dto) =>
             {
                 try
                 {
                     await _mainWindowModel.NewTicketType(dto);
                     await LoadTicketsAsync();
-                    SelectedPriceItem = null;
+                    SelectedTicketTypeItem = null;
                     IsTicketAddPanelOpen = false;
                     ErrorMessage = "";
                 }
@@ -1567,14 +1565,14 @@ namespace CinemaProject_Avalonia.ViewModels
         private void CloseTicketAddPanel()
         {
             IsTicketAddPanelOpen = false;
-            SelectedPriceItem = null;
+            SelectedTicketTypeItem = null;
             ErrorMessage = "";
         }
 
         private void CloseTicketEditPanel()
         {
             IsTicketEditPanelOpen = false;
-            SelectedPriceItem = null;
+            SelectedTicketTypeItem = null;
             ErrorMessage = "";
         }
 
@@ -1583,7 +1581,7 @@ namespace CinemaProject_Avalonia.ViewModels
             IsTicketsPageOpen = false;
             IsTicketAddPanelOpen = false;
             IsTicketEditPanelOpen = false;
-            SelectedPriceItem = null;
+            SelectedTicketTypeItem = null;
             ErrorMessage = "";
         }
 
