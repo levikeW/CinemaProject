@@ -3,6 +3,8 @@ const API_BASE = "http://localhost:5067";
 // DTO
 interface TicketTypeDto {
     Id: number;
+    ticketTypeId?: number;
+    name?: string;
     ticketName: string;
     price: number;
 }
@@ -12,8 +14,22 @@ interface FilmScreeningDto {
     movieId: number;
     movieTitle: string;
     roomId: number;
-    roomName: string;
+    roomName: string | null;
     date: string;
+}
+
+interface RoomDto {
+    roomId: number;
+    roomName: string;
+    seats?: SeatDto[];
+}
+
+interface SeatDto {
+    seatId: number;
+    rowNumber: number;
+    seatNumber: number;
+    roomId: number;
+    isReserved?: boolean;
 }
 
 interface MovieDto {
@@ -58,6 +74,8 @@ interface StoredUserProfile {
 
 interface CategoriesDto {
     id?: number;
+    categId?: number;
+    name?: string;
     categName?: string;
     description?: string;
     categoryId?: number;
@@ -77,17 +95,13 @@ const categoriesGrid = document.getElementById("categoriesGrid") as HTMLElement 
 const roomDetails = document.getElementById("roomDetails") as HTMLElement | null;
 
 let allMovies: MovieDto[] = [];
+let allRooms: RoomDto[] = [];
+let allCategories: CategoriesDto[] = [];
 
 const currentUserStorageKey = "cinemaCurrentUserEmail";
 const userProfilesStorageKey = "cinemaUserProfiles";
 const cartButtonId = "floatingCartButton";
 const selectedScreeningStorageKey = "cinemaSelectedScreening";
-
-const actorNamedRooms = [
-    "Morgan Freeman",
-    "Anne Hathaway",
-    "Leonardo DiCaprio",
-];
 
 const moviePosterFallbacks: Record<string, string> = {
     inception: "inception.jpg",
@@ -95,12 +109,12 @@ const moviePosterFallbacks: Record<string, string> = {
     "the dark knight": "thedarkknight.jpg",
 };
 
-function getActorRoomValue(roomLabel: string): string {
-    return roomLabel.toLowerCase().replace(/\s+/g, "-");
+function getTicketName(ticket: TicketTypeDto): string {
+    return (ticket.ticketName ?? ticket.name ?? "").trim();
 }
 
 function getCategoryName(category: CategoriesDto): string {
-    return (category.categoryName ?? category.categName ?? "").trim();
+    return (category.categoryName ?? category.categName ?? category.name ?? "").trim();
 }
 
 function getCategoryDescription(category: CategoriesDto): string {
@@ -112,30 +126,58 @@ function getMovieFallbackPoster(movie: MovieDto): string {
     return moviePosterFallbacks[normalizedTitle] ?? "Logo.png";
 }
 
-function getRoomLabel(roomId: number, roomName?: string): string {
+function getRoomLabel(roomId: number, roomName?: string | null): string {
     if (roomName && roomName.trim()) {
         return roomName;
     }
 
-    const actorRoom = actorNamedRooms[roomId - 1];
-    return actorRoom ? `${actorRoom} terem` : `Terem #${roomId}`;
+    const matchingRoom = allRooms.find((room) => room.roomId === roomId);
+    return matchingRoom?.roomName ?? `Terem #${roomId}`;
 }
 
-function buildExtraScreening(baseScreening: FilmScreeningDto, movie: MovieDto, offsetMinutes: number): FilmScreeningDto {
-    const screeningDate = new Date(baseScreening.date);
-    screeningDate.setMinutes(screeningDate.getMinutes() + offsetMinutes);
-
-    return {
-        filmScreeningId: baseScreening.filmScreeningId + 1000,
-        movieId: movie.movieId,
-        movieTitle: movie.movieTitle,
-        roomId: baseScreening.roomId,
-        roomName: getRoomLabel(baseScreening.roomId, baseScreening.roomName),
-        date: screeningDate.toISOString(),
-    };
+function getRoomById(roomId: number): RoomDto | undefined {
+    return allRooms.find((room) => room.roomId === roomId);
 }
 
-function ensureExtraScreenings(movie: MovieDto): MovieDto {
+function renderRoomSeatsMarkup(seats: SeatDto[]): string {
+    if (seats.length === 0) {
+        return `
+            <div class="alert alert-secondary mb-0" role="alert">
+                Ehhez a teremhez most nem érkezett ülésadat az API-ból.
+            </div>
+        `;
+    }
+
+    const seatsByRow = new Map<number, SeatDto[]>();
+
+    for (const seat of seats) {
+        const rowSeats = seatsByRow.get(seat.rowNumber) ?? [];
+        rowSeats.push(seat);
+        seatsByRow.set(seat.rowNumber, rowSeats);
+    }
+
+    const sortedRows = Array.from(seatsByRow.entries()).sort((left, right) => left[0] - right[0]);
+
+    return sortedRows.map(([rowNumber, rowSeats]) => {
+        const seatButtons = rowSeats
+            .sort((left, right) => left.seatNumber - right.seatNumber)
+            .map((seat) => {
+                const buttonClass = seat.isReserved ? "btn-outline-danger" : "btn-outline-light";
+                const stateLabel = seat.isReserved ? "foglalt" : "szabad";
+                return `<span class="btn ${buttonClass} btn-sm disabled">${rowNumber}.${seat.seatNumber} (${stateLabel})</span>`;
+            })
+            .join("");
+
+        return `
+            <div class="mb-3">
+                <div class="small text-uppercase text-secondary mb-2">${rowNumber}. sor</div>
+                <div class="d-flex flex-wrap gap-2">${seatButtons}</div>
+            </div>
+        `;
+    }).join("");
+}
+
+function normalizeMovieScreenings(movie: MovieDto): MovieDto {
     const normalizedScreenings: FilmScreeningDto[] = [];
 
     for (const screening of movie.screenings) {
@@ -143,10 +185,6 @@ function ensureExtraScreenings(movie: MovieDto): MovieDto {
             ...screening,
             roomName: getRoomLabel(screening.roomId, screening.roomName),
         });
-    }
-
-    if (normalizedScreenings.length === 1) {
-        normalizedScreenings.push(buildExtraScreening(normalizedScreenings[0], movie, 180));
     }
 
     return {
@@ -343,16 +381,6 @@ async function handleProfileSave(event: Event): Promise<void> {
     showProfileMessage("A profil adatai elmentve.", false);
 }
 
-function getStaticRoomOptions(): string[] {
-    const roomOptions: string[] = [];
-
-    for (const roomLabel of actorNamedRooms) {
-        roomOptions.push(getActorRoomValue(roomLabel));
-    }
-
-    return roomOptions;
-}
-
 // TICKETS
 async function fetchJegyekList(): Promise<TicketTypeDto[]> {
     const response = await fetch(`${API_BASE}/api/cinema/getalltickettype`);
@@ -379,7 +407,7 @@ async function renderjegyekTable(): Promise<void> {
         for (const jegy of jegyek) {
             const row = document.createElement("tr");
             row.innerHTML = `
-                <td>${jegy.ticketName}</td>
+                <td>${getTicketName(jegy)}</td>
                 <td>${jegy.price} Ft</td>
             `;
             jegyekTbody.appendChild(row);
@@ -403,6 +431,20 @@ async function fetchMoviesList(): Promise<MovieDto[]> {
     return await response.json() as MovieDto[];
 }
 
+async function fetchRoomsList(): Promise<RoomDto[]> {
+    const response = await fetch(`${API_BASE}/api/cinema/getallrooms`);
+    if (!response.ok) throw new Error("Nem sikerült lekérni a termek listáját.");
+    return await response.json() as RoomDto[];
+}
+
+async function ensureRoomsLoaded(): Promise<RoomDto[]> {
+    if (allRooms.length === 0) {
+        allRooms = await fetchRoomsList();
+    }
+
+    return allRooms;
+}
+
 async function fetchCategoriesList(): Promise<CategoriesDto[]> {
     const response = await fetch(`${API_BASE}/api/cinema/getallcateg`);
     if (!response.ok) throw new Error("Nem sikerült lekérni a kategóriák listáját.");
@@ -411,11 +453,14 @@ async function fetchCategoriesList(): Promise<CategoriesDto[]> {
 
 async function ensureMoviesLoaded(): Promise<MovieDto[]> {
     if (allMovies.length === 0) {
-        const movies = await fetchMoviesList();
+        const [movies, rooms, categories] = await Promise.all([fetchMoviesList(), fetchRoomsList(), fetchCategoriesList()]);
         const normalizedMovies: MovieDto[] = [];
 
+        allRooms = rooms;
+        allCategories = categories;
+
         for (const movie of movies) {
-            normalizedMovies.push(ensureExtraScreenings(movie));
+            normalizedMovies.push(normalizeMovieScreenings(movie));
         }
 
         allMovies = normalizedMovies;
@@ -453,12 +498,12 @@ function renderMovieOptions(
 }
 
 function populateMovieFilters(movies: MovieDto[]): void {
-    const genreSet = new Set<string>();
+    const roomIdSet = new Set<number>();
     const movieTitleSet = new Set<string>();
 
     for (const movie of movies) {
-        if (movie.genre) {
-            genreSet.add(movie.genre);
+        for (const screening of movie.screenings) {
+            roomIdSet.add(screening.roomId);
         }
 
         if (movie.movieTitle) {
@@ -466,10 +511,14 @@ function populateMovieFilters(movies: MovieDto[]): void {
         }
     }
 
-    const genres = Array.from(genreSet).sort((left, right) => left.localeCompare(right, "hu"));
+    const roomIds = Array.from(roomIdSet).sort((left, right) => left - right).map((roomId) => String(roomId));
+    const genres = allCategories
+        .map((category) => getCategoryName(category))
+        .filter((categoryName) => Boolean(categoryName))
+        .sort((left, right) => left.localeCompare(right, "hu"));
     const movieTitles = Array.from(movieTitleSet).sort((left, right) => left.localeCompare(right, "hu"));
 
-    renderMovieOptions(locationFilter, getStaticRoomOptions(), "Összes terem", (roomValue) => actorNamedRooms[getStaticRoomOptions().indexOf(roomValue)] || roomValue);
+    renderMovieOptions(locationFilter, roomIds, "Összes terem", (roomValue) => getRoomLabel(Number(roomValue)));
     renderMovieOptions(genreFilter, genres, "Összes kategória");
     renderMovieOptions(movieFilter, movieTitles, "Összes film");
 }
@@ -493,7 +542,7 @@ function getFilteredMovies(): MovieDto[] {
         const filteredScreenings: FilmScreeningDto[] = [];
 
         for (const screening of movie.screenings) {
-            const matchesLocation = !selectedLocation || true;
+            const matchesLocation = !selectedLocation || String(screening.roomId) === selectedLocation;
             const matchesDate = !selectedDate || screening.date.slice(0, 10) === selectedDate;
 
             if (matchesLocation && matchesDate) {
@@ -697,7 +746,7 @@ function initializeScreeningButtons(): void {
     });
 }
 
-function renderRoomPage(): void {
+async function renderRoomPage(): Promise<void> {
     if (!roomDetails) {
         return;
     }
@@ -708,7 +757,31 @@ function renderRoomPage(): void {
         return;
     }
 
-    roomDetails.innerHTML = "";
+    await ensureRoomsLoaded();
+
+    const room = getRoomById(selectedScreening.roomId);
+    const roomName = getRoomLabel(selectedScreening.roomId, selectedScreening.roomName);
+    const formattedDate = new Date(selectedScreening.date).toLocaleString("hu-HU");
+    const bookingTarget = getCurrentUserEmail().trim() ? "Kosar.html" : "Bejelentkezes.html";
+    const bookingLabel = getCurrentUserEmail().trim() ? "Foglalás" : "Bejelentkezés a foglaláshoz";
+    const seatsMarkup = renderRoomSeatsMarkup(room?.seats ?? []);
+
+    roomDetails.innerHTML = `
+        <section class="container py-4">
+            <div class="card bg-dark text-light border-secondary">
+                <div class="card-body">
+                    <h1 class="h3 mb-3">${roomName}</h1>
+                    <p class="mb-2"><strong>Film:</strong> ${selectedScreening.movieTitle}</p>
+                    <p class="mb-4"><strong>Időpont:</strong> ${formattedDate}</p>
+                    <div class="mb-4">
+                        <h2 class="h5 mb-3">Székek</h2>
+                        ${seatsMarkup}
+                    </div>
+                    <a class="btn btn-success" href="${bookingTarget}">${bookingLabel}</a>
+                </div>
+            </div>
+        </section>
+    `;
 }
 
 // SCREENINGS
@@ -722,7 +795,8 @@ async function renderScreeningsTable(): Promise<void> {
     if (!screeningsTbody) return;
 
     try {
-        const screenings = await fetchScreeningsList();
+        const [screenings, rooms] = await Promise.all([fetchScreeningsList(), fetchRoomsList()]);
+        allRooms = rooms;
         screeningsTbody.innerHTML = "";
 
         if (screenings.length === 0) {
@@ -738,10 +812,11 @@ async function renderScreeningsTable(): Promise<void> {
             const row = document.createElement("tr");
             const date = new Date(screening.date);
             const formattedDate = date.toLocaleString('hu-HU');
+            const roomName = getRoomLabel(screening.roomId, screening.roomName);
             
             row.innerHTML = `
                 <td>${screening.movieTitle}</td>
-                <td>${screening.roomName}</td>
+                <td>${roomName}</td>
                 <td>${formattedDate}</td>
                 <td>
                     <button class="btn btn-sm btn-success">Foglalás</button>
@@ -965,7 +1040,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCategoriesPage();
     }
     if (roomDetails) {
-        renderRoomPage();
+        await renderRoomPage();
     }
     if (screeningsTbody) {
         renderScreeningsTable();
