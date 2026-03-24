@@ -52,16 +52,6 @@ namespace CinemaProject.Model
             }).ToListAsync();
         }
 
-        public async Task<IEnumerable<TicketDto>> GetAllTickets()
-        {
-            return await _context.tickets.Select(x => new TicketDto
-            {
-                TicketId = x.TicketId,
-                TicketType = x.TicketType,
-                TicketPrice = x.TicketPrice
-            }).ToListAsync();
-        }
-
         public async Task<IEnumerable<RoomDto>> GetAllRooms()
         {
             return await _context.rooms.Select(x => new RoomDto
@@ -73,11 +63,11 @@ namespace CinemaProject.Model
 
         public async Task<IEnumerable<TicketTypeDto>> GetAllTicketType()
         {
-            return await _context.ticketsForHTML.Select(x => new TicketTypeDto
+            return await _context.ticketTypes.Select(x => new TicketTypeDto
             {
-                TicketTypeId = x.TicketId,
-                Name = x.TicketType,
-                Price = x.TicketPrice
+                TicketTypeId = x.TicketTypeId,
+                TicketType = x.TicketType,
+                TicketPrice = x.TicketPrice
             }).ToListAsync();
         }
 
@@ -259,12 +249,12 @@ namespace CinemaProject.Model
             return freeSeatsCount >= requiredSeats;
         }
 
-        public async Task<TicketDto?> SelectTicketType(int screeningId)
+        public async Task<TicketTypeDto?> SelectTicketType()
         {
-            return await _context.tickets.Where(x => x.FilmScreeningId == screeningId)
-                .Select(x => new TicketDto
+            return await _context.ticketTypes
+                .Select(x => new TicketTypeDto
                 {
-                    TicketId = x.TicketId,
+                    TicketTypeId = x.TicketTypeId,
                     TicketType = x.TicketType,
                     TicketPrice = x.TicketPrice
                 }).FirstOrDefaultAsync();
@@ -281,7 +271,7 @@ namespace CinemaProject.Model
                 throw new ArgumentException("Quantity must be greater than zero");
 
             cart.Amount = amount;
-            cart.TotalPrice = cart.Ticket.TicketPrice * amount;
+            cart.TotalPrice = cart.Ticket.TicketType.TicketPrice * amount;
 
             await _context.SaveChangesAsync();
         }

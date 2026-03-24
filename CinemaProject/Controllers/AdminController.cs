@@ -228,25 +228,6 @@ namespace CinemaProject.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("modifyticket")]
-        public async Task<ActionResult> ModifyTicket([FromBody] ModifyTicketDto dto, [FromQuery] int ticketId)
-        {
-            try
-            {
-                await _adminModel.ModifyTicket(dto, ticketId);
-                return Ok();
-            }
-            catch (InvalidOperationException e)
-            {
-                return BadRequest(e.Message);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [Authorize(Roles = "Admin")]
         [HttpPut("modifyroom")]
         public async Task<ActionResult> ModifyRoom([FromBody] ModifyRoomDto dto, [FromQuery] int roomId)
         {

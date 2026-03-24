@@ -27,7 +27,7 @@ namespace CinemaProject.Model
                     FilmScreeningId = x.FilmScreeningId,
                     TicketId = x.TicketId,
                     Amount = x.Amount,
-                    TotalPrice = x.Ticket.TicketPrice * x.Amount,
+                    TotalPrice = x.Ticket.TicketType.TicketPrice * x.Amount,
                     Seats = x.Seats.Select(s => new SeatDto
                     {
                         SeatId = s.SeatId,
@@ -68,7 +68,7 @@ namespace CinemaProject.Model
                 FilmScreeningId = dto.FilmScreeningId,
                 TicketId = dto.TicketId,
                 Amount = dto.Amount,
-                TotalPrice = ticket.TicketPrice * dto.Amount,
+                TotalPrice = ticket.TicketType.TicketPrice * dto.Amount,
                 Seats = seats
             };
             var conflictingSeatIds = await _context.carts.Where(c => c.FilmScreeningId == dto.FilmScreeningId).SelectMany(c => c.Seats.Select(s => s.SeatId)).Where(seatId => seatIds.Contains(seatId)).Distinct().ToListAsync();
@@ -137,7 +137,7 @@ namespace CinemaProject.Model
             cart.FilmScreeningId = dto.FilmScreeningId;
             cart.TicketId = dto.TicketId;
             cart.Amount = dto.Amount;
-            cart.TotalPrice = ticket.TicketPrice * dto.Amount;
+            cart.TotalPrice = ticket.TicketType.TicketPrice * dto.Amount;
 
             foreach (var seat in seats)
             {
@@ -164,7 +164,7 @@ namespace CinemaProject.Model
             if (dto.NewAmount > 0)
             {
                 cart.Amount = dto.NewAmount;
-                cart.TotalPrice = cart.Ticket.TicketPrice * dto.NewAmount;
+                cart.TotalPrice = cart.Ticket.TicketType.TicketPrice * dto.NewAmount;
             }
 
             if (dto.NewSeatIds != null && dto.NewSeatIds.Any())

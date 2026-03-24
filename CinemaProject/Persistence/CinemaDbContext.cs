@@ -18,9 +18,9 @@ namespace CinemaProject.Persistence
         public DbSet<Seat> seats { get; set; }
         public DbSet<Receipt> receipts { get; set; }
         public DbSet<ReservationConfirmation> reservationConfirmations { get; set; }
+        public DbSet<TicketTypes> ticketTypes { get; set; }
 
         // DATAS FOR HTML
-        public DbSet<TicketForHTML> ticketsForHTML { get; set; }
         public DbSet<CategoriesForHTML> categoriesForHTML { get; set; }
 
         public CinemaDbContext(DbContextOptions<CinemaDbContext> options) : base(options) { }
@@ -78,12 +78,10 @@ namespace CinemaProject.Persistence
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int TicketId { get; set; }
-        [Required]
-        public string TicketType { get; set; }
-        [Required]
-        public int TicketPrice { get; set; }
+        public int TicketTypeId { get; set; }
         public int? FilmScreeningId { get; set; }
         public FilmScreening? FilmScreening { get; set; }
+        public TicketTypes TicketType { get; set; }
     }
 
     public class FilmScreening
@@ -193,17 +191,18 @@ namespace CinemaProject.Persistence
         public PaymentReservation PaymentReservation { get; set; }
     }
 
-    // DATAS FOR HTML
-    public class TicketForHTML
+    public class TicketTypes
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int TicketId { get; set; }
+        public int TicketTypeId { get; set; }
         [Required]
         public string TicketType { get; set; }
         [Required]
         public int TicketPrice { get; set; }
-    }
+    }    
+
+    // DATAS FOR HTML
 
     public class CategoriesForHTML
     {

@@ -48,7 +48,7 @@ namespace CinemaProject.Model
                     Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
                     TicketId = x.Cart.TicketId,
                     Amount = x.Cart.Amount,
-                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     UserEmail = x.Cart.User.Email
                 }).FirstAsync();
         }
@@ -97,7 +97,7 @@ namespace CinemaProject.Model
                     Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
                     TicketId = x.Cart.TicketId,
                     Amount = x.Cart.Amount,
-                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     PaymentDate = x.Date,
                     UserEmail = x.Cart.User.Email
                 }).FirstAsync();
@@ -116,7 +116,7 @@ namespace CinemaProject.Model
                     Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
                     TicketId = x.Cart.TicketId,
                     Amount = x.Cart.Amount,
-                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     PaymentDate = x.Date,
                     UserEmail = x.Cart.User.Email
                 }).FirstOrDefaultAsync();
@@ -134,7 +134,7 @@ namespace CinemaProject.Model
                     Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
                     TicketId = x.Cart.TicketId,
                     Amount = x.Cart.Amount,
-                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     UserEmail = x.Cart.User.Email
                 }).FirstOrDefaultAsync();
         }
@@ -157,7 +157,7 @@ namespace CinemaProject.Model
                     Date = x.Date,
                     IsPaid = x.IsPaid,
                     Amount = x.Cart.Amount,
-                    Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    Price = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     Seats = x.Cart.Seats.Select(s => new SeatDto
                     {
                         SeatId = s.SeatId,
@@ -187,7 +187,7 @@ namespace CinemaProject.Model
                     Date = x.Date,
                     IsPaid = x.IsPaid,
                     Amount = x.Cart.Amount,
-                    Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    Price = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     Seats = x.Cart.Seats.Select(s => new SeatDto
                     {
                         SeatId = s.SeatId,
