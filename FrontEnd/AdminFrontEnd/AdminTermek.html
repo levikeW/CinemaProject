@@ -6,10 +6,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="AdminCinema.css" />
-    <title>Admin - Vetítések</title>
+    <title>Admin - Termek</title>
 </head>
 
-<body class="cinema-page">
+<body class="infos-page">
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <a class="navbar-brand" href="AdminCinema.html">
@@ -36,9 +36,9 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="AdminArak.html">Árak</a>
-                    </li>
+                    </li>                    
                     <li class="nav-item">
-                        <a class="nav-link" href="AdminTermek.html">Termek</a>
+                        <a class="nav-link active" href="AdminRooms.html">Termek</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="AdminKategoriak.html">Kategóriák</a>
@@ -56,9 +56,9 @@
 
     <main class="admin-page page-section">
         <section class="admin-hero">
-            <h1 class="admin-title">Vetítések kezelése</h1>
+            <h1 class="admin-title">Termek kezelése</h1>
             <p class="admin-lead">
-                Vetítések létrehozása, módosítása és törlése.
+                Termek létrehozása, módosítása és törlése.
             </p>
         </section>
 
@@ -69,7 +69,7 @@
                 <div class="col-lg-7">
                     <div class="card admin-card shadow-sm h-100">
                         <div class="card-header">
-                            <h4 class="mb-0">Vetítések listája</h4>
+                            <h4 class="mb-0">Termek listája</h4>
                         </div>
 
                         <div class="card-body">
@@ -78,16 +78,14 @@
                                     <thead class="table-dark">
                                         <tr>
                                             <th>ID</th>
-                                            <th>Film</th>
-                                            <th>Terem</th>
-                                            <th>Dátum</th>
+                                            <th>Terem neve</th>
                                             <th>Művelet</th>
                                         </tr>
                                     </thead>
 
-                                    <tbody id="adminScreeningsTbody">
+                                    <tbody id="adminRoomsTbody">
                                         <tr>
-                                            <td colspan="5" class="text-center">
+                                            <td colspan="3" class="text-center">
                                                 <div class="spinner-border spinner-border-sm" role="status">
                                                     <span class="visually-hidden">Betöltés...</span>
                                                 </div>
@@ -101,37 +99,31 @@
                 </div>
 
                 <!-- JOBB OLDAL -->
-                <div class="col-lg-5 admin-side-panel">
+                <div class="col-lg-5">
                     <div class="card admin-card shadow-sm h-100">
                         <div class="card-header">
-                            <h4 class="mb-0">Vetítés kezelése</h4>
+                            <h4 class="mb-0">Terem kezelése</h4>
                         </div>
 
                         <div class="card-body">
 
                             <!-- ÚJ -->
                             <div class="mb-4">
-                                <h5>Új vetítés létrehozása</h5>
-                                <div id="adminScreeningMessage"></div>
+                                <h5>Új terem létrehozása</h5>
+                                <div id="adminRoomMessage"></div>
 
-                                <form id="screeningForm" onsubmit="Admin_handleScreeningCreate(event)">
+                                <form id="roomForm" onsubmit="Admin_handleRoomCreate(event)">
                                     <div class="mb-3">
-                                        <label for="screeningMovieId" class="form-label">Film</label>
-                                        <select id="screeningMovieId" class="form-select" required></select>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="screeningRoomId" class="form-label">Terem</label>
-                                        <select id="screeningRoomId" class="form-select" required></select>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="screeningDate" class="form-label">Dátum</label>
-                                        <input type="datetime-local" id="screeningDate" class="form-control" required>
+                                        <label for="roomName" class="form-label">Terem neve</label>
+                                        <input
+                                            type="text"
+                                            id="roomName"
+                                            class="form-control"
+                                            required>
                                     </div>
 
                                     <button type="submit" class="btn btn-success w-100">
-                                        Vetítés létrehozása
+                                        Terem létrehozása
                                     </button>
                                 </form>
                             </div>
@@ -140,25 +132,19 @@
 
                             <!-- MÓDOSÍTÁS -->
                             <div class="mt-4">
-                                <h5>Vetítés módosítása</h5>
-                                <div id="adminScreeningEditMessage"></div>
+                                <h5>Terem módosítása</h5>
+                                <div id="adminRoomEditMessage"></div>
 
-                                <form id="editScreeningForm" onsubmit="Admin_handleScreeningUpdate(event)">
-                                    <input type="hidden" id="editScreeningId">
-
-                                    <div class="mb-3">
-                                        <label for="editScreeningMovieId" class="form-label">Film</label>
-                                        <select id="editScreeningMovieId" class="form-select" required></select>
-                                    </div>
+                                <form onsubmit="Admin_handleRoomUpdate(event)">
+                                    <input type="hidden" id="editRoomId">
 
                                     <div class="mb-3">
-                                        <label for="editScreeningRoomId" class="form-label">Terem</label>
-                                        <select id="editScreeningRoomId" class="form-select" required></select>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="editScreeningDate" class="form-label">Dátum</label>
-                                        <input type="datetime-local" id="editScreeningDate" class="form-control" required>
+                                        <label for="editRoomName" class="form-label">Terem neve</label>
+                                        <input
+                                            type="text"
+                                            id="editRoomName"
+                                            class="form-control"
+                                            required>
                                     </div>
 
                                     <button type="submit" class="btn btn-warning w-100">
@@ -174,9 +160,9 @@
             </div>
         </section>
     </main>
+
     <script src="Script/adminApi.js"></script>
-    <script src="Script/adminMovies.js"></script>
-    <script src="Script/adminRooms.js"></script>
+    <script src="Script/adminRooms.js"></script>    
     <script src="Script/adminCinema.js"></script>
 </body>
 </html>

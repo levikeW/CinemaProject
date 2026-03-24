@@ -2,20 +2,20 @@
 
 interface TicketTypeDto {
     ticketTypeId: number;
-    name: string;
-    price: number;
+    ticketType: string;
+    ticketPrice: number;
 }
 
 interface NewTicketTypeDto {
     ticketTypeId : number;
-    name: string;
-    price: number;
+    ticketType: string;
+    ticketPrice: number;
 }
 
 interface ModifyTicketTypeDto {
     ticketTypeId: number;
-    name: string;
-    price: number;
+    ticketType: string;
+    ticketPrice: number;
 }
 
 // ===================== TICKETS =====================
@@ -48,10 +48,10 @@ async function Admin_renderTicketsAdminTable(): Promise<void> {
             const row = document.createElement("tr");
             row.innerHTML = 
             `<td>${ticket.ticketTypeId}</td>
-                <td>${ticket.name}</td>
-                <td>${ticket.price} Ft</td>
+                <td>${ticket.ticketType}</td>
+                <td>${ticket.ticketPrice} Ft</td>
                 <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editTicket(${ticket.ticketTypeId}, '${Admin_escapeJs(ticket.name)}', ${ticket.price})">
+                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editTicket(${ticket.ticketTypeId}, '${Admin_escapeJs(ticket.ticketType)}', ${ticket.ticketPrice})">
                         Módosítás
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="Admin_removeTicket(${ticket.ticketTypeId})">
@@ -75,8 +75,8 @@ async function Admin_handleTicketCreate(event: Event): Promise<void> {
     try {
         const dto: NewTicketTypeDto = {
             ticketTypeId: 0,
-            name: (document.getElementById("ticketType") as HTMLInputElement).value,
-            price: Number((document.getElementById("ticketPrice") as HTMLInputElement).value)
+            ticketType: (document.getElementById("ticketType") as HTMLInputElement).value,
+            ticketPrice: Number((document.getElementById("ticketPrice") as HTMLInputElement).value)
         };
 
         await Admin_createTicketType(dto);
@@ -102,8 +102,8 @@ async function Admin_handleTicketUpdate(event: Event): Promise<void> {
 
         const dto: ModifyTicketTypeDto = {
             ticketTypeId: ticketId,
-            name: (document.getElementById("editTicketType") as HTMLInputElement).value.trim(),
-            price: Number((document.getElementById("editTicketPrice") as HTMLInputElement).value)
+            ticketType: (document.getElementById("editTicketType") as HTMLInputElement).value.trim(),
+            ticketPrice: Number((document.getElementById("editTicketPrice") as HTMLInputElement).value)
         };
 
         await Admin_updateTicketType(ticketId, dto);

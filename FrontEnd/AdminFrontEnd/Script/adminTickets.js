@@ -23,10 +23,10 @@ async function Admin_renderTicketsAdminTable() {
             const row = document.createElement("tr");
             row.innerHTML =
                 `<td>${ticket.ticketTypeId}</td>
-                <td>${ticket.name}</td>
-                <td>${ticket.price} Ft</td>
+                <td>${ticket.ticketType}</td>
+                <td>${ticket.ticketPrice} Ft</td>
                 <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editTicket(${ticket.ticketTypeId}, '${Admin_escapeJs(ticket.name)}', ${ticket.price})">
+                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editTicket(${ticket.ticketTypeId}, '${Admin_escapeJs(ticket.ticketType)}', ${ticket.ticketPrice})">
                         Módosítás
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="Admin_removeTicket(${ticket.ticketTypeId})">
@@ -49,8 +49,8 @@ async function Admin_handleTicketCreate(event) {
     try {
         const dto = {
             ticketTypeId: 0,
-            name: document.getElementById("ticketType").value,
-            price: Number(document.getElementById("ticketPrice").value)
+            ticketType: document.getElementById("ticketType").value,
+            ticketPrice: Number(document.getElementById("ticketPrice").value)
         };
         await Admin_createTicketType(dto);
         Admin_showMessage("adminTicketMessage", "Jegytípus létrehozva.");
@@ -72,8 +72,8 @@ async function Admin_handleTicketUpdate(event) {
         const ticketId = Number(document.getElementById("editTicketId").value);
         const dto = {
             ticketTypeId: ticketId,
-            name: document.getElementById("editTicketType").value.trim(),
-            price: Number(document.getElementById("editTicketPrice").value)
+            ticketType: document.getElementById("editTicketType").value.trim(),
+            ticketPrice: Number(document.getElementById("editTicketPrice").value)
         };
         await Admin_updateTicketType(ticketId, dto);
         Admin_showMessage("adminTicketEditMessage", "Jegytípus módosítva.");
