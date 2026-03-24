@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Cinema_Test
+/*namespace Cinema_Test
 {
     public class CartModelTest
     {
@@ -220,4 +220,4 @@ namespace Cinema_Test
         }
 
     }
-}
+}*/

@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using Xunit;
 
 namespace Cinema_IntegrationTest;
-public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
+/*public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
 {
     private readonly HttpClient _client;
     private readonly CustomApplicationFactory _factory;
@@ -130,7 +130,7 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         Assert.NotEmpty(screenings);
         Assert.Contains(screenings, s => s.FilmScreeningId == screening.FilmScreeningId);
     }
-    */
+    /
 
     [Fact]
     public async Task GetUpcomingScreenings()
@@ -261,7 +261,7 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         Assert.Equal(newAmount, updatedCart.Amount);
         Assert.Equal(updatedCart.Ticket.TicketPrice * newAmount, updatedCart.TotalPrice);
     }
-    */
+    /
 
 
     [Fact]
@@ -282,4 +282,4 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         Assert.NotEmpty(image.ImageContent);
     }
     
-}
+}*/

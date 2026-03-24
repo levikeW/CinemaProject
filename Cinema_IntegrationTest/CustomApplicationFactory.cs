@@ -16,7 +16,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Cinema_IntegrationTest
+/*namespace Cinema_IntegrationTest
 {
     public class CustomApplicationFactory : WebApplicationFactory<Program>
     {
@@ -64,4 +64,4 @@ namespace Cinema_IntegrationTest
             }
         }
     }
-}
+}*/

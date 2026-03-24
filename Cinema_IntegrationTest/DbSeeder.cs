@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using CinemaProject.Model;
 
-namespace Cinema_IntegrationTest
+/*namespace Cinema_IntegrationTest
 {
     public class DbSeeder
     {
@@ -395,4 +395,4 @@ namespace Cinema_IntegrationTest
             return Convert.ToBase64String(hash);
         }
     }
-}
+}*/

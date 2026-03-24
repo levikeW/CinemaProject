@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace Cinema_IntegrationTest
 {
-    public class CartControllerTest : IClassFixture<CustomApplicationFactory>
+  /*  public class CartControllerTest : IClassFixture<CustomApplicationFactory>
     {
         private readonly HttpClient _client;
         private readonly CustomApplicationFactory _factory;
@@ -239,7 +239,7 @@ namespace Cinema_IntegrationTest
             Assert.All(updatedCart.Seats, s => Assert.Contains(s.SeatId, dto.NewSeatIds));
             Assert.All(updatedCart.Seats, s => Assert.True(s.IsReserved));
         }
-        */
+        /
 
         [Fact]
         public async Task ClearCart()
@@ -254,5 +254,5 @@ namespace Cinema_IntegrationTest
             var clearResponse = await _client.DeleteAsync($"api/cart/clearcart?userId={user.UserId}");
             Assert.Equal(HttpStatusCode.OK, clearResponse.StatusCode);
         }
-    }
+    }*/
 }

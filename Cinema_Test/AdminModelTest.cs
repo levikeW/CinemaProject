@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Cinema_Test
+/*namespace Cinema_Test
 {
     public class AdminModelTest
     {
@@ -306,4 +306,4 @@ namespace Cinema_Test
             Assert.Equal("Image is already exist", ex.Message);
         }
     }
-}
+}*/

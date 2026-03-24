@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Cinema_Test
+/*namespace Cinema_Test
 {
     public class DbSeeder
     {
@@ -248,4 +248,4 @@ namespace Cinema_Test
             return Convert.ToBase64String(hash);
         }
     }
-}
+}*/

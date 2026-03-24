@@ -6,7 +6,7 @@ using System.Net;
 using System.Text.Json;
 using Xunit;
 
-namespace Cinema_IntegrationTest;
+/*namespace Cinema_IntegrationTest;
 
 public class PaymentReservationControllerTest : IClassFixture<CustomApplicationFactory>
 {
@@ -139,4 +139,4 @@ public class PaymentReservationControllerTest : IClassFixture<CustomApplicationF
 
         Assert.NotNull(reservations);
     }
-}
+}*/

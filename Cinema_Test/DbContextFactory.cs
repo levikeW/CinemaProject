@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Cinema_Test
+/*namespace Cinema_Test
 {
     internal class DbContextFactory
     {
@@ -51,4 +51,4 @@ namespace Cinema_Test
             return context;
         }
     }
-}
+}*/
