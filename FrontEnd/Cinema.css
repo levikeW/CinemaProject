@@ -60,7 +60,7 @@ body.auth-page {
 
 body.profile-page,
 body.rolunk-page {
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
     background-color: #100c1d;
     background-image:
@@ -389,52 +389,6 @@ header {
     margin-top: 0.5rem;
 }
 
-.room-page-shell {
-    max-width: 920px;
-    margin: 1rem auto 0;
-    padding: 0 1rem 2rem;
-}
-
-.room-page-card {
-    border: 1px solid rgba(196, 88, 255, 0.26);
-    border-radius: 28px;
-    background: rgba(18, 14, 37, 0.78);
-    box-shadow: 0 18px 40px rgba(20, 8, 34, 0.28);
-    backdrop-filter: blur(8px);
-    padding: 2rem;
-    color: #f3e9ff;
-}
-
-.room-page-eyebrow {
-    margin: 0 0 0.85rem;
-    color: rgba(226, 194, 255, 0.78);
-    font-size: 0.95rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.room-page-card h1 {
-    margin: 0 0 1.25rem;
-    color: #e4b5ff;
-    text-shadow:
-        1px 1px 0 rgba(111, 42, 168, 0.82),
-        2px 2px 0 rgba(86, 22, 139, 0.64),
-        0 10px 26px rgba(0, 0, 0, 0.22);
-}
-
-.room-page-meta {
-    display: grid;
-    gap: 0.9rem;
-}
-
-.room-page-meta p {
-    margin: 0;
-    padding: 1rem 1.1rem;
-    border: 1px solid rgba(196, 88, 255, 0.16);
-    border-radius: 18px;
-    background: rgba(244, 234, 255, 0.08);
-}
-
 .movie-card button {
     margin-top: 0;
     border-radius: 999px;
@@ -505,11 +459,11 @@ header {
     margin: 0 auto;
     font-size: 1.05rem;
     line-height: 1.6;
-    color: #d6ebf8;
+    color: #e4b5ff;
     text-shadow:
-        0 2px 0 rgba(37, 121, 150, 0.64),
-        0 10px 30px rgba(0, 0, 0, 0.28),
-        0 0 18px rgba(127, 233, 255, 0.16);
+        1px 1px 0 rgba(111, 42, 168, 0.82),
+        2px 2px 0 rgba(86, 22, 139, 0.64),
+        0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 .arak-shell {
@@ -521,9 +475,9 @@ header {
 .arak-panel {
     position: relative;
     isolation: isolate;
-    border: 1px solid rgba(173, 230, 255, 0.2);
+    border: 1px solid rgba(208, 161, 255, 0.22);
     border-radius: 28px;
-    box-shadow: 0 18px 40px rgba(5, 17, 27, 0.28);
+    box-shadow: 0 18px 40px rgba(44, 16, 72, 0.3);
     background: rgba(8, 25, 40, 0.72);
     backdrop-filter: blur(8px);
     overflow: visible;
@@ -540,8 +494,8 @@ header {
     opacity: 0.34;
     filter: blur(28px);
     background:
-        radial-gradient(ellipse at 18% 50%, rgba(126, 240, 255, 0.6) 0%, transparent 38%),
-        radial-gradient(ellipse at 82% 50%, rgba(126, 240, 255, 0.6) 0%, transparent 38%);
+    radial-gradient(ellipse at 18% 50%, rgba(188, 104, 255, 0.66) 0%, transparent 38%),
+    radial-gradient(ellipse at 82% 50%, rgba(152, 84, 255, 0.62) 0%, transparent 38%);
 }
 
 .arak-panel::after {
@@ -551,9 +505,9 @@ header {
     z-index: -1;
     border-radius: 30px;
     box-shadow:
-        0 0 0 1px rgba(126, 240, 255, 0.16),
-        0 0 24px rgba(126, 240, 255, 0.18),
-        0 0 48px rgba(126, 240, 255, 0.14);
+        0 0 0 1px rgba(188, 104, 255, 0.2),
+        0 0 24px rgba(176, 92, 255, 0.22),
+        0 0 48px rgba(137, 67, 255, 0.18);
     pointer-events: none;
 }
 
@@ -577,43 +531,54 @@ header {
 
 .arak-table-wrap {
     overflow: hidden;
-    border: 1px solid rgba(173, 230, 255, 0.16);
+    border: 1px solid rgba(131, 92, 177, 0.24);
     border-radius: 22px;
-    background: rgba(13, 33, 51, 0.82);
+    background: rgba(49, 24, 77, 0.96);
 }
 
 .arak-panel .table {
     --bs-table-color: #eff8ff;
-    --bs-table-bg: rgba(13, 33, 51, 0.82);
+    --bs-table-bg: transparent;
     --bs-table-striped-color: #eff8ff;
-    --bs-table-striped-bg: rgba(20, 45, 67, 0.9);
+    --bs-table-striped-bg: transparent;
     --bs-table-hover-color: #ffffff;
-    --bs-table-hover-bg: rgba(28, 61, 88, 0.95);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.06);
     margin-bottom: 0;
     border: 0;
+    background: transparent;
 }
 
 .arak-panel .table-dark,
 .arak-panel .table-dark th {
-    background: rgba(18, 54, 79, 0.98) !important;
+    background: transparent !important;
     color: #f4fbff;
 }
 
 .arak-panel thead th {
+    background: rgba(76, 38, 116, 0.98);
     border: 0;
-    border-bottom: 1px solid rgba(173, 230, 255, 0.18);
+    border-bottom: 1px solid rgba(214, 179, 241, 0.2);
     font-weight: 700;
     letter-spacing: 0.04em;
 }
 
 .arak-panel tbody tr {
-    border-bottom: 1px solid rgba(173, 230, 255, 0.12);
+    border-bottom: 1px solid rgba(214, 179, 241, 0.12);
+}
+
+.arak-panel tbody tr:nth-child(odd) {
+    background: rgba(65, 31, 99, 0.92);
+}
+
+.arak-panel tbody tr:nth-child(even) {
+    background: rgba(49, 24, 77, 0.96);
 }
 
 .arak-panel td,.arak-panel th {
     padding: 1rem;
     text-align: center;
     border: 0;
+    background: transparent;
 }
 
 .arak-panel tbody td {
@@ -774,7 +739,14 @@ header {
 /* Rolunk.html */
 
 .Rolunk {
+    height: calc(100vh - 84px);
     min-height: calc(100vh - 84px);
+    padding: 1.5rem 1rem;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     background: transparent;
 }
 
@@ -799,8 +771,8 @@ header {
 
 .rolunk-hero {
     max-width: 620px;
-    margin: 0 auto 1.5rem;
-    padding: 1.5rem 1rem 0.5rem;
+    margin: 0 auto 1rem;
+    padding: 0.5rem 1rem;
     text-align: center;
 }
 
@@ -819,7 +791,7 @@ header {
 .rolunk-info {
     max-width: 620px;
     margin: 0 auto;
-    padding: 0 1rem 2rem;
+    padding: 0 1rem;
     display: grid;
     grid-template-columns: 1fr;
     gap: 1rem;
