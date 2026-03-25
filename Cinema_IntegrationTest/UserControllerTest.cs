@@ -12,7 +12,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
-/*namespace Cinema_IntegrationTest
+namespace Cinema_IntegrationTest
 {
     public class UserControllerTests : IClassFixture<CustomApplicationFactory>
     {
@@ -199,4 +199,4 @@ using Xunit;
             Assert.True(response.IsSuccessStatusCode, $"ChangePassword failed: {content}");
         }
     }
-}*/
+}

@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace Cinema_IntegrationTest
 {
-  /*  public class CartControllerTest : IClassFixture<CustomApplicationFactory>
+    public class CartControllerTest : IClassFixture<CustomApplicationFactory>
     {
         private readonly HttpClient _client;
         private readonly CustomApplicationFactory _factory;
@@ -52,7 +52,7 @@ namespace Cinema_IntegrationTest
         }
 
         [Fact]
-        public async Task AddToCart()
+        public async Task AddToCart_ShouldReturnOk()
         {
             var dto = new CartDto
             {
@@ -60,13 +60,16 @@ namespace Cinema_IntegrationTest
                 FilmScreeningId = 1,
                 TicketId = 2,
                 Amount = 1,
-                Seats = new List<SeatDto> { }
+                Seats = new List<SeatDto>()
             };
-            var request = new HttpRequestMessage(HttpMethod.Put, "api/cart/addtocart")
-            {
-                Content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json")
-            };
-            var response = await _client.SendAsync(request);
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(dto),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await _client.PutAsync("api/cart/addtocart", content);
+            var body = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -79,7 +82,7 @@ namespace Cinema_IntegrationTest
 
             var cart = db.carts
                 .Include(c => c.User)
-                .FirstOrDefault(c => c.User.Email == "deleteuser@cinema.hu");
+                .FirstOrDefault(c => c.User.Email == "admin@cinema.hu");
 
             Assert.NotNull(cart);
         }
@@ -114,7 +117,6 @@ namespace Cinema_IntegrationTest
             var screening = new FilmScreening
             {
                 MovieId = movie.MovieId,
-                MovieTitle = movie.MovieTitle,
                 RoomId = room.RoomId,
                 RoomName = room.RoomName,
                 Date = DateTime.UtcNow.AddDays(1)
@@ -122,7 +124,7 @@ namespace Cinema_IntegrationTest
             db.filmScreenings.Add(screening);
             db.SaveChanges();
 
-            var ticket = new Ticket { TicketType = "Adult", TicketPrice = 1000, FilmScreeningId = screening.FilmScreeningId };
+            var ticket = new Ticket { TicketTypeId = 2, FilmScreeningId = screening.FilmScreeningId };
             db.tickets.Add(ticket);
             db.SaveChanges();
 
@@ -138,7 +140,7 @@ namespace Cinema_IntegrationTest
                 FilmScreeningId = screening.FilmScreeningId,
                 TicketId = ticket.TicketId,
                 Amount = 1,
-                TotalPrice = ticket.TicketPrice
+                TotalPrice = ticket.TicketType.TicketPrice
             };
             db.carts.Add(cart);
             db.SaveChanges();
@@ -159,7 +161,7 @@ namespace Cinema_IntegrationTest
                 FilmScreeningId = screening.FilmScreeningId,
                 TicketId = ticket.TicketId,
                 Amount = 3,
-                TotalPrice = ticket.TicketPrice,
+                TotalPrice = ticket.TicketType.TicketPrice,
                 Seats = seatDtos
             };
 
@@ -177,14 +179,13 @@ namespace Cinema_IntegrationTest
             Assert.All(updatedCart.Seats, s => Assert.Contains(s.SeatId, seatDtos.Select(sd => sd.SeatId)));
         }
 
-        /*
         [Fact]
         public async Task ModifyCart()
         {
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var user = db.users.First(u => u.Email == "deleteuser@cinema.hu");
+            var user = db.users.First(u => u.Email == "user@cinema.hu");
 
             var cart = db.carts
                 .Include(c => c.Seats)
@@ -197,10 +198,10 @@ namespace Cinema_IntegrationTest
                 cart = new Cart
                 {
                     UserId = user.UserId,
-                    FilmScreeningId = ticket.FilmScreeningId,
+                    //FilmScreeningId = ticket.FilmScreeningId,
                     TicketId = ticket.TicketId,
                     Amount = 1,
-                    TotalPrice = ticket.TicketPrice
+                    TotalPrice = ticket.TicketType.TicketPrice
                 };
                 db.carts.Add(cart);
                 db.SaveChanges();
@@ -239,7 +240,7 @@ namespace Cinema_IntegrationTest
             Assert.All(updatedCart.Seats, s => Assert.Contains(s.SeatId, dto.NewSeatIds));
             Assert.All(updatedCart.Seats, s => Assert.True(s.IsReserved));
         }
-        /
+  
 
         [Fact]
         public async Task ClearCart()
@@ -254,5 +255,5 @@ namespace Cinema_IntegrationTest
             var clearResponse = await _client.DeleteAsync($"api/cart/clearcart?userId={user.UserId}");
             Assert.Equal(HttpStatusCode.OK, clearResponse.StatusCode);
         }
-    }*/
+    }
 }

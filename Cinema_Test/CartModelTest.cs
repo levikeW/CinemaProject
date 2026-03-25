@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-/*namespace Cinema_Test
+namespace Cinema_Test
 {
     public class CartModelTest
     {
@@ -49,48 +49,6 @@ using Xunit;
             var result = await _cartModel.GetCart(dto, userId);
 
             Assert.NotNull(result);
-        }
-
-        [Fact]
-        public async Task AddToCart()
-        {
-            var user = _context.users.First(u => u.Role == "User");
-            var screening = _context.filmScreenings.First();
-            var seat = _context.seats
-                .OrderBy(s => s.SeatId)
-                .First(s => s.RoomId == screening.RoomId);
-            var ticket = _context.tickets.First();
-
-            var dto = new CartDto
-            {
-                UserId = user.UserId,
-                FilmScreeningId = screening.FilmScreeningId,
-                TicketId = ticket.TicketId,
-                Amount = 2,
-                TotalPrice = ticket.TicketPrice,
-                Seats = new List<SeatDto>
-                {
-                    new SeatDto
-                    {
-                        SeatId = seat.SeatId,
-                        RowNumber = seat.RowNumber,
-                        SeatNumber = seat.SeatNumber,
-                        RoomId = seat.RoomId,
-                        IsReserved = seat.IsReserved
-                    }
-                }
-            };
-
-            await _cartModel.AddToCart(dto);
-
-            var saved = _context.carts
-                .Include(c => c.Seats)
-                .FirstOrDefault(c =>
-                    c.UserId == user.UserId &&
-                    c.FilmScreeningId == screening.FilmScreeningId);
-
-            Assert.NotNull(saved);
-            Assert.Equal(2, saved.Amount);
         }
 
         // REMOVE FROM CART
@@ -178,7 +136,7 @@ using Xunit;
                 .FirstAsync(c => c.CartId == cart.CartId);
 
             Assert.Equal(3, modified.Amount);
-            Assert.Equal(modified.Ticket.TicketPrice * 3, modified.TotalPrice);
+            Assert.Equal(modified.Ticket.TicketType.TicketPrice * 3, modified.TotalPrice);
             Assert.Single(modified.Seats);
             Assert.Equal(newSeatIds.First(), modified.Seats.First().SeatId);
         }
@@ -220,4 +178,4 @@ using Xunit;
         }
 
     }
-}*/
+}

@@ -9,7 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-/*namespace Cinema_Test
+namespace Cinema_Test
 {
     public class Payment_ReservationModelTest
     {
@@ -141,4 +141,4 @@ using Xunit;
             Assert.Empty(result);
         }
     }
-}*/
+}

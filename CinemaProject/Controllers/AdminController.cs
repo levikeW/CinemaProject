@@ -210,11 +210,11 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("modifyreservation")]
-        public async Task<ActionResult> ModifyReservation([FromBody] ModifyReservationDto dto, [FromQuery] int reservationId)
+        public async Task<ActionResult> ModifyReservation([FromBody] ModifyReservationDto dto)
         {
             try
             {
-                await _adminModel.ModifyReservation(dto, reservationId);
+                await _adminModel.ModifyReservation(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)

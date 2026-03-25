@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-/*namespace Cinema_Test
+namespace Cinema_Test
 {
     public class UserModelTest
     {
@@ -201,4 +201,4 @@ using System.Threading.Tasks;
         }
 
     }
-}*/
+}

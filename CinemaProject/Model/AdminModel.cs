@@ -225,11 +225,11 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
-        public async Task ModifyReservation(ModifyReservationDto dto, int reservationId)
+        public async Task ModifyReservation(ModifyReservationDto dto)
         {
             var reservation = await _context.paymentReservations
                 .Include(p => p.Cart)
-                    .ThenInclude(c => c.Seats).FirstOrDefaultAsync(p => p.PaymentReservationId == reservationId);
+                    .ThenInclude(c => c.Seats).FirstOrDefaultAsync(p => p.PaymentReservationId == dto.PaymentReservationId);
 
             if (reservation == null)
                 throw new InvalidOperationException("Reservation not found");

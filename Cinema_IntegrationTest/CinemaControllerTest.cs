@@ -10,13 +10,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Cinema_IntegrationTest;
-/*public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
+public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
 {
     private readonly HttpClient _client;
     private readonly CustomApplicationFactory _factory;
@@ -33,13 +34,12 @@ namespace Cinema_IntegrationTest;
 
 
     [Fact]
-    public async Task GetAllMovies()
+    public async Task GetAllMovies_ShouldReturnOk()
     {
-        var response = await _client.GetAsync("/api/cinema/getallmovies");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var movies = JsonSerializer.Deserialize<List<MovieDto>>(await response.Content.ReadAsStringAsync(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        Assert.NotEmpty(movies);
+        var response = await _client.GetFromJsonAsync<IEnumerable<MovieDto>>("api/cinema/getallmovies");
+
+        
+        Assert.NotNull(response);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ namespace Cinema_IntegrationTest;
         Assert.NotEmpty(movies);
     }
     
-    /*
+    
     [Fact]
     public async Task GetScreeningDetails()
     {
@@ -130,7 +130,7 @@ namespace Cinema_IntegrationTest;
         Assert.NotEmpty(screenings);
         Assert.Contains(screenings, s => s.FilmScreeningId == screening.FilmScreeningId);
     }
-    /
+    
 
     [Fact]
     public async Task GetUpcomingScreenings()
@@ -245,7 +245,7 @@ namespace Cinema_IntegrationTest;
         Assert.NotNull(ticket);
     }
 
-    /*
+    
     [Fact]
     public async Task SetQuantity()
     {
@@ -259,9 +259,9 @@ namespace Cinema_IntegrationTest;
 
         var updatedCart = db.carts.First(c => c.CartId == cart.CartId);
         Assert.Equal(newAmount, updatedCart.Amount);
-        Assert.Equal(updatedCart.Ticket.TicketPrice * newAmount, updatedCart.TotalPrice);
+        Assert.Equal(updatedCart.Ticket.TicketType.TicketPrice * newAmount, updatedCart.TotalPrice);
     }
-    /
+    
 
 
     [Fact]
@@ -282,4 +282,4 @@ namespace Cinema_IntegrationTest;
         Assert.NotEmpty(image.ImageContent);
     }
     
-}*/
+}

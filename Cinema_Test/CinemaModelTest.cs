@@ -8,7 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-/*namespace Cinema_Test
+namespace Cinema_Test
 {
     public class CinemaModelTest
     {
@@ -127,7 +127,7 @@ using Xunit;
 
             var updated = _context.carts.First(c => c.CartId == cart.CartId);
             Assert.Equal(newAmount, updated.Amount);
-            Assert.Equal(cart.Ticket.TicketPrice * newAmount, updated.TotalPrice);
+            Assert.Equal(cart.Ticket.TicketType.TicketPrice * newAmount, updated.TotalPrice);
         }
 
         [Fact]
@@ -160,4 +160,4 @@ using Xunit;
             Assert.Equal(movie.ImageId, image.ImageId);
         }
     }
-}*/
+}

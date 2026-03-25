@@ -1,4 +1,5 @@
-﻿using CinemaProject.Persistence;
+﻿using Cinema_Test;
+using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -16,7 +17,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-/*namespace Cinema_IntegrationTest
+namespace Cinema_IntegrationTest
 {
     public class CustomApplicationFactory : WebApplicationFactory<Program>
     {
@@ -64,4 +65,4 @@ using System.Threading.Tasks;
             }
         }
     }
-}*/
+}
