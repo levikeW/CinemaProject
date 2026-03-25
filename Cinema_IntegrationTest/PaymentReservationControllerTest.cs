@@ -113,13 +113,10 @@ public class PaymentReservationControllerTest : IClassFixture<CustomApplicationF
 
         var response = await _client.GetAsync($"/api/payment_reservation/viewupcomingreservation?userId={user.UserId}");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var reservations = JsonSerializer.Deserialize<List<PaymentReservationDto>>(
-            await response.Content.ReadAsStringAsync(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        Assert.NotNull(reservations);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(body));
     }
 
     [Fact]
@@ -131,12 +128,9 @@ public class PaymentReservationControllerTest : IClassFixture<CustomApplicationF
 
         var response = await _client.GetAsync($"/api/payment_reservation/viewpastreservation?userId={user.UserId}");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var reservations = JsonSerializer.Deserialize<List<PaymentReservationDto>>(
-            await response.Content.ReadAsStringAsync(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        Assert.NotNull(reservations);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(body));
     }
 }

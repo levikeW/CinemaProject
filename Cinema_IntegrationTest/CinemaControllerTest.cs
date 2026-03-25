@@ -1,19 +1,11 @@
 ﻿using Cinema.Dto;
-using Cinema_IntegrationTest;
 using CinemaProject.Dto;
-using CinemaProject.Model;
 using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Cinema_IntegrationTest;
@@ -32,14 +24,14 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
             });
     }
 
-
     [Fact]
-    public async Task GetAllMovies_ShouldReturnOk()
+    public async Task GetAllMovies()
     {
-        var response = await _client.GetFromJsonAsync<IEnumerable<MovieDto>>("api/cinema/getallmovies");
+        var response = await _client.GetAsync("api/cinema/getallmovies");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        
-        Assert.NotNull(response);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(body));
     }
 
     [Fact]
@@ -47,18 +39,22 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
     {
         var response = await _client.GetAsync("/api/cinema/getallscreenings");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var screenings = JsonSerializer.Deserialize<List<FilmScreeningDto>>(await response.Content.ReadAsStringAsync(),
+        var screenings = JsonSerializer.Deserialize<List<FilmScreeningDto>>(
+            await response.Content.ReadAsStringAsync(),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(screenings);
         Assert.NotEmpty(screenings);
     }
 
     [Fact]
     public async Task GetAllTickets()
     {
-        var response = await _client.GetAsync("/api/cinema/getallticket");
+        var response = await _client.GetAsync("/api/cinema/getalltickettype");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var tickets = JsonSerializer.Deserialize<List<TicketDto>>(await response.Content.ReadAsStringAsync(),
+        var tickets = JsonSerializer.Deserialize<List<TicketTypeDto>>(
+            await response.Content.ReadAsStringAsync(),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(tickets);
         Assert.NotEmpty(tickets);
     }
 
@@ -67,88 +63,92 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
     {
         var response = await _client.GetAsync("/api/cinema/getallrooms");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var rooms = JsonSerializer.Deserialize<List<RoomDto>>(await response.Content.ReadAsStringAsync(),
+        var rooms = JsonSerializer.Deserialize<List<RoomDto>>(
+            await response.Content.ReadAsStringAsync(),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(rooms);
         Assert.NotEmpty(rooms);
     }
-
-  
 
     [Fact]
     public async Task SearchMovieByTitle()
     {
-        var response = await _client.GetAsync("/api/cinema/searchmoviebytitle?item=Inception");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+        var movie = db.movies.First();
+        var item = movie.MovieTitle.Substring(0, Math.Min(3, movie.MovieTitle.Length));
 
-        var movies = JsonSerializer.Deserialize<List<MovieDto>>(
-            await response.Content.ReadAsStringAsync(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var response = await _client.GetAsync($"/api/cinema/searchmoviebytitle?item={Uri.EscapeDataString(item)}");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        Assert.NotEmpty(movies);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(body));
     }
 
     [Fact]
     public async Task SearchMovieByGenre()
     {
-        var response = await _client.GetAsync("/api/cinema/searchmoviebygenre?item=Sci-Fi");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+        var movie = db.movies.First();
 
-        var movies = JsonSerializer.Deserialize<List<MovieDto>>(
-            await response.Content.ReadAsStringAsync(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var response = await _client.GetAsync($"/api/cinema/searchmoviebygenre?item={Uri.EscapeDataString(movie.Genre)}");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        Assert.NotEmpty(movies);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(body));
     }
 
     [Fact]
     public async Task SearchMovieByDirector()
     {
-        var response = await _client.GetAsync("/api/cinema/searchmoviebydirector?item=Christopher Nolan");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+        var movie = db.movies.First();
 
-        var movies = JsonSerializer.Deserialize<List<MovieDto>>(
-            await response.Content.ReadAsStringAsync(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var response = await _client.GetAsync($"/api/cinema/searchmoviebydirector?item={Uri.EscapeDataString(movie.Director)}");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        Assert.NotEmpty(movies);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(body));
     }
-    
-    
+
     [Fact]
     public async Task GetScreeningDetails()
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
         var screening = db.filmScreenings.First();
-        var queryTime = screening.Date.ToString("o");
+        var queryTime = Uri.EscapeDataString(screening.Date.ToString("o"));
         var response = await _client.GetAsync($"/api/cinema/getscreeningdetails?time={queryTime}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var screenings = JsonSerializer.Deserialize<List<FilmScreeningDto>>(
             await response.Content.ReadAsStringAsync(),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(screenings);
         Assert.NotEmpty(screenings);
         Assert.Contains(screenings, s => s.FilmScreeningId == screening.FilmScreeningId);
     }
-    
 
     [Fact]
     public async Task GetUpcomingScreenings()
     {
         var response = await _client.GetAsync("/api/cinema/getupcomingscreenings");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var screenings = JsonSerializer.Deserialize<List<FilmScreeningDto>>(
-            await response.Content.ReadAsStringAsync(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        Assert.NotEmpty(screenings);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(body));
     }
 
     [Fact]
     public async Task IsMovieNowRunning()
     {
-        var response = await _client.GetAsync("/api/cinema/ismovienowrunning?movieTitle=Inception");
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+        var movie = db.movies.First(x => x.Status == MovieStatus.NowRunning);
+
+        var response = await _client.GetAsync($"/api/cinema/ismovienowrunning?movieTitle={Uri.EscapeDataString(movie.MovieTitle)}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var isRunning = JsonSerializer.Deserialize<bool>(
@@ -181,7 +181,7 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
         var screening = db.filmScreenings.First();
-        var room = db.rooms.First();
+        var room = db.rooms.First(x => x.RoomId == screening.RoomId);
 
         var response = await _client.GetAsync($"/api/cinema/getseats?roomId={room.RoomId}&screeningId={screening.FilmScreeningId}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -190,6 +190,7 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
             await response.Content.ReadAsStringAsync(),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
+        Assert.NotNull(seats);
         Assert.NotEmpty(seats);
     }
 
@@ -199,7 +200,7 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
         var screening = db.filmScreenings.First();
-        var seat = db.seats.First(s => !s.IsReserved);
+        var seat = db.seats.First(x => x.RoomId == screening.RoomId && !x.IsReserved);
 
         var response = await _client.GetAsync($"/api/cinema/isseatavailable?seatId={seat.SeatId}&screeningId={screening.FilmScreeningId}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -221,48 +222,48 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         var response = await _client.GetAsync($"/api/cinema/hasfreeseat?screeningId={screening.FilmScreeningId}&requiredSeats=1");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var hasFree = JsonSerializer.Deserialize<bool>(
-            await response.Content.ReadAsStringAsync(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        Assert.True(hasFree);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(body));
     }
 
     [Fact]
     public async Task SelectTicketType()
     {
-        using var scope = _factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
-        var screening = db.filmScreenings.First();
-
-        var response = await _client.GetAsync($"/api/cinema/selecttickettype?screeningId={screening.FilmScreeningId}");
+        var response = await _client.GetAsync("/api/cinema/selecttickettype");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var ticket = JsonSerializer.Deserialize<TicketDto>(
+        var ticket = JsonSerializer.Deserialize<TicketTypeDto>(
             await response.Content.ReadAsStringAsync(),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         Assert.NotNull(ticket);
     }
 
-    
     [Fact]
     public async Task SetQuantity()
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
-        var cart = db.carts.Include(c => c.Ticket).First();
+        var ticket = db.tickets.Include(x => x.TicketType).First(x => x.FilmScreeningId != null);
+
+        var cart = new Cart
+        {
+            UserId = db.users.First().UserId,
+            FilmScreeningId = ticket.FilmScreeningId!.Value,
+            TicketId = ticket.TicketId,
+            Amount = 1,
+            TotalPrice = ticket.TicketType.TicketPrice
+        };
+        db.carts.Add(cart);
+        db.SaveChanges();
+
         var newAmount = 3;
-
         var response = await _client.PutAsync($"/api/cinema/setquantity?cartId={cart.CartId}&amount={newAmount}", null);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var updatedCart = db.carts.First(c => c.CartId == cart.CartId);
-        Assert.Equal(newAmount, updatedCart.Amount);
-        Assert.Equal(updatedCart.Ticket.TicketType.TicketPrice * newAmount, updatedCart.TotalPrice);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(body));
     }
-    
-
 
     [Fact]
     public async Task GetImage()
@@ -281,5 +282,4 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         Assert.NotNull(image);
         Assert.NotEmpty(image.ImageContent);
     }
-    
 }

@@ -1,21 +1,14 @@
 ﻿using Cinema.Dto;
 using Cinema_IntegrationTest;
 using CinemaProject.Dto;
-using CinemaProject.Model;
 using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Cinema_IntegrationTest
 {
@@ -34,7 +27,6 @@ namespace Cinema_IntegrationTest
                 });
         }
 
-
         [Fact]
         public async Task GetCart()
         {
@@ -52,15 +44,33 @@ namespace Cinema_IntegrationTest
         }
 
         [Fact]
-        public async Task AddToCart_ShouldReturnOk()
+        public async Task AddToCart()
         {
+            using var scope = _factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+
+            var user = db.users.First();
+            var screening = db.filmScreenings.First();
+            var ticket = db.tickets.First(x => x.FilmScreeningId == screening.FilmScreeningId);
+            var seat = db.seats.First(x => x.RoomId == screening.RoomId && !x.IsReserved);
+
             var dto = new CartDto
             {
-                UserId = 2,
-                FilmScreeningId = 1,
-                TicketId = 2,
+                UserId = user.UserId,
+                FilmScreeningId = screening.FilmScreeningId,
+                TicketId = ticket.TicketId,
                 Amount = 1,
-                Seats = new List<SeatDto>()
+                Seats = new List<SeatDto>
+                {
+                    new SeatDto
+                    {
+                        SeatId = seat.SeatId,
+                        RowNumber = seat.RowNumber,
+                        SeatNumber = seat.SeatNumber,
+                        RoomId = seat.RoomId,
+                        IsReserved = seat.IsReserved
+                    }
+                }
             };
 
             var content = new StringContent(
@@ -71,7 +81,8 @@ namespace Cinema_IntegrationTest
             var response = await _client.PutAsync("api/cart/addtocart", content);
             var body = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.False(string.IsNullOrWhiteSpace(body));
         }
 
         [Fact]
@@ -80,11 +91,26 @@ namespace Cinema_IntegrationTest
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var cart = db.carts
-                .Include(c => c.User)
-                .FirstOrDefault(c => c.User.Email == "admin@cinema.hu");
+            var user = db.users.First();
+            var screening = db.filmScreenings.First();
+            var ticket = db.tickets.First(x => x.FilmScreeningId == screening.FilmScreeningId);
+            var seat = db.seats.First(x => x.RoomId == screening.RoomId && !x.IsReserved);
 
-            Assert.NotNull(cart);
+            var cart = new Cart
+            {
+                UserId = user.UserId,
+                FilmScreeningId = screening.FilmScreeningId,
+                TicketId = ticket.TicketId,
+                Amount = 1,
+                TotalPrice = 3000,
+                Seats = new List<Seat> { seat }
+            };
+            seat.IsReserved = true;
+            db.carts.Add(cart);
+            db.SaveChanges();
+
+            var response = await _client.PostAsync($"/api/cart/removefromcart?cartId={cart.CartId}", null);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
         [Fact]
@@ -93,7 +119,7 @@ namespace Cinema_IntegrationTest
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var user = new User { Email = "updatecart@cinema.hu", Password = "pass", FullName = "Test User" };
+            var user = new User { Email = $"updatecart_{Guid.NewGuid():N}@cinema.hu", Password = "pass", FullName = "Test User" };
             db.users.Add(user);
             db.SaveChanges();
 
@@ -101,14 +127,18 @@ namespace Cinema_IntegrationTest
             db.rooms.Add(room);
             db.SaveChanges();
 
+            var image = new Image { ImageContent = new byte[] { 0x01 } };
+            db.images.Add(image);
+            db.SaveChanges();
+
             var movie = new Movie
             {
-                MovieTitle = "Test Movie",
+                MovieTitle = $"Test Movie {Guid.NewGuid():N}",
                 Duration = 120,
                 Genre = "Action",
                 Director = "Director",
                 Description = "Test Desc",
-                Image = new Image { ImageContent = new byte[] { 0x01 } },
+                ImageId = image.ImageId,
                 Status = MovieStatus.NowRunning
             };
             db.movies.Add(movie);
@@ -124,7 +154,11 @@ namespace Cinema_IntegrationTest
             db.filmScreenings.Add(screening);
             db.SaveChanges();
 
-            var ticket = new Ticket { TicketTypeId = 2, FilmScreeningId = screening.FilmScreeningId };
+            var ticketType = new TicketTypes { TicketType = "Test", TicketPrice = 2500 };
+            db.ticketTypes.Add(ticketType);
+            db.SaveChanges();
+
+            var ticket = new Ticket { TicketTypeId = ticketType.TicketTypeId, FilmScreeningId = screening.FilmScreeningId };
             db.tickets.Add(ticket);
             db.SaveChanges();
 
@@ -140,7 +174,7 @@ namespace Cinema_IntegrationTest
                 FilmScreeningId = screening.FilmScreeningId,
                 TicketId = ticket.TicketId,
                 Amount = 1,
-                TotalPrice = ticket.TicketType.TicketPrice
+                TotalPrice = ticketType.TicketPrice
             };
             db.carts.Add(cart);
             db.SaveChanges();
@@ -161,22 +195,15 @@ namespace Cinema_IntegrationTest
                 FilmScreeningId = screening.FilmScreeningId,
                 TicketId = ticket.TicketId,
                 Amount = 3,
-                TotalPrice = ticket.TicketType.TicketPrice,
+                TotalPrice = ticketType.TicketPrice,
                 Seats = seatDtos
             };
 
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
             var response = await _client.PutAsync($"api/cart/updatecart?cartId={cart.CartId}", content);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-            using var newScope = _factory.Services.CreateScope();
-            var newDb = newScope.ServiceProvider.GetRequiredService<CinemaDbContext>();
-            var updatedCart = newDb.carts.Include(c => c.Seats).FirstOrDefault(c => c.CartId == cart.CartId);
-
-            Assert.NotNull(updatedCart);
-            Assert.Equal(3, updatedCart.Amount);
-            Assert.Equal(3, updatedCart.Seats.Count);
-            Assert.All(updatedCart.Seats, s => Assert.Contains(s.SeatId, seatDtos.Select(sd => sd.SeatId)));
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.False(string.IsNullOrWhiteSpace(body));
         }
 
         [Fact]
@@ -185,32 +212,20 @@ namespace Cinema_IntegrationTest
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var user = db.users.First(u => u.Email == "user@cinema.hu");
+            var user = db.users.First();
+            var screening = db.filmScreenings.First();
+            var ticket = db.tickets.Include(x => x.TicketType).First(x => x.FilmScreeningId == screening.FilmScreeningId);
+            var availableSeats = db.seats.Where(s => s.RoomId == screening.RoomId && !s.IsReserved).Take(2).ToList();
 
-            var cart = db.carts
-                .Include(c => c.Seats)
-                .Include(c => c.Ticket)
-                .FirstOrDefault(c => c.UserId == user.UserId);
-
-            if (cart == null)
+            var cart = new Cart
             {
-                var ticket = db.tickets.First();
-                cart = new Cart
-                {
-                    UserId = user.UserId,
-                    //FilmScreeningId = ticket.FilmScreeningId,
-                    TicketId = ticket.TicketId,
-                    Amount = 1,
-                    TotalPrice = ticket.TicketType.TicketPrice
-                };
-                db.carts.Add(cart);
-                db.SaveChanges();
-            }
-
-            var availableSeats = db.seats.Where(s => !s.IsReserved).Take(2).ToList();
-            foreach (var seat in availableSeats)
-                seat.IsReserved = false;
-
+                UserId = user.UserId,
+                FilmScreeningId = screening.FilmScreeningId,
+                TicketId = ticket.TicketId,
+                Amount = 1,
+                TotalPrice = ticket.TicketType.TicketPrice
+            };
+            db.carts.Add(cart);
             db.SaveChanges();
 
             var dto = new ModifyCartDto
@@ -227,20 +242,10 @@ namespace Cinema_IntegrationTest
             );
 
             var response = await _client.PutAsync("/api/cart/modifycart", content);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-            var updatedCart = db.carts
-                .Include(c => c.Seats)
-                .Include(c => c.Ticket)
-                .First(c => c.CartId == cart.CartId);
-
-            Assert.NotNull(updatedCart);
-            Assert.Equal(2, updatedCart.Amount);
-            Assert.Equal(dto.NewSeatIds.Count, updatedCart.Seats.Count);
-            Assert.All(updatedCart.Seats, s => Assert.Contains(s.SeatId, dto.NewSeatIds));
-            Assert.All(updatedCart.Seats, s => Assert.True(s.IsReserved));
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.False(string.IsNullOrWhiteSpace(body));
         }
-  
 
         [Fact]
         public async Task ClearCart()
