@@ -6,7 +6,9 @@ interface TicketTypeDto {
     ticketTypeId?: number;
     name?: string;
     ticketName: string;
-    price: number;
+    price?: number;
+    ticketType?: string;
+    ticketPrice?: number;
 }
 
 interface FilmScreeningDto {
@@ -30,6 +32,10 @@ interface SeatDto {
     seatNumber: number;
     roomId: number;
     isReserved?: boolean;
+}
+
+interface ApiCollectionResponse<T> {
+    value?: T[];
 }
 
 interface MovieDto {
@@ -91,6 +97,7 @@ const locationFilter = document.getElementById("locationFilter") as HTMLSelectEl
 const genreFilter = document.getElementById("genreFilter") as HTMLSelectElement | null;
 const movieFilter = document.getElementById("movieFilter") as HTMLSelectElement | null;
 const dateFilter = document.getElementById("dateFilter") as HTMLInputElement | null;
+const movieSearchInput = document.getElementById("movieSearchInput") as HTMLInputElement | null;
 const categoriesGrid = document.getElementById("categoriesGrid") as HTMLElement | null;
 const roomDetails = document.getElementById("roomDetails") as HTMLElement | null;
 
@@ -102,15 +109,37 @@ const currentUserStorageKey = "cinemaCurrentUserEmail";
 const userProfilesStorageKey = "cinemaUserProfiles";
 const cartButtonId = "floatingCartButton";
 const selectedScreeningStorageKey = "cinemaSelectedScreening";
+const selectedSeatStorageKeyPrefix = "cinemaSelectedSeats";
+const cartStorageKey = "cinemaCartItems";
 
 const moviePosterFallbacks: Record<string, string> = {
+    avatar: "avatar.jpg",
     inception: "inception.jpg",
     interstellar: "interstellar.jpg",
     "the dark knight": "thedarkknight.jpg",
 };
 
 function getTicketName(ticket: TicketTypeDto): string {
-    return (ticket.ticketName ?? ticket.name ?? "").trim();
+    const t = ticket as any;
+    const keys = ['ticketType', 'ticket_type', 'ticketName', 'tickettype', 'name', 'Name'];
+    for (const k of keys) {
+        const v = t[k];
+        if (typeof v === 'string' && v.trim()) return v.trim();
+    }
+    // Fallback to previously defined properties
+    return (ticket.ticketName ?? ticket.name ?? '').trim();
+}
+
+function getTicketPrice(ticket: TicketTypeDto): number | null {
+    const t = ticket as any;
+    const keys = ['price', 'Price', 'amount', 'Amount', 'value', 'Value', 'ticketPrice', 'ticketprice', 'ticket_price'];
+    for (const k of keys) {
+        const v = t[k];
+        if (typeof v !== 'undefined' && v !== null && !Number.isNaN(Number(v))) {
+            return Number(v);
+        }
+    }
+    return null;
 }
 
 function getCategoryName(category: CategoriesDto): string {
@@ -139,7 +168,7 @@ function getRoomById(roomId: number): RoomDto | undefined {
     return allRooms.find((room) => room.roomId === roomId);
 }
 
-function renderRoomSeatsMarkup(seats: SeatDto[]): string {
+function renderRoomSeatsMarkup(seats: SeatDto[], selectedSeatIds: Set<number>): string {
     if (seats.length === 0) {
         return `
             <div class="alert alert-secondary mb-0" role="alert">
@@ -148,33 +177,204 @@ function renderRoomSeatsMarkup(seats: SeatDto[]): string {
         `;
     }
 
-    const seatsByRow = new Map<number, SeatDto[]>();
+    const seatsByRow = new Map<number, Map<number, SeatDto>>();
+    let maxSeatNumber = 0;
 
     for (const seat of seats) {
-        const rowSeats = seatsByRow.get(seat.rowNumber) ?? [];
-        rowSeats.push(seat);
+        const rowSeats = seatsByRow.get(seat.rowNumber) ?? new Map<number, SeatDto>();
+        rowSeats.set(seat.seatNumber, seat);
         seatsByRow.set(seat.rowNumber, rowSeats);
+        maxSeatNumber = Math.max(maxSeatNumber, seat.seatNumber);
     }
 
     const sortedRows = Array.from(seatsByRow.entries()).sort((left, right) => left[0] - right[0]);
+    const aisleIndex = maxSeatNumber >= 6 ? Math.ceil(maxSeatNumber / 2) : 0;
 
-    return sortedRows.map(([rowNumber, rowSeats]) => {
-        const seatButtons = rowSeats
-            .sort((left, right) => left.seatNumber - right.seatNumber)
-            .map((seat) => {
-                const buttonClass = seat.isReserved ? "btn-outline-danger" : "btn-outline-light";
-                const stateLabel = seat.isReserved ? "foglalt" : "szabad";
-                return `<span class="btn ${buttonClass} btn-sm disabled">${rowNumber}.${seat.seatNumber} (${stateLabel})</span>`;
-            })
-            .join("");
+    const seatRowsMarkup = sortedRows.map(([rowNumber, rowSeats]) => {
+        const seatCells: string[] = [];
+
+        for (let seatNumber = 1; seatNumber <= maxSeatNumber; seatNumber++) {
+            const seat = rowSeats.get(seatNumber);
+
+            if (!seat) {
+                seatCells.push('<span class="room-seat room-seat-empty" aria-hidden="true"></span>');
+            } else {
+                const stateLabel = seat.isReserved ? "Foglalt" : "Szabad";
+                const isSelected = selectedSeatIds.has(seat.seatId);
+
+                if (seat.isReserved) {
+                    seatCells.push(`
+                        <button
+                            type="button"
+                            class="room-seat room-seat-button room-seat-occupied"
+                            title="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
+                            aria-label="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
+                            disabled
+                            aria-disabled="true"
+                        ></button>
+                    `);
+                } else {
+                    seatCells.push(`
+                        <button
+                            type="button"
+                            class="room-seat room-seat-button room-seat-available${isSelected ? " room-seat-selected" : ""}"
+                            title="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
+                            aria-label="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
+                            aria-pressed="${isSelected ? "true" : "false"}"
+                            data-seat-id="${seat.seatId}"
+                        ></button>
+                    `);
+                }
+            }
+
+            if (aisleIndex && seatNumber === aisleIndex) {
+                seatCells.push('<span class="room-seat-aisle" aria-hidden="true"></span>');
+            }
+        }
 
         return `
-            <div class="mb-3">
-                <div class="small text-uppercase text-secondary mb-2">${rowNumber}. sor</div>
-                <div class="d-flex flex-wrap gap-2">${seatButtons}</div>
+            <div class="room-seat-row">
+                <div class="room-seat-row-label">${rowNumber}. sor</div>
+                <div class="room-seat-row-grid" style="--seat-columns: ${maxSeatNumber}; --seat-aisle-columns: ${aisleIndex ? maxSeatNumber + 1 : maxSeatNumber};">${seatCells.join("")}</div>
             </div>
         `;
     }).join("");
+
+    return `
+        <div class="room-seat-map">
+            <div class="room-seat-screen">Vászon</div>
+            <div class="room-seat-layout">${seatRowsMarkup}</div>
+            <div class="room-seat-legend" aria-label="Szék állapot jelmagyarázat">
+                <span class="room-seat-legend-item">
+                    <span class="room-seat-legend-swatch room-seat-legend-available"></span>
+                    Szabad
+                </span>
+                <span class="room-seat-legend-item">
+                    <span class="room-seat-legend-swatch room-seat-legend-selected"></span>
+                    Kijelölt szék
+                </span>
+                <span class="room-seat-legend-item">
+                    <span class="room-seat-legend-swatch room-seat-legend-occupied"></span>
+                    Foglalt
+                </span>
+            </div>
+        </div>
+    `;
+}
+
+function getSelectedSeatStorageKey(screeningId: number): string {
+    return `${selectedSeatStorageKeyPrefix}:${screeningId}`;
+}
+
+function getSelectedSeatIds(screeningId: number): number[] {
+    const rawSeatIds = sessionStorage.getItem(getSelectedSeatStorageKey(screeningId));
+    if (!rawSeatIds) {
+        return [];
+    }
+
+    try {
+        const parsedSeatIds = JSON.parse(rawSeatIds) as unknown;
+        return Array.isArray(parsedSeatIds)
+            ? parsedSeatIds.filter((value): value is number => typeof value === "number")
+            : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveSelectedSeatIds(screeningId: number, seatIds: number[]): void {
+    sessionStorage.setItem(getSelectedSeatStorageKey(screeningId), JSON.stringify(seatIds));
+}
+
+interface CartSeat {
+    seatId: number;
+    rowNumber: number;
+    seatNumber: number;
+}
+
+interface CartItem {
+    filmScreeningId: number;
+    movieTitle: string;
+    roomId: number;
+    roomName?: string;
+    date?: string;
+    seats: CartSeat[];
+}
+
+function getCartItems(): CartItem[] {
+    const raw = localStorage.getItem(cartStorageKey);
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw) as unknown;
+        return Array.isArray(parsed) ? parsed as CartItem[] : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveCartItems(items: CartItem[]): void {
+    localStorage.setItem(cartStorageKey, JSON.stringify(items));
+    refreshFloatingCartBadge();
+}
+
+function addSeatsToCart(item: CartItem): void {
+    const items = getCartItems();
+    const existing = items.find((it) => it.filmScreeningId === item.filmScreeningId);
+
+    if (existing) {
+        const existingSeatIds = new Set(existing.seats.map(s => s.seatId));
+        for (const s of item.seats) {
+            if (!existingSeatIds.has(s.seatId)) existing.seats.push(s);
+        }
+    } else {
+        items.push(item);
+    }
+
+    saveCartItems(items);
+}
+
+function refreshFloatingCartBadge(): void {
+    const count = getCartItems().reduce((sum, it) => sum + (it.seats?.length ?? 0), 0);
+    const existingButton = document.getElementById(cartButtonId);
+    if (!existingButton) return;
+    let badge = existingButton.querySelector('.floating-cart-badge') as HTMLElement | null;
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'floating-cart-badge';
+        existingButton.appendChild(badge);
+    }
+
+    badge.textContent = String(count);
+    badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+function initializeRoomSeatSelection(screeningId: number): void {
+    if (!roomDetails) {
+        return;
+    }
+
+    const selectedSeatIds = new Set<number>(getSelectedSeatIds(screeningId));
+    const seatButtons = roomDetails.querySelectorAll<HTMLButtonElement>(".room-seat-button");
+
+    for (const seatButton of seatButtons) {
+        seatButton.addEventListener("click", () => {
+            const seatId = Number(seatButton.dataset.seatId);
+            if (!seatId) {
+                return;
+            }
+
+            if (selectedSeatIds.has(seatId)) {
+                selectedSeatIds.delete(seatId);
+            } else {
+                selectedSeatIds.add(seatId);
+            }
+
+            const isSelected = selectedSeatIds.has(seatId);
+            seatButton.classList.toggle("room-seat-selected", isSelected);
+            seatButton.setAttribute("aria-pressed", isSelected ? "true" : "false");
+            saveSelectedSeatIds(screeningId, Array.from(selectedSeatIds));
+        });
+    }
 }
 
 function normalizeMovieScreenings(movie: MovieDto): MovieDto {
@@ -283,14 +483,9 @@ function getCurrentUserEmail(): string {
 
 function updateFloatingCartButton(): void {
     const existingButton = document.getElementById(cartButtonId);
-    const email = getCurrentUserEmail().trim();
-
-    if (!email) {
-        existingButton?.remove();
-        return;
-    }
 
     if (existingButton) {
+        refreshFloatingCartBadge();
         return;
     }
 
@@ -305,6 +500,7 @@ function updateFloatingCartButton(): void {
     });
 
     document.body.appendChild(cartButton);
+    refreshFloatingCartBadge();
 }
 
 function applyLoginState(): void {
@@ -385,7 +581,22 @@ async function handleProfileSave(event: Event): Promise<void> {
 async function fetchJegyekList(): Promise<TicketTypeDto[]> {
     const response = await fetch(`${API_BASE}/api/cinema/getalltickettype`);
     if (!response.ok) throw new Error("Nem sikerült lekérni a jegyek listát.");
-    return await response.json() as TicketTypeDto[];
+
+    const payload = await response.json();
+    if (Array.isArray(payload)) {
+        return payload as TicketTypeDto[];
+    }
+
+    if (payload && Array.isArray(payload.value)) {
+        return payload.value as TicketTypeDto[];
+    }
+
+    // Try common properties
+    if (payload && Array.isArray(payload.data)) {
+        return payload.data as TicketTypeDto[];
+    }
+
+    throw new Error('Váratlan API válasz: jegyek lista nem található.');
 }
 
 async function renderjegyekTable(): Promise<void> {
@@ -406,9 +617,11 @@ async function renderjegyekTable(): Promise<void> {
 
         for (const jegy of jegyek) {
             const row = document.createElement("tr");
+            const priceVal = getTicketPrice(jegy);
+            const priceDisplay = priceVal !== null ? String(priceVal) : "-";
             row.innerHTML = `
                 <td>${getTicketName(jegy)}</td>
-                <td>${jegy.price} Ft</td>
+                <td>${priceDisplay} Ft</td>
             `;
             jegyekTbody.appendChild(row);
         }
@@ -435,6 +648,20 @@ async function fetchRoomsList(): Promise<RoomDto[]> {
     const response = await fetch(`${API_BASE}/api/cinema/getallrooms`);
     if (!response.ok) throw new Error("Nem sikerült lekérni a termek listáját.");
     return await response.json() as RoomDto[];
+}
+
+async function fetchSeatsForRoom(roomId: number, screeningId?: number): Promise<SeatDto[]> {
+    const query = new URLSearchParams({ roomId: String(roomId) });
+
+    if (screeningId) {
+        query.set("screeningId", String(screeningId));
+    }
+
+    const response = await fetch(`${API_BASE}/api/cinema/getseats?${query.toString()}`);
+    if (!response.ok) throw new Error("Nem sikerült lekérni a terem székadatait.");
+
+    const payload = await response.json() as SeatDto[] | ApiCollectionResponse<SeatDto>;
+    return Array.isArray(payload) ? payload : (payload.value ?? []);
 }
 
 async function ensureRoomsLoaded(): Promise<RoomDto[]> {
@@ -528,6 +755,8 @@ function getFilteredMovies(): MovieDto[] {
     const selectedGenre = genreFilter?.value ?? "";
     const selectedMovie = movieFilter?.value ?? "";
     const selectedDate = dateFilter?.value ?? "";
+    const searchText = (movieSearchInput?.value ?? "").trim().toLowerCase();
+    const hasScreeningFilters = Boolean(selectedLocation || selectedDate);
     const filteredMovies: MovieDto[] = [];
 
     for (const movie of allMovies) {
@@ -549,8 +778,12 @@ function getFilteredMovies(): MovieDto[] {
                 filteredScreenings.push(screening);
             }
         }
+        
+        if (filteredScreenings.length > 0 || !hasScreeningFilters) {
+            if (searchText && !(movie.movieTitle ?? "").toLowerCase().includes(searchText)) {
+                continue;
+            }
 
-        if (filteredScreenings.length > 0 || !selectedDate) {
             filteredMovies.push({
                 ...movie,
                 screenings: filteredScreenings,
@@ -655,7 +888,7 @@ async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<void> {
                     <img src="${image}" alt="${movie.movieTitle}">
                 </div>
                 <div class="movie-card-content">
-                    <h3>Cím: ${movie.movieTitle}</h3>
+                    <h3>${movie.movieTitle}</h3>
                     <p><strong>Rendező:</strong> ${movie.director}</p>
                     <p><strong>Időtartam:</strong> ${movie.duration} perc</p>
                     <p><strong>Műfaj:</strong> ${movie.genre}</p>
@@ -715,11 +948,76 @@ function applyMovieFilters(): void {
     void renderMoviesList(getFilteredMovies());
 }
 
+function renderCartPage(): void {
+    const mainSection = document.querySelector('main.page-section') as HTMLElement | null;
+    if (!mainSection) return;
+
+    const items = getCartItems();
+    if (!items || items.length === 0) {
+        mainSection.innerHTML = `
+            <section class="container py-4">
+                <div class="alert alert-info">A kosarad üres.</div>
+            </section>
+        `;
+        return;
+    }
+
+    let content = `
+        <section class="container py-4">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Kosár tartalma</h2>
+    `;
+
+    for (const item of items) {
+        content += `
+            <div class="mb-3">
+                <h3 class="h6">${item.movieTitle} — ${item.roomName ?? ''}</h3>
+                <p class="text-muted">${item.date ? new Date(item.date).toLocaleString('hu-HU') : ''}</p>
+                <div>Székek: ${item.seats.map(s => `${s.rowNumber}.${s.seatNumber}`).join(', ')}</div>
+            </div>
+        `;
+    }
+
+    const totalSeats = items.reduce((sum, it) => sum + (it.seats?.length ?? 0), 0);
+
+    const storedCartId = localStorage.getItem('paymentCartId') || '';
+
+    content += `
+                    <hr />
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>Összesen: <strong>${totalSeats} db szék</strong>
+                        ${storedCartId ? `<div class="text-muted small">Cart id: ${storedCartId}</div>` : `<div class="text-danger small">Cart id missing</div>`}
+                        </div>
+                        <div class="cart-actions horizontal-symmetric">
+                                <button id="bookingButton" type="button" class="btn btn-success">Foglalás</button>
+                                <button id="clearCartButton" class="btn btn-danger">Kosár ürítése</button>
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    `;
+
+    mainSection.innerHTML = content;
+
+    const clearBtn = document.getElementById('clearCartButton') as HTMLButtonElement | null;
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            saveCartItems([]);
+            renderCartPage();
+        });
+    }
+
+    
+}
+
 function initializeMovieFilters(): void {
     locationFilter?.addEventListener("change", applyMovieFilters);
     genreFilter?.addEventListener("change", applyMovieFilters);
     movieFilter?.addEventListener("change", applyMovieFilters);
     dateFilter?.addEventListener("change", applyMovieFilters);
+    movieSearchInput?.addEventListener("input", applyMovieFilters);
 }
 
 function initializeScreeningButtons(): void {
@@ -763,25 +1061,65 @@ async function renderRoomPage(): Promise<void> {
     const roomName = getRoomLabel(selectedScreening.roomId, selectedScreening.roomName);
     const formattedDate = new Date(selectedScreening.date).toLocaleString("hu-HU");
     const bookingTarget = getCurrentUserEmail().trim() ? "Kosar.html" : "Bejelentkezes.html";
-    const bookingLabel = getCurrentUserEmail().trim() ? "Foglalás" : "Bejelentkezés a foglaláshoz";
-    const seatsMarkup = renderRoomSeatsMarkup(room?.seats ?? []);
+    const bookingLabel = getCurrentUserEmail().trim() ? "Kosárba" : "Bejelentkezés a kosárhoz";
+    const selectedSeatIds = new Set<number>(getSelectedSeatIds(selectedScreening.filmScreeningId));
+    let seats: SeatDto[] = [];
+
+    try {
+        seats = await fetchSeatsForRoom(selectedScreening.roomId, selectedScreening.filmScreeningId);
+    } catch (error) {
+        console.error(error);
+        seats = room?.seats ?? [];
+    }
+
+    const seatsMarkup = renderRoomSeatsMarkup(seats, selectedSeatIds);
 
     roomDetails.innerHTML = `
         <section class="container py-4">
-            <div class="card bg-dark text-light border-secondary">
+            <div class="card bg-dark text-light border-secondary room-details-card">
                 <div class="card-body">
                     <h1 class="h3 mb-3">${roomName}</h1>
                     <p class="mb-2"><strong>Film:</strong> ${selectedScreening.movieTitle}</p>
                     <p class="mb-4"><strong>Időpont:</strong> ${formattedDate}</p>
-                    <div class="mb-4">
+                    <div class="mb-4 room-seat-section">
                         <h2 class="h5 mb-3">Székek</h2>
                         ${seatsMarkup}
                     </div>
-                    <a class="btn btn-success" href="${bookingTarget}">${bookingLabel}</a>
+                    <div class="text-start mt-2">
+                        <button id="addToCartButton" class="btn btn-success room-add-to-cart" type="button">${bookingLabel}</button>
+                    </div>
                 </div>
             </div>
         </section>
     `;
+
+    initializeRoomSeatSelection(selectedScreening.filmScreeningId);
+
+    const addToCartButton = document.getElementById("addToCartButton") as HTMLButtonElement | null;
+    if (addToCartButton) {
+        addToCartButton.addEventListener("click", () => {
+            const selectedIds = getSelectedSeatIds(selectedScreening.filmScreeningId);
+            if (!selectedIds || selectedIds.length === 0) {
+                alert("Nincsenek kiválasztott székek.");
+                return;
+            }
+
+            const seatsForCart: CartSeat[] = seats
+                .filter(s => selectedIds.includes(s.seatId))
+                .map(s => ({ seatId: s.seatId, rowNumber: s.rowNumber, seatNumber: s.seatNumber }));
+
+            const cartItem: CartItem = {
+                filmScreeningId: selectedScreening.filmScreeningId,
+                movieTitle: selectedScreening.movieTitle,
+                roomId: selectedScreening.roomId,
+                roomName: selectedScreening.roomName,
+                date: selectedScreening.date,
+                seats: seatsForCart,
+            };
+
+            addSeatsToCart(cartItem);
+        });
+    }
 }
 
 // SCREENINGS
@@ -1044,6 +1382,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (screeningsTbody) {
         renderScreeningsTable();
+    }
+
+    const currentPageName = window.location.pathname.split("/").pop() || "";
+    if (currentPageName.toLowerCase() === "kosar.html") {
+        renderCartPage();
     }
 
     await loadProfileData();
