@@ -13,7 +13,7 @@ builder.Services.AddCors(options =>
         {
             // when using credentials (cookies/auth) the origin cannot be '*' – must specify exact hosts
             policy
-                .WithOrigins("http://127.0.0.1:5500", "http://localhost:5500")
+                .WithOrigins("http://127.0.0.1:5501", "http://localhost:5501")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
