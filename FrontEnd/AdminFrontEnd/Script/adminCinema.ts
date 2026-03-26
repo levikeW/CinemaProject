@@ -757,8 +757,7 @@ async function Admin_loadProfileData(): Promise<void> {
 
 }
 
-// ===================== SELECT SEGÉDEK =====================
-
+ 
 async function Admin_renderScreeningsMovieSelect(): Promise<void> {
     const createSelect = document.getElementById("screeningMovieId") as HTMLSelectElement | null;
     const editSelect = document.getElementById("editScreeningMovieId") as HTMLSelectElement | null;
