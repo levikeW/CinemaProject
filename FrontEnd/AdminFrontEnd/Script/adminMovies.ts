@@ -31,6 +31,11 @@ interface ModifyMovieDto {
     imageId: number;
 }
 
+interface ImageDto {
+    imageId?: number;
+    imageContent: string | null;
+}
+
 // ===================== MOVIES =====================
 
 async function Admin_getAllMovies(): Promise<MovieDto[]> {
@@ -49,6 +54,20 @@ async function Admin_deleteMovie(movieId: number): Promise<void> {
     await Admin_apiDelete(`/api/admin/deletemovie?movieId=${movieId}`);
 }
 
+async function Admin_loadMovieImage(movieId: number): Promise<void> {
+    try {
+        const result = await Admin_apiGet<ImageDto>(`/api/cinema/getimage?movieId=${movieId}`);
+        if (!result?.imageContent) return;
+
+        const img = document.getElementById(`img-${movieId}`) as HTMLImageElement;
+        if (!img) return;
+
+        img.src = `data:image/jpeg;base64,${result.imageContent}`;
+    } catch {
+    }
+}
+
+
 async function Admin_renderMoviesAdminTable(): Promise<void> {
     const tbody = document.getElementById("adminMoviesTbody") as HTMLTableSectionElement | null;
     if (!tbody) return;
@@ -59,23 +78,35 @@ async function Admin_renderMoviesAdminTable(): Promise<void> {
 
         for (const movie of movies) {
             const row = document.createElement("tr");
-           row.innerHTML = `
-            <td>${movie.movieId}</td>
-            <td>${movie.movieTitle}</td>
-            <td>${movie.genre}</td>
-            <td>${movie.director}</td>
-            <td>${movie.duration} perc</td>
-            <td>${movie.imageId ?? "-"}</td>
-            <td>
-                <button class="btn btn-warning btn-sm me-2" onclick="Admin_editMovie(${movie.movieId}, '${window.Admin_escapeJs(movie.movieTitle)}', ${movie.duration}, '${window.Admin_escapeJs(movie.genre)}', '${window.Admin_escapeJs(movie.director)}', '${window.Admin_escapeJs(movie.description)}', ${movie.imageId ?? 0})">
-                    Módosítás
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="Admin_removeMovie(${movie.movieId})">
-                    Törlés
-                </button>
-    </td>
-`;
+
+            row.innerHTML = `
+                <td>${movie.movieId}</td>
+                <td>${movie.movieTitle}</td>
+                <td>${movie.genre}</td>
+                <td>${movie.director}</td>
+                <td>${movie.duration} perc</td>
+
+                <td>
+                    <img id="img-${movie.movieId}" 
+                         style="width:60px; height:80px; object-fit:cover;" />
+                </td>
+
+                <td>
+                    <button class="btn btn-warning btn-sm me-2" 
+                        onclick="Admin_editMovie(${movie.movieId}, '${window.Admin_escapeJs(movie.movieTitle)}', ${movie.duration}, '${window.Admin_escapeJs(movie.genre)}', '${window.Admin_escapeJs(movie.director)}', '${window.Admin_escapeJs(movie.description)}', ${movie.imageId ?? 0})">
+                        Módosítás
+                    </button>
+
+                    <button class="btn btn-danger btn-sm" 
+                        onclick="Admin_removeMovie(${movie.movieId})">
+                        Törlés
+                    </button>
+                </td>
+            `;
+
             tbody.appendChild(row);
+
+            Admin_loadMovieImage(movie.movieId);
         }
     } catch (error) {
         console.error(error);
@@ -176,6 +207,9 @@ window.Admin_handleMovieUpdate = Admin_handleMovieUpdate;
 window.Admin_removeMovie = Admin_removeMovie;
 // @ts-ignore
 window.Admin_editMovie = Admin_editMovie;
+
+// @ts-ignore
+window.Admin_loadMovieImage = Admin_loadMovieImage;
 
 // ===================== INIT =====================
 
