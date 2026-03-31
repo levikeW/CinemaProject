@@ -1,34 +1,5 @@
-//npx tsc adminApi.ts adminMovies.ts adminRooms.ts adminCinema.ts adminTickets.ts adminCategories.ts --target ES2020 --lib ES2020,DOM
+//npx tsc adminApi.ts adminCommon.ts adminMovies.ts adminRooms.ts adminReservation.ts adminCinema.ts adminTickets.ts adminCategories.ts --target ES2020 --lib ES2020,DOM
 //http://localhost:5500/AdminFrontEnd/AdminBejelentkezes.html
-// ===================== AUTH / SESSION =====================
-function Admin_getAdminId() {
-    const raw = localStorage.getItem("adminUserId");
-    return raw ? Number(raw) : 0;
-}
-function Admin_setCurrentUserRole(role) {
-    localStorage.setItem("currentUserRole", role);
-}
-function Admin_getCurrentUserRole() {
-    return localStorage.getItem("currentUserRole") || "";
-}
-function Admin_setCurrentUserId(userId) {
-    localStorage.setItem("currentUserId", String(userId));
-}
-function Admin_clearAuthData() {
-    localStorage.removeItem("currentUserId");
-    localStorage.removeItem("currentUserRole");
-    localStorage.removeItem("adminUserId");
-}
-function Admin_setAdminId(id) {
-    localStorage.setItem("adminUserId", String(id));
-}
-function Admin_showMessage(targetId, message, isError = false) {
-    const target = document.getElementById(targetId);
-    if (!target)
-        return;
-    target.textContent = message;
-    target.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
-}
 // ===================== SCREENINGS =====================
 async function Admin_getAllScreenings() {
     return await Admin_apiGet("/api/cinema/getallscreenings");
@@ -289,104 +260,6 @@ async function Admin_removeUser(userId) {
         Admin_showMessage("adminUserMessage", error.message, true);
     }
 }
-// ===================== RESERVATIONS =====================
-async function Admin_getAllReservations() {
-    return await Admin_apiGet("/api/admin/getallreservation");
-}
-async function Admin_updateReservation(reservationId, dto) {
-    await Admin_apiPut(`/api/admin/modifyreservation?reservationId=${reservationId}`, dto);
-}
-async function Admin_deleteReservation(reservationId) {
-    await Admin_apiDelete(`/api/admin/deletereservation?reservationId=${reservationId}`);
-}
-async function Admin_renderReservationsAdminTable() {
-    const tbody = document.getElementById("adminReservationsTbody");
-    if (!tbody)
-        return;
-    try {
-        const reservations = await Admin_getAllReservations();
-        tbody.innerHTML = "";
-        for (const reservation of reservations) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${reservation.paymentReservationId}</td>
-                <td>${reservation.userId}</td>
-                <td>${reservation.filmScreeningId}</td>
-                <td>${reservation.amount}</td>
-                <td>${reservation.price ?? 0} Ft</td>
-                <td>${reservation.isPaid ? "Igen" : "Nem"}</td>
-                <td>${new Date(reservation.date).toLocaleString("hu-HU")}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editReservation(${reservation.paymentReservationId}, ${reservation.cartId}, '${reservation.date}', ${reservation.isPaid}, ${reservation.filmScreeningId}, ${reservation.amount}, ${reservation.price ?? 0}, ${reservation.userId}, '${encodeURIComponent(JSON.stringify(reservation.seats ?? []))}')">
-                        Módosítás
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="Admin_removeReservation(${reservation.paymentReservationId})">
-                        Törlés
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    }
-    catch (error) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" class="text-danger text-center">Nem sikerült a foglalások betöltése.</td>
-            </tr>
-        `;
-    }
-}
-function Admin_editReservation(paymentReservationId, cartId, date, isPaid, filmScreeningId, amount, price, userId, seatsEncoded) {
-    document.getElementById("editReservationId").value = String(paymentReservationId);
-    document.getElementById("editReservationCartId").value = String(cartId);
-    document.getElementById("editReservationDate").value = Admin_toDateTimeLocalValue(date);
-    document.getElementById("editReservationIsPaid").value = isPaid ? "true" : "false";
-    document.getElementById("editReservationScreeningId").value = String(filmScreeningId);
-    document.getElementById("editReservationAmount").value = String(amount);
-    document.getElementById("editReservationPrice").value = String(price);
-    document.getElementById("editReservationUserId").value = String(userId);
-    document.getElementById("editReservationSeatsJson").value = decodeURIComponent(seatsEncoded);
-}
-async function Admin_handleReservationUpdate(event) {
-    event.preventDefault();
-    try {
-        const reservationId = Number(document.getElementById("editReservationId").value);
-        const seatsJson = document.getElementById("editReservationSeatsJson").value.trim();
-        let seats = [];
-        if (seatsJson) {
-            seats = JSON.parse(seatsJson);
-        }
-        const dto = {
-            paymentReservationId: reservationId,
-            cartId: Number(document.getElementById("editReservationCartId").value),
-            date: document.getElementById("editReservationDate").value,
-            isPaid: document.getElementById("editReservationIsPaid").value === "true",
-            filmScreeningId: Number(document.getElementById("editReservationScreeningId").value),
-            amount: Number(document.getElementById("editReservationAmount").value),
-            price: Number(document.getElementById("editReservationPrice").value),
-            userId: Number(document.getElementById("editReservationUserId").value),
-            seats
-        };
-        await Admin_updateReservation(reservationId, dto);
-        Admin_showMessage("adminReservationMessage", "Foglalás módosítva.");
-        await Admin_renderReservationsAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminReservationMessage", error.message, true);
-    }
-}
-async function Admin_removeReservation(reservationId) {
-    if (!confirm("Biztosan törlöd ezt a foglalást?"))
-        return;
-    try {
-        await Admin_deleteReservation(reservationId);
-        Admin_showMessage("adminReservationMessage", "Foglalás törölve.");
-        await Admin_renderReservationsAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminReservationMessage", error.message, true);
-    }
-}
 // ===================== IMAGE =====================
 async function Admin_uploadImage(dto) {
     return await Admin_apiPost("/api/admin/uploadimage", dto);
@@ -603,22 +476,6 @@ async function Admin_renderScreeningsRoomSelect() {
         }
     }
 }
-// ===================== DATE =====================
-function Admin_toIsoDateTime(localValue) {
-    if (!localValue)
-        return "";
-    return new Date(localValue).toISOString();
-}
-// ===================== UTIL =====================
-function Admin_toDateTimeLocalValue(date) {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
 // ===================== WINDOW EXPORT =====================
 // @ts-ignore
 window.Admin_handleScreeningCreate = Admin_handleScreeningCreate;
@@ -632,12 +489,6 @@ window.Admin_editScreening = Admin_editScreening;
 window.Admin_toggleUserRole = Admin_toggleUserRole;
 // @ts-ignore
 window.Admin_removeUser = Admin_removeUser;
-// @ts-ignore
-window.Admin_handleReservationUpdate = Admin_handleReservationUpdate;
-// @ts-ignore
-window.Admin_removeReservation = Admin_removeReservation;
-// @ts-ignore
-window.Admin_editReservation = Admin_editReservation;
 // @ts-ignore
 window.Admin_handleImageUpload = Admin_handleImageUpload;
 // @ts-ignore
@@ -654,7 +505,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         await Promise.all([
             Admin_renderScreeningsAdminTable(),
             Admin_renderUsersAdminTable(),
-            Admin_renderReservationsAdminTable(),
             Admin_renderScreeningsMovieSelect(),
             Admin_renderScreeningsRoomSelect()
         ]);

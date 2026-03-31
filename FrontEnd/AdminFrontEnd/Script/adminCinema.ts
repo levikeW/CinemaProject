@@ -1,4 +1,4 @@
-//npx tsc adminApi.ts adminMovies.ts adminRooms.ts adminCinema.ts adminTickets.ts adminCategories.ts --target ES2020 --lib ES2020,DOM
+//npx tsc adminApi.ts adminCommon.ts adminMovies.ts adminRooms.ts adminReservation.ts adminCinema.ts adminTickets.ts adminCategories.ts --target ES2020 --lib ES2020,DOM
 //http://localhost:5500/AdminFrontEnd/AdminBejelentkezes.html
 
 // ===================== DTO =====================
@@ -36,80 +36,10 @@ interface UserDto {
     role?: string;
 }
 
-interface SeatDto {
-    seatId: number;
-    rowNumber: number;
-    seatNumber: number;
-    roomId: number;
-    isReserved: boolean;
-}
-
-interface PaymentReservationDto {
-    paymentReservationId: number;
-    cartId: number;
-    date: string;
-    isPaid: boolean;
-    filmScreeningId: number;
-    amount: number;
-    price: number;
-    userId: number;
-    seats?: SeatDto[];
-}
-
-interface ModifyReservationDto {
-    paymentReservationId: number;
-    cartId: number;
-    date: string;
-    isPaid: boolean;
-    filmScreeningId: number;
-    amount: number;
-    price: number;
-    userId: number;
-    seats: SeatDto[];
-}
-
 interface ImageDto {
     imageId?: number;
     imageContent: string;
 }
-
-// ===================== AUTH / SESSION =====================
-
-function Admin_getAdminId(): number {
-    const raw = localStorage.getItem("adminUserId");
-    return raw ? Number(raw) : 0;
-}
-
-function Admin_setCurrentUserRole(role: string): void {
-    localStorage.setItem("currentUserRole", role);
-}
-
-function Admin_getCurrentUserRole(): string {
-    return localStorage.getItem("currentUserRole") || "";
-}
-
-function Admin_setCurrentUserId(userId: number): void {
-    localStorage.setItem("currentUserId", String(userId));
-}
-
-function Admin_clearAuthData(): void {
-    localStorage.removeItem("currentUserId");
-    localStorage.removeItem("currentUserRole");
-    localStorage.removeItem("adminUserId");
-}
-
-function Admin_setAdminId(id: number): void {
-    localStorage.setItem("adminUserId", String(id));
-}
-
-function Admin_showMessage(targetId: string, message: string, isError = false): void {
-    const target = document.getElementById(targetId);
-    if (!target) return;
-
-    target.textContent = message;
-    target.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
-}
-
 // ===================== SCREENINGS =====================
 
 async function Admin_getAllScreenings(): Promise<FilmScreeningDto[]> {
@@ -406,124 +336,6 @@ async function Admin_removeUser(userId: number): Promise<void> {
     }
 }
 
-// ===================== RESERVATIONS =====================
-
-async function Admin_getAllReservations(): Promise<PaymentReservationDto[]> {
-    return await Admin_apiGet<PaymentReservationDto[]>("/api/admin/getallreservation");
-}
-
-async function Admin_updateReservation(reservationId: number, dto: ModifyReservationDto): Promise<void> {
-    await Admin_apiPut<ModifyReservationDto>(`/api/admin/modifyreservation?reservationId=${reservationId}`, dto);
-}
-
-async function Admin_deleteReservation(reservationId: number): Promise<void> {
-    await Admin_apiDelete(`/api/admin/deletereservation?reservationId=${reservationId}`);
-}
-
-async function Admin_renderReservationsAdminTable(): Promise<void> {
-    const tbody = document.getElementById("adminReservationsTbody") as HTMLTableSectionElement | null;
-    if (!tbody) return;
-
-    try {
-        const reservations = await Admin_getAllReservations();
-        tbody.innerHTML = "";
-
-        for (const reservation of reservations) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${reservation.paymentReservationId}</td>
-                <td>${reservation.userId}</td>
-                <td>${reservation.filmScreeningId}</td>
-                <td>${reservation.amount}</td>
-                <td>${reservation.price ?? 0} Ft</td>
-                <td>${reservation.isPaid ? "Igen" : "Nem"}</td>
-                <td>${new Date(reservation.date).toLocaleString("hu-HU")}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm me-2" onclick="Admin_editReservation(${reservation.paymentReservationId}, ${reservation.cartId}, '${reservation.date}', ${reservation.isPaid}, ${reservation.filmScreeningId}, ${reservation.amount}, ${reservation.price ?? 0}, ${reservation.userId}, '${encodeURIComponent(JSON.stringify(reservation.seats ?? []))}')">
-                        Módosítás
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="Admin_removeReservation(${reservation.paymentReservationId})">
-                        Törlés
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    } catch (error) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" class="text-danger text-center">Nem sikerült a foglalások betöltése.</td>
-            </tr>
-        `;
-    }
-}
-
-function Admin_editReservation(
-    paymentReservationId: number,
-    cartId: number,
-    date: string,
-    isPaid: boolean,
-    filmScreeningId: number,
-    amount: number,
-    price: number,
-    userId: number,
-    seatsEncoded: string
-): void {
-    (document.getElementById("editReservationId") as HTMLInputElement).value = String(paymentReservationId);
-    (document.getElementById("editReservationCartId") as HTMLInputElement).value = String(cartId);
-    (document.getElementById("editReservationDate") as HTMLInputElement).value = Admin_toDateTimeLocalValue(date);
-    (document.getElementById("editReservationIsPaid") as HTMLSelectElement).value = isPaid ? "true" : "false";
-    (document.getElementById("editReservationScreeningId") as HTMLInputElement).value = String(filmScreeningId);
-    (document.getElementById("editReservationAmount") as HTMLInputElement).value = String(amount);
-    (document.getElementById("editReservationPrice") as HTMLInputElement).value = String(price);
-    (document.getElementById("editReservationUserId") as HTMLInputElement).value = String(userId);
-    (document.getElementById("editReservationSeatsJson") as HTMLTextAreaElement).value = decodeURIComponent(seatsEncoded);
-}
-
-async function Admin_handleReservationUpdate(event: Event): Promise<void> {
-    event.preventDefault();
-
-    try {
-        const reservationId = Number((document.getElementById("editReservationId") as HTMLInputElement).value);
-        const seatsJson = (document.getElementById("editReservationSeatsJson") as HTMLTextAreaElement).value.trim();
-
-        let seats: SeatDto[] = [];
-        if (seatsJson) {
-            seats = JSON.parse(seatsJson) as SeatDto[];
-        }
-
-        const dto: ModifyReservationDto = {
-            paymentReservationId: reservationId,
-            cartId: Number((document.getElementById("editReservationCartId") as HTMLInputElement).value),
-            date: (document.getElementById("editReservationDate") as HTMLInputElement).value,
-            isPaid: (document.getElementById("editReservationIsPaid") as HTMLSelectElement).value === "true",
-            filmScreeningId: Number((document.getElementById("editReservationScreeningId") as HTMLInputElement).value),
-            amount: Number((document.getElementById("editReservationAmount") as HTMLInputElement).value),
-            price: Number((document.getElementById("editReservationPrice") as HTMLInputElement).value),
-            userId: Number((document.getElementById("editReservationUserId") as HTMLInputElement).value),
-            seats
-        };
-
-        await Admin_updateReservation(reservationId, dto);
-        Admin_showMessage("adminReservationMessage", "Foglalás módosítva.");
-        await Admin_renderReservationsAdminTable();
-    } catch (error) {
-        Admin_showMessage("adminReservationMessage", (error as Error).message, true);
-    }
-}
-
-async function Admin_removeReservation(reservationId: number): Promise<void> {
-    if (!confirm("Biztosan törlöd ezt a foglalást?")) return;
-
-    try {
-        await Admin_deleteReservation(reservationId);
-        Admin_showMessage("adminReservationMessage", "Foglalás törölve.");
-        await Admin_renderReservationsAdminTable();
-    } catch (error) {
-        Admin_showMessage("adminReservationMessage", (error as Error).message, true);
-    }
-}
-
 // ===================== IMAGE =====================
 
 async function Admin_uploadImage(dto: ImageDto): Promise<ImageDto> {
@@ -794,24 +606,6 @@ async function Admin_renderScreeningsRoomSelect(): Promise<void> {
     }
 }
 
-// ===================== DATE =====================
-
-function Admin_toIsoDateTime(localValue: string): string {
-    if (!localValue) return "";
-    return new Date(localValue).toISOString();
-}
-
-// ===================== UTIL =====================
-function Admin_toDateTimeLocalValue(date: string): string {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
 // ===================== WINDOW EXPORT =====================
 
 // @ts-ignore
@@ -827,13 +621,6 @@ window.Admin_editScreening = Admin_editScreening;
 window.Admin_toggleUserRole = Admin_toggleUserRole;
 // @ts-ignore
 window.Admin_removeUser = Admin_removeUser;
-
-// @ts-ignore
-window.Admin_handleReservationUpdate = Admin_handleReservationUpdate;
-// @ts-ignore
-window.Admin_removeReservation = Admin_removeReservation;
-// @ts-ignore
-window.Admin_editReservation = Admin_editReservation;
 
 // @ts-ignore
 window.Admin_handleImageUpload = Admin_handleImageUpload;
@@ -856,7 +643,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         await Promise.all([
             Admin_renderScreeningsAdminTable(),
             Admin_renderUsersAdminTable(),
-            Admin_renderReservationsAdminTable(),
             Admin_renderScreeningsMovieSelect(),
             Admin_renderScreeningsRoomSelect()
         ]);
