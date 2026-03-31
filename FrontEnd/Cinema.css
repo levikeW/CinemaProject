@@ -120,11 +120,6 @@ header {
     white-space: nowrap;
 }
 
-.navbar .navbar-brand {
-    color: white !important;
-    font-weight: 700;
-}
-
 .navbar .nav-link {
     position: relative;
     margin: 0 0.35rem;
@@ -1249,16 +1244,47 @@ button {
     font-weight: 600;
 }
 
-.auth-container .btn-primary,
-#profileContainer .btn-primary {
+.auth-container .btn-primary {
     border: 0;
     background: linear-gradient(135deg, rgba(186, 92, 255, 0.95), rgba(116, 46, 214, 0.92));
     box-shadow: 0 12px 26px rgba(120, 52, 182, 0.22);
 }
 
-.auth-container .btn-primary:hover,
-#profileContainer .btn-primary:hover {
+#profileContainer .btn-primary,
+.btn-save-like {
+    border: 0;
+    background: linear-gradient(135deg, rgba(96,165,250,0.98), rgba(59,130,246,0.95));
+    box-shadow: 0 12px 26px rgba(59,130,246,0.18);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.auth-container .btn-primary:hover {
     background: linear-gradient(135deg, rgba(174, 76, 246, 0.95), rgba(104, 38, 198, 0.92));
+}
+
+#profileContainer .btn-primary:hover,
+.btn-save-like:hover {
+    background: linear-gradient(135deg, rgba(96,165,250,1), rgba(37,99,235,0.95));
+}
+
+#profileContainer .profile-btn-group .btn-short {
+    width: 150px;
+    height: 46px;
+    padding: 0.35rem 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#profileContainer .btn-secondary.btn-short {
+    height: 46px;
+    padding: 0.35rem 0.9rem;
+}
+
+@media (max-width: 576px) {
+    #profileContainer .profile-btn-group { flex-direction: column; width: 100%; }
+    #profileContainer .profile-btn-group .btn-short { width: 100%; }
 }
 
 #profileContainer .btn-secondary {
