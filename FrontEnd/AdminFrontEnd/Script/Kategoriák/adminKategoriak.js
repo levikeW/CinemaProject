@@ -106,6 +106,7 @@ window.Admin_editCategory = Admin_editCategory;
 // ===================== INIT =====================
 document.addEventListener("DOMContentLoaded", async () => {
     try {
+        Admin_updateNavbarByAuth();
         await Admin_renderCategoriesAdminTable();
     }
     catch (error) {

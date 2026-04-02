@@ -140,6 +140,7 @@ window.Admin_editCategory = Admin_editCategory;
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
+        Admin_updateNavbarByAuth();
         await Admin_renderCategoriesAdminTable();
     } catch (error) {
         console.error("Admin categories init hiba:", error);
