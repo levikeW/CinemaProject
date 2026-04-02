@@ -215,6 +215,7 @@ window.Admin_loadMovieImage = Admin_loadMovieImage;
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
+        Admin_updateNavbarByAuth();
         await Admin_renderMoviesAdminTable();
         await Admin_renderScreeningsByMovie();
     } catch (error) {
