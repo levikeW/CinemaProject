@@ -107,6 +107,7 @@ window.Admin_editReservation = Admin_editReservation;
 // ===================== INIT =====================
 document.addEventListener("DOMContentLoaded", async () => {
     try {
+        Admin_updateNavbarByAuth();
         await Admin_renderReservationsAdminTable();
     }
     catch (error) {

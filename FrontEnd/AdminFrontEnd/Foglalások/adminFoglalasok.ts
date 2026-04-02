@@ -163,6 +163,7 @@ window.Admin_editReservation = Admin_editReservation;
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
+        Admin_updateNavbarByAuth();
         await Admin_renderReservationsAdminTable();
     } catch (error) {
         console.error("Admin tickets init hiba:", error);
