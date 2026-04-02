@@ -107,6 +107,7 @@ window.Admin_editTicket = Admin_editTicket;
 // ===================== INIT =====================
 document.addEventListener("DOMContentLoaded", async () => {
     try {
+        Admin_updateNavbarByAuth();
         await Admin_renderTicketsAdminTable();
     }
     catch (error) {
