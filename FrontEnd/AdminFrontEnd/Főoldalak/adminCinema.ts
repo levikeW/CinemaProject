@@ -5,7 +5,7 @@
 
 interface FilmScreeningDto {
     filmScreeningId: number;
-    movieId: number;
+    movieId: Number;
     movieTitle: string;
     roomId: number;
     roomName: string;
@@ -13,7 +13,7 @@ interface FilmScreeningDto {
 }
 
 interface NewScreeningDto {
-    movieId: number;
+    filmScreeningId: number;
     movieTitle: string;
     roomId: number;
     roomName: string;
@@ -171,16 +171,17 @@ async function Admin_handleScreeningCreate(event: Event): Promise<void> {
     try {
         const movieSelect = document.getElementById("screeningMovieId") as HTMLSelectElement;
         const roomSelect = document.getElementById("screeningRoomId") as HTMLSelectElement;
+        const dateInput = document.getElementById("screeningDate") as HTMLInputElement;
 
-        const dto = {
-            movieId: Number(movieSelect.value),
-            movieTitle: movieSelect.options[movieSelect.selectedIndex].text,
+        const dto: NewScreeningDto = {
+            filmScreeningId: 0,
+            movieTitle: movieSelect.options[movieSelect.selectedIndex].text.trim(),
             roomId: Number(roomSelect.value),
-            roomName: roomSelect.options[roomSelect.selectedIndex].text,
-            date: (document.getElementById("screeningDate") as HTMLInputElement).value
+            roomName: roomSelect.options[roomSelect.selectedIndex].text.trim(),
+            date: Admin_toIsoDateTime(dateInput.value)
         };
 
-        await Admin_createScreening(dto as any);
+        await Admin_createScreening(dto);
 
         Admin_showMessage("adminScreeningMessage", "Vetítés létrehozva.");
         (document.getElementById("screeningForm") as HTMLFormElement | null)?.reset();
@@ -259,16 +260,15 @@ async function Admin_handleLoginSubmit(event: Event) {
 
         if (data.role !== "Admin") throw new Error("Csak admin jogosultsággal lehet belépni.");
 
-        Admin_setCurrentUserId(data.userId);
-        Admin_setCurrentUserRole(data.role);
-        Admin_setAdminId(data.userId);
+        await Admin_loadProfileData();
+        Admin_updateNavbarByAuth();
 
         if (loginMessage) {
             loginMessage.className = "text-success mb-3";
             loginMessage.textContent = "Sikeres bejelentkezés!";
         }
 
-        window.location.replace("AdminProfile.html");
+        window.location.replace("AdminCinema.html");
 
     } catch (err: any) {
         if (loginMessage) {
@@ -277,10 +277,10 @@ async function Admin_handleLoginSubmit(event: Event) {
         }
     }
 }
-
 // ===================== LOGOUT =====================
 async function Admin_handleLogout(): Promise<void> {
     Admin_clearAuthData();
+    Admin_updateNavbarByAuth();
 
     try {
         await Admin_apiPost<null>("/api/user/logout", null);
@@ -347,14 +347,7 @@ async function Admin_handleRegisterSubmit(event: Event): Promise<void> {
     }
 }
 
-// ===================== PROFILE =====================
 async function Admin_loadProfileData(): Promise<void> {
-    const emailField = document.getElementById("profileEmail");
-    const fullNameField = document.getElementById("profileFullName");
-    const billingField = document.getElementById("profileBilling");
-
-    if (!emailField || !fullNameField || !billingField) return;
-
     try {
         const user = await Admin_apiGet<{
             userId: number;
@@ -373,42 +366,8 @@ async function Admin_loadProfileData(): Promise<void> {
         Admin_setCurrentUserRole(user.role);
         Admin_setAdminId(user.userId);
 
-        emailField.textContent = user.email;
-        fullNameField.textContent = user.fullName;
-        billingField.textContent = user.billingAddress;
-
     } catch {
         window.location.replace("AdminBejelentkezes.html");
-    }
-}
-
-async function Admin_handleProfileSave(event: Event): Promise<void> {
-    event.preventDefault();
-
-    const emailInput = document.getElementById("profileEmail") as HTMLInputElement;
-    const fullNameInput = document.getElementById("profileFullName") as HTMLInputElement;
-    const billingInput = document.getElementById("profileBilling") as HTMLInputElement;
-    const messageBox = document.getElementById("profileMessage");
-
-    if (!emailInput || !fullNameInput || !billingInput || !messageBox) return;
-
-    try {
-        await Admin_apiPut<{
-            email: string;
-            fullName: string;
-            billingAddress: string;
-        }>("/api/user/updateprofile", {
-            email: emailInput.value.trim(),
-            fullName: fullNameInput.value.trim(),
-            billingAddress: billingInput.value.trim()
-        });
-
-        messageBox.className = "alert alert-success";
-        messageBox.textContent = "Profil sikeresen mentve.";
-
-    } catch (err: any) {
-        messageBox.className = "alert alert-danger";
-        messageBox.textContent = err.message || "Hiba történt a mentés során.";
     }
 }
  
@@ -461,14 +420,11 @@ window.Admin_editScreening = Admin_editScreening;
 
 // @ts-ignore
 window.Admin_handleLoginSubmit = Admin_handleLoginSubmit;
+// @ts-ignore
+window.Admin_loadProfileData = Admin_loadProfileData;
 
 // @ts-ignore
 window.Admin_handleLogout = Admin_handleLogout;
-
-// @ts-ignore
-window.Admin_loadProfileData = Admin_loadProfileData;
-// @ts-ignore
-window.Admin_loadProfileData = Admin_handleProfileSave;
 
 //@ts-ignore
 window.Admin_handleRegisterSubmit = Admin_handleRegisterSubmit;
@@ -476,12 +432,19 @@ window.Admin_handleRegisterSubmit = Admin_handleRegisterSubmit;
 // ===================== INIT =====================
 
 document.addEventListener("DOMContentLoaded", async () => {
+    Admin_updateNavbarByAuth();
+
+    const isLoginPage = !!document.getElementById("loginEmail");
+    if (isLoginPage) return;
+
     try {
+        await Admin_loadProfileData();
+
         await Promise.all([
             Admin_renderScreeningsAdminTable(),
             Admin_renderScreeningsMovieSelect(),
             Admin_renderScreeningsRoomSelect(),
-            Admin_loadProfileData()
+            Admin_renderScreeningsByMovie()
         ]);
     } catch (error) {
         console.error("Admin init hiba:", error);

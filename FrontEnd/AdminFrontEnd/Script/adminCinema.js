@@ -198,14 +198,13 @@ async function Admin_handleLoginSubmit(event) {
         const data = await Admin_apiPost("/api/user/login", { email: emailInput.value.trim(), password: passwordInput.value });
         if (data.role !== "Admin")
             throw new Error("Csak admin jogosultsággal lehet belépni.");
-        Admin_setCurrentUserId(data.userId);
-        Admin_setCurrentUserRole(data.role);
-        Admin_setAdminId(data.userId);
+        await Admin_loadProfileData();
+        Admin_updateNavbarByAuth();
         if (loginMessage) {
             loginMessage.className = "text-success mb-3";
             loginMessage.textContent = "Sikeres bejelentkezés!";
         }
-        window.location.replace("AdminProfile.html");
+        window.location.replace("AdminCinema.html");
     }
     catch (err) {
         if (loginMessage) {
@@ -217,6 +216,7 @@ async function Admin_handleLoginSubmit(event) {
 // ===================== LOGOUT =====================
 async function Admin_handleLogout() {
     Admin_clearAuthData();
+    Admin_updateNavbarByAuth();
     try {
         await Admin_apiPost("/api/user/logout", null);
     }
@@ -269,13 +269,7 @@ async function Admin_handleRegisterSubmit(event) {
         }
     }
 }
-// ===================== PROFILE =====================
 async function Admin_loadProfileData() {
-    const emailField = document.getElementById("profileEmail");
-    const fullNameField = document.getElementById("profileFullName");
-    const billingField = document.getElementById("profileBilling");
-    if (!emailField || !fullNameField || !billingField)
-        return;
     try {
         const user = await Admin_apiGet("/api/user/getmydata");
         if (user.role !== "Admin") {
@@ -285,34 +279,9 @@ async function Admin_loadProfileData() {
         Admin_setCurrentUserId(user.userId);
         Admin_setCurrentUserRole(user.role);
         Admin_setAdminId(user.userId);
-        emailField.textContent = user.email;
-        fullNameField.textContent = user.fullName;
-        billingField.textContent = user.billingAddress;
     }
     catch {
         window.location.replace("AdminBejelentkezes.html");
-    }
-}
-async function Admin_handleProfileSave(event) {
-    event.preventDefault();
-    const emailInput = document.getElementById("profileEmail");
-    const fullNameInput = document.getElementById("profileFullName");
-    const billingInput = document.getElementById("profileBilling");
-    const messageBox = document.getElementById("profileMessage");
-    if (!emailInput || !fullNameInput || !billingInput || !messageBox)
-        return;
-    try {
-        await Admin_apiPut("/api/user/updateprofile", {
-            email: emailInput.value.trim(),
-            fullName: fullNameInput.value.trim(),
-            billingAddress: billingInput.value.trim()
-        });
-        messageBox.className = "alert alert-success";
-        messageBox.textContent = "Profil sikeresen mentve.";
-    }
-    catch (err) {
-        messageBox.className = "alert alert-danger";
-        messageBox.textContent = err.message || "Hiba történt a mentés során.";
     }
 }
 async function Admin_renderScreeningsMovieSelect() {
@@ -359,21 +328,24 @@ window.Admin_editScreening = Admin_editScreening;
 // @ts-ignore
 window.Admin_handleLoginSubmit = Admin_handleLoginSubmit;
 // @ts-ignore
-window.Admin_handleLogout = Admin_handleLogout;
-// @ts-ignore
 window.Admin_loadProfileData = Admin_loadProfileData;
 // @ts-ignore
-window.Admin_loadProfileData = Admin_handleProfileSave;
+window.Admin_handleLogout = Admin_handleLogout;
 //@ts-ignore
 window.Admin_handleRegisterSubmit = Admin_handleRegisterSubmit;
 // ===================== INIT =====================
 document.addEventListener("DOMContentLoaded", async () => {
+    Admin_updateNavbarByAuth();
+    const isLoginPage = !!document.getElementById("loginEmail");
+    if (isLoginPage)
+        return;
     try {
+        await Admin_loadProfileData();
         await Promise.all([
             Admin_renderScreeningsAdminTable(),
             Admin_renderScreeningsMovieSelect(),
             Admin_renderScreeningsRoomSelect(),
-            Admin_loadProfileData()
+            Admin_renderScreeningsByMovie()
         ]);
     }
     catch (error) {
