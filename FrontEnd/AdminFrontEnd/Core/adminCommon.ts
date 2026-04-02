@@ -35,6 +35,28 @@ function Admin_showMessage(targetId: string, message: string, isError = false): 
     target.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
 }
 
+function Admin_isLoggedIn(): boolean {
+    const userId = localStorage.getItem("currentUserId");
+    const role = localStorage.getItem("currentUserRole");
+    return !!userId && role === "Admin";
+}
+
+function Admin_updateNavbarByAuth(): void {
+    const loginItem = document.getElementById("navLoginItem");
+    const logoutItem = document.getElementById("navLogoutItem");
+
+    const userId = localStorage.getItem("currentUserId");
+    const role = localStorage.getItem("currentUserRole");
+    const loggedIn = !!userId && role === "Admin";
+
+    if (loggedIn) {
+        loginItem?.classList.add("d-none");
+        logoutItem?.classList.remove("d-none");
+    } else {
+        loginItem?.classList.remove("d-none");
+        logoutItem?.classList.add("d-none");
+    }
+}
 // ===================== DATE =====================
 
 function Admin_toIsoDateTime(localValue: string): string {
@@ -54,9 +76,5 @@ function Admin_toDateTimeLocalValue(date: string): string {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-// ===================== WINDOW EXPORT =====================
-
 // @ts-ignore
-window.Admin_handleLoginSubmit = Admin_handleLoginSubmit;
-// @ts-ignore
-window.Admin_handleLogout = Admin_handleLogout;
+window.Admin_updateNavbarByAuth = Admin_updateNavbarByAuth;

@@ -76,28 +76,6 @@ header {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
 }
 
-.navbar::after {
-    content: "CINEMANIA";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    padding: 0.35rem 0.85rem;
-    border: 1px solid rgba(196, 88, 255, 0.55);
-    border-radius: 999px;
-    background: linear-gradient(135deg, rgba(209, 103, 255, 0.18), rgba(122, 44, 255, 0.08));
-    box-shadow: 0 8px 24px rgba(162, 56, 255, 0.16);
-    font-size: 0.82rem;
-    font-weight: 800;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: #c85cff;
-    text-shadow: 0 0 18px rgba(200, 92, 255, 0.42);
-    opacity: 0.88;
-    pointer-events: none;
-    white-space: nowrap;
-}
-
 .navbar .navbar-brand {
     color: white !important;
     font-weight: 700;

@@ -1,4 +1,4 @@
-const Admin_API_BASE = " https://localhost:7199";
+const Admin_API_BASE = "https://localhost:7199";
 
 function Admin_escapeJs(value: string): string {
     return value
