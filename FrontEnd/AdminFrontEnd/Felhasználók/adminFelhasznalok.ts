@@ -110,6 +110,7 @@ window.Admin_removeUser = Admin_removeUser;
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
+        Admin_updateNavbarByAuth();
         await Admin_renderUsersAdminTable();
     } catch (error) {
         console.error("Admin tickets init hiba:", error);

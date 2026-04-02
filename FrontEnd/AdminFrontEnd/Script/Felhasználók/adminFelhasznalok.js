@@ -87,6 +87,7 @@ window.Admin_removeUser = Admin_removeUser;
 // ===================== INIT =====================
 document.addEventListener("DOMContentLoaded", async () => {
     try {
+        Admin_updateNavbarByAuth();
         await Admin_renderUsersAdminTable();
     }
     catch (error) {
