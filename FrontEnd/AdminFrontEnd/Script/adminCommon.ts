@@ -43,6 +43,7 @@ function Admin_toIsoDateTime(localValue: string): string {
 }
 
 // ===================== UTIL =====================
+
 function Admin_toDateTimeLocalValue(date: string): string {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -52,3 +53,10 @@ function Admin_toDateTimeLocalValue(date: string): string {
     const minutes = String(d.getMinutes()).padStart(2, "0");
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
+
+// ===================== WINDOW EXPORT =====================
+
+// @ts-ignore
+window.Admin_handleLoginSubmit = Admin_handleLoginSubmit;
+// @ts-ignore
+window.Admin_handleLogout = Admin_handleLogout;

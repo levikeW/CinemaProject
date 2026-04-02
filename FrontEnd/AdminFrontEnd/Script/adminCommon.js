@@ -43,3 +43,8 @@ function Admin_toDateTimeLocalValue(date) {
     const minutes = String(d.getMinutes()).padStart(2, "0");
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
+// ===================== WINDOW EXPORT =====================
+// @ts-ignore
+window.Admin_handleLoginSubmit = Admin_handleLoginSubmit;
+// @ts-ignore
+window.Admin_handleLogout = Admin_handleLogout;

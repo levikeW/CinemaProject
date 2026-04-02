@@ -28,24 +28,34 @@
                 <li class="nav-item">
                     <a class="nav-link" href="AdminCinema.html">Főoldal</a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link active" href="AdminFilmek.html">Filmek</a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="AdminArak.html">Árak</a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="AdminTermek.html">Termek</a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="AdminFoglalasok.html">Foglalások</a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="AdminKategoriak.html">Kategóriák</a>
+                </li>  
+                <li class="nav-item">
+                    <a class="nav-link" href="adminFelhasznalok.html">Felhasználók</a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="AdminRolunk.html">Rólunk</a>
                 </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="AdminBejelentkezes.html">Bejelentkezés</a>
                 </li>
@@ -67,7 +77,7 @@
         <div class="row g-4">
 
             <!-- BAL OLDAL: LISTA -->
-            <div class="col-lg-7">
+            <div class="col-lg-8">
                 <div class="card admin-card shadow-sm h-100">
                     <div class="card-header">
                         <h4 class="mb-0">Filmek listája</h4>
@@ -83,14 +93,16 @@
                                     <th>Műfaj</th>
                                     <th>Rendező</th>
                                     <th>Hossz</th>
-                                    <th>ImageID</th>
+
+                                    <th>Kép</th>
+
                                     <th>Művelet</th>
                                 </tr>
                                 </thead>
 
                                 <tbody id="adminMoviesTbody">
                                 <tr>
-                                    <td colspan="6" class="text-center">
+                                    <td colspan="7" class="text-center">
                                         <div class="spinner-border spinner-border-sm"></div>
                                     </td>
                                 </tr>
@@ -103,7 +115,7 @@
             </div>
 
             <!-- JOBB OLDAL -->
-            <div class="col-lg-5">
+            <div class="col-lg-4">
                 <div class="card admin-card shadow-sm h-100">
                     <div class="card-header">
                         <h4 class="mb-0">Film kezelése</h4>
@@ -145,6 +157,37 @@
                                     Film létrehozása
                                 </button>
                             </form>
+                        </div>
+
+                        <hr>
+
+                        <!-- ÚJ: KÉP FELTÖLTÉS -->
+                        <div class="mb-4">
+                            <h5>Kép feltöltése</h5>
+                            <div id="adminImageMessage"></div>
+
+                            <input type="file" id="imageFile" class="form-control mb-2" accept="image/*">
+
+                            <textarea id="imageContentBase64" class="form-control mb-2" placeholder="Base64"></textarea>
+
+                            <img id="imagePreview" style="max-width:100%; display:none;" class="mb-2"/>
+
+                            <button onclick="Admin_handleImageUpload(event)" class="btn btn-primary w-100">
+                                Kép feltöltése
+                            </button>
+                        </div>
+
+                        <hr>
+
+                        <!-- ÚJ: KÉP TÖRLÉS -->
+                        <div>
+                            <h5>Kép törlése</h5>
+
+                            <input type="number" id="deleteImageId" class="form-control mb-2" placeholder="Image ID">
+
+                            <button onclick="Admin_handleImageDelete(event)" class="btn btn-danger w-100">
+                                Kép törlése
+                            </button>
                         </div>
 
                         <hr>

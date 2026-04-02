@@ -1,4 +1,4 @@
-//npx tsc adminApi.ts adminCommon.ts adminMovies.ts adminRooms.ts adminReservation.ts adminCinema.ts adminTickets.ts adminCategories.ts --target ES2020 --lib ES2020,DOM
+//npx tsc adminApi.ts adminCommon.ts adminMovies.ts adminRooms.ts adminReservation.ts adminCinema.ts adminTickets.ts adminCategories.ts adminFelhasznalok.ts --target ES2020 --lib ES2020,DOM
 //http://localhost:5500/AdminFrontEnd/AdminBejelentkezes.html
 // ===================== SCREENINGS =====================
 async function Admin_getAllScreenings() {
@@ -186,114 +186,6 @@ async function Admin_removeScreening(screeningId) {
         Admin_showMessage("adminScreeningMessage", error.message, true);
     }
 }
-// ===================== USERS =====================
-async function Admin_getAllUsers() {
-    return await Admin_apiGet("/api/admin/getalluser");
-}
-async function Admin_deleteUser(userId) {
-    await Admin_apiDelete(`/api/admin/deleteuser?userId=${userId}`);
-}
-async function Admin_changeRole(userId, newRole, actAdminId) {
-    await Admin_apiPut(`/api/admin/changerole?userId=${userId}&newRole=${encodeURIComponent(newRole)}&actAdminId=${actAdminId}`, null);
-}
-async function Admin_renderUsersAdminTable() {
-    const tbody = document.getElementById("adminUsersTbody");
-    if (!tbody)
-        return;
-    try {
-        const users = await Admin_getAllUsers();
-        tbody.innerHTML = "";
-        for (const user of users) {
-            const role = user.role ?? "User";
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${user.userId}</td>
-                <td>${user.email}</td>
-                <td>${user.fullName}</td>
-                <td>${user.billingAddress ?? ""}</td>
-                <td>${role}</td>
-                <td>
-                    <button class="btn btn-secondary btn-sm me-2" onclick="Admin_toggleUserRole(${user.userId}, '${role}')">
-                        Szerepkör váltás
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="Admin_removeUser(${user.userId})">
-                        Törlés
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    }
-    catch (error) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-danger text-center">Nem sikerült a felhasználók betöltése.</td>
-            </tr>
-        `;
-    }
-}
-async function Admin_toggleUserRole(userId, currentRole) {
-    const adminId = Admin_getAdminId();
-    if (!adminId) {
-        Admin_showMessage("adminUserMessage", "Nincs eltárolt admin azonosító.", true);
-        return;
-    }
-    const newRole = currentRole === "Admin" ? "User" : "Admin";
-    try {
-        await Admin_changeRole(userId, newRole, adminId);
-        Admin_showMessage("adminUserMessage", `Szerepkör módosítva: ${newRole}`);
-        await Admin_renderUsersAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminUserMessage", error.message, true);
-    }
-}
-async function Admin_removeUser(userId) {
-    if (!confirm("Biztosan törlöd ezt a felhasználót?"))
-        return;
-    try {
-        await Admin_deleteUser(userId);
-        Admin_showMessage("adminUserMessage", "Felhasználó törölve.");
-        await Admin_renderUsersAdminTable();
-    }
-    catch (error) {
-        Admin_showMessage("adminUserMessage", error.message, true);
-    }
-}
-// ===================== IMAGE =====================
-async function Admin_uploadImage(dto) {
-    return await Admin_apiPost("/api/admin/uploadimage", dto);
-}
-async function Admin_deleteImage(imageId) {
-    await Admin_apiDelete(`/api/admin/deleteimage?imageId=${imageId}`);
-}
-async function Admin_handleImageUpload(event) {
-    event.preventDefault();
-    try {
-        const imageContent = document.getElementById("imageContentBase64").value.trim();
-        const dto = { imageContent };
-        const result = await Admin_uploadImage(dto);
-        Admin_showMessage("adminImageMessage", `Kép feltöltve. Új imageId: ${result.imageId}`);
-        const movieImageField = document.getElementById("movieImageId");
-        if (movieImageField && result.imageId) {
-            movieImageField.value = String(result.imageId);
-        }
-    }
-    catch (error) {
-        Admin_showMessage("adminImageMessage", error.message, true);
-    }
-}
-async function Admin_handleImageDelete(event) {
-    event.preventDefault();
-    try {
-        const imageId = Number(document.getElementById("deleteImageId").value);
-        await Admin_deleteImage(imageId);
-        Admin_showMessage("adminImageMessage", "Kép törölve.");
-    }
-    catch (error) {
-        Admin_showMessage("adminImageMessage", error.message, true);
-    }
-}
 // ===================== LOGIN =====================
 async function Admin_handleLoginSubmit(event) {
     event.preventDefault();
@@ -302,48 +194,23 @@ async function Admin_handleLoginSubmit(event) {
     const loginMessage = document.getElementById("loginMessage");
     if (!emailInput || !passwordInput)
         return;
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-    if (loginMessage) {
-        loginMessage.className = "mb-3";
-        loginMessage.textContent = "";
-    }
     try {
-        const response = await fetch(`${Admin_API_BASE}/api/user/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-            credentials: "include"
-        });
-        if (!response.ok) {
-            const text = await response.text();
-            if (loginMessage) {
-                loginMessage.className = "text-danger mb-3";
-                loginMessage.textContent = text || "Hibás email vagy jelszó.";
-            }
-            return;
-        }
-        const data = await response.json();
+        const data = await Admin_apiPost("/api/user/login", { email: emailInput.value.trim(), password: passwordInput.value });
+        if (data.role !== "Admin")
+            throw new Error("Csak admin jogosultsággal lehet belépni.");
         Admin_setCurrentUserId(data.userId);
         Admin_setCurrentUserRole(data.role);
-        if (data.role === "Admin") {
-            Admin_setAdminId(data.userId);
-        }
+        Admin_setAdminId(data.userId);
         if (loginMessage) {
             loginMessage.className = "text-success mb-3";
             loginMessage.textContent = "Sikeres bejelentkezés!";
         }
-        if (data.role === "Admin") {
-            window.location.replace("AdminCinema.html");
-        }
-        else {
-            window.location.replace("AdminProfile.html");
-        }
+        window.location.replace("AdminProfile.html");
     }
     catch (err) {
         if (loginMessage) {
             loginMessage.className = "text-danger mb-3";
-            loginMessage.textContent = "Hiba a bejelentkezés során.";
+            loginMessage.textContent = err.message || "Hiba a bejelentkezés során.";
         }
     }
 }
@@ -351,15 +218,12 @@ async function Admin_handleLoginSubmit(event) {
 async function Admin_handleLogout() {
     Admin_clearAuthData();
     try {
-        await fetch(`${Admin_API_BASE}/api/user/logout`, {
-            method: "POST",
-            credentials: "include"
-        });
+        await Admin_apiPost("/api/user/logout", null);
     }
     catch { }
-    window.location.href = "Bejelentkezes.html";
+    window.location.href = "AdminBejelentkezes.html";
 }
-// ===================== REGIST =====================
+// ===================== REGISTER =====================
 async function Admin_handleRegisterSubmit(event) {
     event.preventDefault();
     const emailInput = document.getElementById("registerEmail");
@@ -382,25 +246,12 @@ async function Admin_handleRegisterSubmit(event) {
         return;
     }
     try {
-        const response = await fetch(`${Admin_API_BASE}/api/user/Regist`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-                Email: emailInput.value.trim(),
-                FullName: fullNameInput.value.trim(),
-                Password: passwordInput.value,
-                BillingAddress: addressInput.value.trim()
-            })
+        await Admin_apiPost("/api/user/Regist", {
+            Email: emailInput.value.trim(),
+            FullName: fullNameInput.value.trim(),
+            Password: passwordInput.value,
+            BillingAddress: addressInput.value.trim()
         });
-        const text = await response.text();
-        if (!response.ok) {
-            if (registerMessage) {
-                registerMessage.className = "text-danger mb-3";
-                registerMessage.textContent = text || "Sikertelen regisztráció.";
-            }
-            return;
-        }
         if (registerMessage) {
             registerMessage.className = "text-success mb-3";
             registerMessage.textContent = "Sikeres regisztráció!";
@@ -414,7 +265,7 @@ async function Admin_handleRegisterSubmit(event) {
     catch (err) {
         if (registerMessage) {
             registerMessage.className = "text-danger mb-3";
-            registerMessage.textContent = "Hiba történt a regisztráció során.";
+            registerMessage.textContent = err.message || "Hiba történt a regisztráció során.";
         }
     }
 }
@@ -426,24 +277,44 @@ async function Admin_loadProfileData() {
     if (!emailField || !fullNameField || !billingField)
         return;
     try {
-        const response = await fetch(`${Admin_API_BASE}/api/user/current`, {
-            credentials: "include"
-        });
-        if (!response.ok)
+        const user = await Admin_apiGet("/api/user/getmydata");
+        if (user.role !== "Admin") {
+            window.location.replace("AdminBejelentkezes.html");
             return;
-        const user = await response.json();
+        }
         Admin_setCurrentUserId(user.userId);
         Admin_setCurrentUserRole(user.role);
-        if (user.role === "Admin") {
-            Admin_setAdminId(user.userId);
-        }
+        Admin_setAdminId(user.userId);
         emailField.textContent = user.email;
         fullNameField.textContent = user.fullName;
         billingField.textContent = user.billingAddress;
     }
-    catch { }
+    catch {
+        window.location.replace("AdminBejelentkezes.html");
+    }
 }
-// ===================== SELECT SEGÉDEK =====================
+async function Admin_handleProfileSave(event) {
+    event.preventDefault();
+    const emailInput = document.getElementById("profileEmail");
+    const fullNameInput = document.getElementById("profileFullName");
+    const billingInput = document.getElementById("profileBilling");
+    const messageBox = document.getElementById("profileMessage");
+    if (!emailInput || !fullNameInput || !billingInput || !messageBox)
+        return;
+    try {
+        await Admin_apiPut("/api/user/updateprofile", {
+            email: emailInput.value.trim(),
+            fullName: fullNameInput.value.trim(),
+            billingAddress: billingInput.value.trim()
+        });
+        messageBox.className = "alert alert-success";
+        messageBox.textContent = "Profil sikeresen mentve.";
+    }
+    catch (err) {
+        messageBox.className = "alert alert-danger";
+        messageBox.textContent = err.message || "Hiba történt a mentés során.";
+    }
+}
 async function Admin_renderScreeningsMovieSelect() {
     const createSelect = document.getElementById("screeningMovieId");
     const editSelect = document.getElementById("editScreeningMovieId");
@@ -486,17 +357,13 @@ window.Admin_removeScreening = Admin_removeScreening;
 // @ts-ignore
 window.Admin_editScreening = Admin_editScreening;
 // @ts-ignore
-window.Admin_toggleUserRole = Admin_toggleUserRole;
-// @ts-ignore
-window.Admin_removeUser = Admin_removeUser;
-// @ts-ignore
-window.Admin_handleImageUpload = Admin_handleImageUpload;
-// @ts-ignore
-window.Admin_handleImageDelete = Admin_handleImageDelete;
-// @ts-ignore
 window.Admin_handleLoginSubmit = Admin_handleLoginSubmit;
 // @ts-ignore
 window.Admin_handleLogout = Admin_handleLogout;
+// @ts-ignore
+window.Admin_loadProfileData = Admin_loadProfileData;
+// @ts-ignore
+window.Admin_loadProfileData = Admin_handleProfileSave;
 //@ts-ignore
 window.Admin_handleRegisterSubmit = Admin_handleRegisterSubmit;
 // ===================== INIT =====================
@@ -504,9 +371,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
         await Promise.all([
             Admin_renderScreeningsAdminTable(),
-            Admin_renderUsersAdminTable(),
             Admin_renderScreeningsMovieSelect(),
-            Admin_renderScreeningsRoomSelect()
+            Admin_renderScreeningsRoomSelect(),
+            Admin_loadProfileData()
         ]);
     }
     catch (error) {
