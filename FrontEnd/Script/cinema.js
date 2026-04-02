@@ -2,7 +2,6 @@
 const API_BASE = "http://localhost:5067";
 const jegyekTbody = document.getElementById("jegyekTbody");
 const movieList = document.getElementById("movieList");
-const screeningsTbody = document.getElementById("screeningsTbody");
 const locationFilter = document.getElementById("locationFilter");
 const genreFilter = document.getElementById("genreFilter");
 const movieFilter = document.getElementById("movieFilter");
@@ -13,17 +12,26 @@ const roomDetails = document.getElementById("roomDetails");
 let allMovies = [];
 let allRooms = [];
 let allCategories = [];
+let allTicketTypes = [];
 const currentUserStorageKey = "cinemaCurrentUserEmail";
 const userProfilesStorageKey = "cinemaUserProfiles";
 const cartButtonId = "floatingCartButton";
 const selectedScreeningStorageKey = "cinemaSelectedScreening";
 const selectedSeatStorageKeyPrefix = "cinemaSelectedSeats";
+const selectedTicketStorageKeyPrefix = "cinemaSelectedTickets";
 const cartStorageKey = "cinemaCartItems";
+const reservationsStorageKey = "cinemaReservations";
 const moviePosterFallbacks = {
     avatar: "avatar.jpg",
     inception: "inception.jpg",
     interstellar: "interstellar.jpg",
     "the dark knight": "thedarkknight.jpg",
+};
+const movieDescriptionTranslations = {
+    inception: "Egy tolvaj álmokba lép be, hogy titkokat lopjon.",
+    interstellar: "Egy csapat egy űrbéli féreglyukon keresztül utazik.",
+    "the dark knight": "Batman Gotham városában szembenéz Jokerrel.",
+    avatar: "Egy tengerészgyalogos felfedezi Pandora világát.",
 };
 function getTicketName(ticket) {
     const t = ticket;
@@ -55,6 +63,10 @@ function getCategoryDescription(category) {
 function getMovieFallbackPoster(movie) {
     const normalizedTitle = movie.movieTitle.trim().toLowerCase();
     return moviePosterFallbacks[normalizedTitle] ?? "Logo.png";
+}
+function getMovieDescription(movie) {
+    const normalizedTitle = movie.movieTitle.trim().toLowerCase();
+    return movieDescriptionTranslations[normalizedTitle] ?? movie.description;
 }
 function getRoomLabel(roomId, roomName) {
     if (roomName && roomName.trim()) {
@@ -154,6 +166,9 @@ function renderRoomSeatsMarkup(seats, selectedSeatIds) {
 function getSelectedSeatStorageKey(screeningId) {
     return `${selectedSeatStorageKeyPrefix}:${screeningId}`;
 }
+function getSelectedTicketStorageKey(screeningId) {
+    return `${selectedTicketStorageKeyPrefix}:${screeningId}`;
+}
 function getSelectedSeatIds(screeningId) {
     const rawSeatIds = sessionStorage.getItem(getSelectedSeatStorageKey(screeningId));
     if (!rawSeatIds) {
@@ -172,13 +187,94 @@ function getSelectedSeatIds(screeningId) {
 function saveSelectedSeatIds(screeningId, seatIds) {
     sessionStorage.setItem(getSelectedSeatStorageKey(screeningId), JSON.stringify(seatIds));
 }
+function getStoredTicketSelections(screeningId) {
+    const rawSelections = sessionStorage.getItem(getSelectedTicketStorageKey(screeningId));
+    if (!rawSelections) {
+        return [];
+    }
+    try {
+        const parsedSelections = JSON.parse(rawSelections);
+        if (!Array.isArray(parsedSelections)) {
+            return [];
+        }
+        return parsedSelections
+            .map((selection) => {
+            const candidate = selection;
+            const ticketTypeId = Number(candidate?.ticketTypeId);
+            const quantity = Number(candidate?.quantity);
+            if (!ticketTypeId || !quantity || quantity < 0) {
+                return null;
+            }
+            return { ticketTypeId, quantity };
+        })
+            .filter((selection) => Boolean(selection && selection.quantity > 0));
+    }
+    catch {
+        return [];
+    }
+}
+function saveStoredTicketSelections(screeningId, selections) {
+    const normalizedSelections = selections.filter((selection) => selection.quantity > 0);
+    if (normalizedSelections.length === 0) {
+        sessionStorage.removeItem(getSelectedTicketStorageKey(screeningId));
+        return;
+    }
+    sessionStorage.setItem(getSelectedTicketStorageKey(screeningId), JSON.stringify(normalizedSelections));
+}
+function getSelectedTicketQuantities(screeningId, availableTickets) {
+    const quantityByTicketId = new Map(getStoredTicketSelections(screeningId).map((selection) => [selection.ticketTypeId, selection.quantity]));
+    return availableTickets
+        .map((ticket) => {
+        const ticketTypeId = getTicketTypeId(ticket);
+        if (ticketTypeId === null) {
+            return null;
+        }
+        const quantity = quantityByTicketId.get(ticketTypeId) ?? 0;
+        if (quantity <= 0) {
+            return null;
+        }
+        return {
+            ticketTypeId,
+            ticketName: getTicketName(ticket),
+            unitPrice: getTicketPrice(ticket),
+            quantity,
+        };
+    })
+        .filter((ticket) => Boolean(ticket));
+}
+function saveSelectedTicketQuantities(screeningId, tickets) {
+    saveStoredTicketSelections(screeningId, tickets.map((ticket) => ({
+        ticketTypeId: ticket.ticketTypeId,
+        quantity: ticket.quantity,
+    })));
+}
+function clearSelectedTicketQuantities(screeningId) {
+    sessionStorage.removeItem(getSelectedTicketStorageKey(screeningId));
+}
+function clampSelectedTicketQuantities(tickets, maxAllowed) {
+    let remaining = Math.max(0, maxAllowed);
+    return tickets
+        .map((ticket) => {
+        if (remaining <= 0) {
+            return { ...ticket, quantity: 0 };
+        }
+        const quantity = Math.min(ticket.quantity, remaining);
+        remaining -= quantity;
+        return { ...ticket, quantity };
+    })
+        .filter((ticket) => ticket.quantity > 0);
+}
 function getCartItems() {
     const raw = localStorage.getItem(cartStorageKey);
     if (!raw)
         return [];
     try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
+        return Array.isArray(parsed)
+            ? parsed
+                .map((item) => normalizeCartItem(item))
+                .filter((item) => Boolean(item))
+            : [];
     }
     catch {
         return [];
@@ -188,14 +284,17 @@ function saveCartItems(items) {
     localStorage.setItem(cartStorageKey, JSON.stringify(items));
     refreshFloatingCartBadge();
 }
-const reservationsStorageKey = "cinemaReservations";
 function getAllSavedReservations() {
     const raw = localStorage.getItem(reservationsStorageKey);
     if (!raw)
         return [];
     try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
+        return Array.isArray(parsed)
+            ? parsed
+                .map((item) => normalizeSavedReservation(item))
+                .filter((item) => Boolean(item))
+            : [];
     }
     catch {
         return [];
@@ -210,6 +309,57 @@ function getUserReservations(email) {
     if (!email)
         return [];
     return getAllSavedReservations().filter(r => (r.userEmail || "").toLowerCase() === email.toLowerCase());
+}
+function getReservedSeatIdsForScreening(screeningId) {
+    const reservedSeatIds = new Set();
+    for (const cartItem of getCartItems()) {
+        if (cartItem.filmScreeningId !== screeningId) {
+            continue;
+        }
+        for (const seat of cartItem.seats) {
+            reservedSeatIds.add(seat.seatId);
+        }
+    }
+    for (const reservation of getAllSavedReservations()) {
+        if (reservation.filmScreeningId !== screeningId) {
+            continue;
+        }
+        for (const seat of reservation.seats) {
+            reservedSeatIds.add(seat.seatId);
+        }
+    }
+    return reservedSeatIds;
+}
+function mergeReservedSeatsForScreening(seats, screeningId) {
+    const reservedSeatIds = getReservedSeatIdsForScreening(screeningId);
+    if (reservedSeatIds.size === 0) {
+        return seats;
+    }
+    return seats.map((seat) => reservedSeatIds.has(seat.seatId)
+        ? { ...seat, isReserved: true }
+        : seat);
+}
+function getAvailableSelectedSeatIds(screeningId, seats, maxAllowed = Number.MAX_SAFE_INTEGER) {
+    const reservedSeatIds = new Set(seats
+        .filter((seat) => Boolean(seat.isReserved))
+        .map((seat) => seat.seatId));
+    const selectedSeatIds = getSelectedSeatIds(screeningId)
+        .filter((seatId) => !reservedSeatIds.has(seatId))
+        .slice(0, Math.max(0, maxAllowed));
+    saveSelectedSeatIds(screeningId, selectedSeatIds);
+    return new Set(selectedSeatIds);
+}
+function clearSelectedSeats(screeningId, seatIds) {
+    const selectedSeatIds = new Set(getSelectedSeatIds(screeningId));
+    let hasChanges = false;
+    for (const seatId of seatIds) {
+        if (selectedSeatIds.delete(seatId)) {
+            hasChanges = true;
+        }
+    }
+    if (hasChanges) {
+        saveSelectedSeatIds(screeningId, Array.from(selectedSeatIds));
+    }
 }
 function generateId(prefix = "res") {
     return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -257,9 +407,10 @@ async function createReservationOnServer(reservation) {
                 body: JSON.stringify({
                     cartId: reservation.cartId,
                     filmScreeningId: reservation.filmScreeningId,
-                    amount: reservation.seats?.length ?? 0,
+                    amount: getSelectedTicketQuantityTotal(reservation.tickets) || reservation.seats?.length || 0,
                     date: reservation.date,
                     seats: reservation.seats,
+                    ticketSelections: reservation.tickets,
                     movieTitle: reservation.movieTitle,
                     userEmail: reservation.userEmail,
                 })
@@ -281,11 +432,151 @@ async function createReservationOnServer(reservation) {
     }
     return null;
 }
+function getTicketTypeId(ticket) {
+    const t = ticket;
+    const keys = ['ticketTypeId', 'TicketTypeId', 'id', 'Id'];
+    for (const k of keys) {
+        const v = t[k];
+        if (typeof v !== 'undefined' && v !== null && !Number.isNaN(Number(v))) {
+            return Number(v);
+        }
+    }
+    return null;
+}
+function isVipLabel(value) {
+    return (value ?? '').trim().toLowerCase().includes('vip');
+}
+function getAllowedTicketsForRoom(roomName, tickets) {
+    const filteredTickets = tickets.filter((ticket) => isVipLabel(roomName)
+        ? isVipLabel(getTicketName(ticket))
+        : !isVipLabel(getTicketName(ticket)));
+    return filteredTickets.length > 0 ? filteredTickets : tickets;
+}
+function formatPrice(amount) {
+    return `${amount.toLocaleString('hu-HU')} Ft`;
+}
+function getSelectedTicketQuantityTotal(tickets) {
+    return tickets.reduce((sum, ticket) => sum + ticket.quantity, 0);
+}
+function getTicketSelectionsTotalPrice(tickets) {
+    let total = 0;
+    for (const ticket of tickets) {
+        if (ticket.unitPrice === null) {
+            return null;
+        }
+        total += ticket.unitPrice * ticket.quantity;
+    }
+    return total;
+}
+function getTicketSummaryText(tickets) {
+    if (tickets.length === 0) {
+        return 'Nincs kiválasztott jegy';
+    }
+    return tickets
+        .map((ticket) => `${ticket.quantity}x ${ticket.ticketName}`)
+        .join(', ');
+}
+function getTicketSummaryMarkup(tickets) {
+    if (tickets.length === 0) {
+        return '<div>Jegyek: Nincs kiválasztott jegy</div>';
+    }
+    const totalPrice = getTicketSelectionsTotalPrice(tickets);
+    return `
+        <div>Jegyek: ${getTicketSummaryText(tickets)}</div>
+        ${totalPrice !== null ? `<div class="text-muted small">Jegyek összesen: ${formatPrice(totalPrice)}</div>` : ''}
+    `;
+}
+function normalizeCartSeats(seats) {
+    if (!Array.isArray(seats)) {
+        return [];
+    }
+    const normalizedSeats = [];
+    for (const seat of seats) {
+        const candidate = seat;
+        const seatId = Number(candidate?.seatId);
+        const rowNumber = Number(candidate?.rowNumber);
+        const seatNumber = Number(candidate?.seatNumber);
+        if (!seatId || !rowNumber || !seatNumber) {
+            continue;
+        }
+        normalizedSeats.push({ seatId, rowNumber, seatNumber });
+    }
+    return normalizedSeats;
+}
+function normalizeSelectedTicketQuantities(tickets) {
+    if (!Array.isArray(tickets)) {
+        return [];
+    }
+    const normalizedTickets = [];
+    for (const ticket of tickets) {
+        const candidate = ticket;
+        const ticketTypeId = Number(candidate?.ticketTypeId);
+        const quantity = Number(candidate?.quantity);
+        if (!ticketTypeId || !quantity || quantity < 0) {
+            continue;
+        }
+        const unitPrice = typeof candidate?.unitPrice === 'number'
+            ? candidate.unitPrice
+            : (candidate?.unitPrice !== null && typeof candidate?.unitPrice !== 'undefined' && !Number.isNaN(Number(candidate.unitPrice))
+                ? Number(candidate.unitPrice)
+                : null);
+        normalizedTickets.push({
+            ticketTypeId,
+            ticketName: (candidate?.ticketName ?? '').trim() || `Jegy #${ticketTypeId}`,
+            unitPrice,
+            quantity,
+        });
+    }
+    return normalizedTickets.filter((ticket) => ticket.quantity > 0);
+}
+function normalizeCartItem(item) {
+    const candidate = item;
+    const filmScreeningId = Number(candidate?.filmScreeningId);
+    const roomId = Number(candidate?.roomId);
+    if (!filmScreeningId || !roomId) {
+        return null;
+    }
+    return {
+        filmScreeningId,
+        movieTitle: candidate?.movieTitle ?? '',
+        roomId,
+        roomName: candidate?.roomName,
+        date: candidate?.date,
+        seats: normalizeCartSeats(candidate?.seats),
+        tickets: normalizeSelectedTicketQuantities(candidate?.tickets),
+    };
+}
+function normalizeSavedReservation(item) {
+    const candidate = item;
+    const filmScreeningId = Number(candidate?.filmScreeningId);
+    const roomId = Number(candidate?.roomId);
+    const createdAt = typeof candidate?.createdAt === 'string' ? candidate.createdAt : '';
+    if (!candidate?.id || !filmScreeningId || !roomId || !createdAt) {
+        return null;
+    }
+    return {
+        id: candidate.id,
+        userEmail: candidate.userEmail ?? '',
+        filmScreeningId,
+        movieTitle: candidate.movieTitle ?? '',
+        roomId,
+        roomName: candidate.roomName,
+        date: candidate.date,
+        seats: normalizeCartSeats(candidate.seats),
+        tickets: normalizeSelectedTicketQuantities(candidate.tickets),
+        createdAt,
+        cartId: candidate.cartId,
+        paymentReservationId: typeof candidate?.paymentReservationId === 'number'
+            ? candidate.paymentReservationId
+            : (typeof candidate?.paymentReservationId !== 'undefined' && !Number.isNaN(Number(candidate.paymentReservationId))
+                ? Number(candidate.paymentReservationId)
+                : undefined),
+    };
+}
 async function deleteReservationOnServerByPaymentId(paymentReservationId) {
     const endpoints = [
-        '/api/admin/deletereservation',
-        '/api/payment/deletereservation',
-        '/api/reservation/delete'
+        '/api/payment_reservation/cancelreservation',
+        '/api/admin/deletereservation'
     ];
     for (const ep of endpoints) {
         try {
@@ -324,15 +615,65 @@ async function handleDeleteReservation(localId) {
             return;
         }
     }
-    // remove local
+    clearSelectedSeats(reservation.filmScreeningId, reservation.seats.map((seat) => seat.seatId));
     items.splice(idx, 1);
     localStorage.setItem(reservationsStorageKey, JSON.stringify(items));
     showReservationMessage('Foglalás törölve.', false);
     renderSavedReservations();
 }
-// expose for inline onclick usage
-// @ts-ignore
-window.handleDeleteReservation = handleDeleteReservation;
+function renderSavedReservations() {
+    const mainSection = document.querySelector('main.page-section');
+    if (!mainSection)
+        return;
+    const email = getCurrentUserEmail().trim();
+    if (!email) {
+        mainSection.innerHTML = `
+            <section class="container py-4">
+                <div class="alert alert-info">Jelentkezz be a foglalásaid megtekintéséhez.</div>
+            </section>
+        `;
+        return;
+    }
+    const reservations = getUserReservations(email);
+    if (!reservations || reservations.length === 0) {
+        mainSection.innerHTML = `
+            <section class="container py-4">
+                <div class="alert alert-info">Nincsenek aktív foglalásaid.</div>
+            </section>
+        `;
+        return;
+    }
+    let content = `
+        <section class="container py-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 mb-0">Aktív foglalásaim</h2>
+                        <a class="btn btn-save-like btn-sm" href="Profile.html">← Vissza a profilra</a>
+                    </div>
+    `;
+    for (const r of reservations) {
+        content += `
+            <div class="mb-3">
+                <h3 class="h6">${r.movieTitle} — ${r.roomName ?? ''}</h3>
+                <p class="text-muted">${r.date ? new Date(r.date).toLocaleString('hu-HU') : ''}</p>
+                ${getTicketSummaryMarkup(r.tickets)}
+                <div>Székek: ${r.seats.map(s => `${s.rowNumber}.${s.seatNumber}`).join(', ')}</div>
+                <div class="text-muted small">Mentve: ${new Date(r.createdAt).toLocaleString('hu-HU')}</div>
+                <div class="text-muted small">Cart id: ${r.cartId ?? '-'}</div>
+                <div class="mt-2">
+                    <button class="btn btn-danger btn-sm" onclick="window.handleDeleteReservation('${r.id}')">Törlés</button>
+                </div>
+            </div>
+        `;
+    }
+    content += `
+                </div>
+            </div>
+        </section>
+    `;
+    mainSection.innerHTML = content;
+}
 function addSeatsToCart(item) {
     const items = getCartItems();
     const existing = items.find((it) => it.filmScreeningId === item.filmScreeningId);
@@ -342,6 +683,19 @@ function addSeatsToCart(item) {
             if (!existingSeatIds.has(s.seatId))
                 existing.seats.push(s);
         }
+        const mergedTickets = new Map();
+        for (const ticket of [...existing.tickets, ...item.tickets]) {
+            const current = mergedTickets.get(ticket.ticketTypeId);
+            if (current) {
+                current.quantity += ticket.quantity;
+            }
+            else {
+                mergedTickets.set(ticket.ticketTypeId, { ...ticket });
+            }
+        }
+        existing.tickets = Array.from(mergedTickets.values()).filter((ticket) => ticket.quantity > 0);
+        existing.roomName = item.roomName ?? existing.roomName;
+        existing.date = item.date ?? existing.date;
     }
     else {
         items.push(item);
@@ -362,28 +716,38 @@ function refreshFloatingCartBadge() {
     badge.textContent = String(count);
     badge.style.display = count > 0 ? 'flex' : 'none';
 }
-function initializeRoomSeatSelection(screeningId) {
+function initializeRoomSeatSelection(screeningId, getSeatSelectionLimit, onSelectionChange) {
     if (!roomDetails) {
         return;
     }
-    const selectedSeatIds = new Set(getSelectedSeatIds(screeningId));
-    const seatButtons = roomDetails.querySelectorAll(".room-seat-button");
+    const seatButtons = roomDetails.querySelectorAll(".room-seat-button[data-seat-id]");
     for (const seatButton of seatButtons) {
         seatButton.addEventListener("click", () => {
+            if (seatButton.disabled) {
+                return;
+            }
             const seatId = Number(seatButton.dataset.seatId);
             if (!seatId) {
                 return;
             }
-            if (selectedSeatIds.has(seatId)) {
-                selectedSeatIds.delete(seatId);
+            const selectedSeatIds = getSelectedSeatIds(screeningId);
+            const isSelected = selectedSeatIds.includes(seatId);
+            const seatSelectionLimit = getSeatSelectionLimit();
+            if (isSelected) {
+                saveSelectedSeatIds(screeningId, selectedSeatIds.filter((id) => id !== seatId));
             }
             else {
-                selectedSeatIds.add(seatId);
+                if (seatSelectionLimit <= 0) {
+                    alert("Előbb válassz jegytípust és darabszámot.");
+                    return;
+                }
+                if (selectedSeatIds.length >= seatSelectionLimit) {
+                    alert('Csak annyi helyet választhatsz, amennyi jegyet beállítottál.');
+                    return;
+                }
+                saveSelectedSeatIds(screeningId, [...selectedSeatIds, seatId]);
             }
-            const isSelected = selectedSeatIds.has(seatId);
-            seatButton.classList.toggle("room-seat-selected", isSelected);
-            seatButton.setAttribute("aria-pressed", isSelected ? "true" : "false");
-            saveSelectedSeatIds(screeningId, Array.from(selectedSeatIds));
+            onSelectionChange();
         });
     }
 }
@@ -420,7 +784,6 @@ function findScreeningById(screeningId) {
             if (screening.filmScreeningId === screeningId) {
                 return {
                     filmScreeningId: screening.filmScreeningId,
-                    movieId: movie.movieId,
                     movieTitle: movie.movieTitle,
                     roomId: screening.roomId,
                     roomName: getRoomLabel(screening.roomId, screening.roomName),
@@ -430,129 +793,6 @@ function findScreeningById(screeningId) {
         }
     }
     return null;
-}
-function getStoredProfiles() {
-    const rawProfiles = localStorage.getItem(userProfilesStorageKey);
-    if (!rawProfiles)
-        return [];
-    try {
-        return JSON.parse(rawProfiles);
-    }
-    catch {
-        return [];
-    }
-}
-function saveStoredProfile(email, fullName, billingAddress) {
-    const profiles = getStoredProfiles();
-    const existingIndex = profiles.findIndex((item) => item.email.toLowerCase() === email.toLowerCase());
-    const existingProfile = existingIndex >= 0 ? profiles[existingIndex] : null;
-    const mergedProfile = {
-        email,
-        fullName: fullName || existingProfile?.fullName || "",
-        billingAddress: billingAddress || existingProfile?.billingAddress || "",
-    };
-    if (existingIndex >= 0) {
-        profiles[existingIndex] = mergedProfile;
-    }
-    else {
-        profiles.push(mergedProfile);
-    }
-    localStorage.setItem(userProfilesStorageKey, JSON.stringify(profiles));
-}
-function updateStoredProfile(oldEmail, newEmail, fullName, billingAddress) {
-    const profiles = getStoredProfiles().filter((item) => item.email.toLowerCase() !== oldEmail.toLowerCase());
-    localStorage.setItem(userProfilesStorageKey, JSON.stringify(profiles));
-    saveStoredProfile(newEmail, fullName, billingAddress);
-}
-function getStoredProfile(email) {
-    const profiles = getStoredProfiles();
-    return profiles.find((item) => item.email.toLowerCase() === email.toLowerCase()) || null;
-}
-function setCurrentUserEmail(email) {
-    if (email) {
-        localStorage.setItem(currentUserStorageKey, email);
-        return;
-    }
-    localStorage.removeItem(currentUserStorageKey);
-}
-function getCurrentUserEmail() {
-    return localStorage.getItem(currentUserStorageKey) || "";
-}
-function updateFloatingCartButton() {
-    const existingButton = document.getElementById(cartButtonId);
-    if (existingButton) {
-        refreshFloatingCartBadge();
-        return;
-    }
-    const cartButton = document.createElement("button");
-    cartButton.id = cartButtonId;
-    cartButton.className = "floating-cart-button";
-    cartButton.type = "button";
-    cartButton.setAttribute("aria-label", "Kosár megnyitása");
-    cartButton.textContent = "🛒";
-    cartButton.addEventListener("click", () => {
-        window.location.href = "Kosar.html";
-    });
-    document.body.appendChild(cartButton);
-    refreshFloatingCartBadge();
-}
-function applyLoginState() {
-    const email = getCurrentUserEmail().trim();
-    const currentPage = window.location.pathname.split("/").pop() || "Cinema.html";
-    const navProfileArea = document.getElementById("navProfileArea");
-    const authLink = navProfileArea?.querySelector('a[href="Bejelentkezes.html"]');
-    if (authLink) {
-        authLink.href = email ? "Profile.html" : "Bejelentkezes.html";
-        authLink.textContent = email ? "Profil" : "Bejelentkezés/Regisztráció";
-    }
-    if (email && currentPage === "Bejelentkezes.html") {
-        window.location.replace("Profile.html");
-        return;
-    }
-    if (!email && currentPage === "Profile.html") {
-        window.location.replace("Bejelentkezes.html");
-        return;
-    }
-    updateFloatingCartButton();
-}
-function fillProfileFields(email, fullName, billingAddress) {
-    const emailField = document.getElementById("profileEmail");
-    const fullNameField = document.getElementById("profileFullName");
-    const billingField = document.getElementById("profileBilling");
-    if (!emailField || !fullNameField || !billingField)
-        return;
-    emailField.value = email;
-    fullNameField.value = fullName;
-    billingField.value = billingAddress;
-}
-function showProfileMessage(message, isError) {
-    const profileMessage = document.getElementById("profileMessage");
-    if (!profileMessage)
-        return;
-    profileMessage.textContent = message;
-    profileMessage.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
-}
-async function handleProfileSave(event) {
-    event.preventDefault();
-    const oldEmail = getCurrentUserEmail();
-    const emailField = document.getElementById("profileEmail");
-    const fullNameField = document.getElementById("profileFullName");
-    const billingField = document.getElementById("profileBilling");
-    if (!oldEmail || !emailField || !fullNameField || !billingField) {
-        showProfileMessage("A profil mentése most nem sikerült.", true);
-        return;
-    }
-    const newEmail = emailField.value.trim();
-    const fullName = fullNameField.value.trim();
-    const billingAddress = billingField.value.trim();
-    if (!newEmail) {
-        showProfileMessage("Az email cím megadása kötelező.", true);
-        return;
-    }
-    updateStoredProfile(oldEmail, newEmail, fullName, billingAddress);
-    setCurrentUserEmail(newEmail);
-    fillProfileFields(newEmail, fullName, billingAddress);
-    showProfileMessage("A profil adatai elmentve.", false);
 }
 // TICKETS
 async function fetchJegyekList() {
@@ -566,17 +806,22 @@ async function fetchJegyekList() {
     if (payload && Array.isArray(payload.value)) {
         return payload.value;
     }
-    // Try common properties
     if (payload && Array.isArray(payload.data)) {
         return payload.data;
     }
     throw new Error('Váratlan API válasz: jegyek lista nem található.');
 }
+async function ensureTicketTypesLoaded() {
+    if (allTicketTypes.length === 0) {
+        allTicketTypes = await fetchJegyekList();
+    }
+    return allTicketTypes;
+}
 async function renderjegyekTable() {
     if (!jegyekTbody)
         return;
     try {
-        const jegyek = await fetchJegyekList();
+        const jegyek = await ensureTicketTypesLoaded();
         jegyekTbody.innerHTML = "";
         if (jegyek.length === 0) {
             jegyekTbody.innerHTML = `
@@ -607,6 +852,54 @@ async function renderjegyekTable() {
             `;
         }
     }
+}
+function renderRoomTicketSelectionMarkup(availableTickets, selectedTickets) {
+    if (availableTickets.length === 0) {
+        return `
+            <div class="alert alert-warning mb-0">
+                Ehhez a teremhez most nincs elérhető jegytípus.
+            </div>
+        `;
+    }
+    const selectedCounts = new Map(selectedTickets.map((ticket) => [ticket.ticketTypeId, ticket.quantity]));
+    return `
+        <div class="room-ticket-picker">
+            <div class="room-ticket-picker-header">
+                <h2 class="room-ticket-picker-title">Jegyek kiválasztása</h2>
+                <p class="room-ticket-picker-lead">Válaszd ki, melyik jegytípusból mennyit szeretnél, és utána pontosan ugyanennyi széket tudsz kijelölni.</p>
+            </div>
+            <div class="room-ticket-counter-grid">
+                ${availableTickets.map((ticket) => {
+        const ticketTypeId = getTicketTypeId(ticket);
+        if (ticketTypeId === null) {
+            return '';
+        }
+        const quantity = selectedCounts.get(ticketTypeId) ?? 0;
+        const ticketName = getTicketName(ticket);
+        const ticketPrice = getTicketPrice(ticket);
+        return `
+                        <article class="room-ticket-counter-card">
+                            <div class="room-ticket-counter-top">
+                                <div class="room-ticket-counter-title">${ticketName}</div>
+                                <div class="room-ticket-stepper" role="group" aria-label="${ticketName} darabszám">
+                                    <div class="room-ticket-stepper-controls">
+                                        <button type="button" class="room-ticket-stepper-btn" data-ticket-action="increment" data-ticket-type-id="${ticketTypeId}" aria-label="${ticketName} mennyiség növelése"></button>
+                                        <button type="button" class="room-ticket-stepper-btn" data-ticket-action="decrement" data-ticket-type-id="${ticketTypeId}" aria-label="${ticketName} mennyiség csökkentése"></button>
+                                    </div>
+                                    <span id="roomTicketCount-${ticketTypeId}" class="room-ticket-stepper-value">${quantity}</span>
+                                </div>
+                            </div>
+                            <div class="room-ticket-counter-price">${ticketPrice !== null ? `${formatPrice(ticketPrice)}/db` : 'Ár nem elérhető'}</div>
+                        </article>
+                    `;
+    }).join('')}
+            </div>
+            <div class="room-ticket-selection-footer">
+                <div id="roomTicketSelectionSummary" class="room-ticket-selection-summary"></div>
+                <div id="roomSeatSelectionSummary" class="room-ticket-selection-summary"></div>
+            </div>
+        </div>
+    `;
 }
 // MOVIES
 async function fetchMoviesList() {
@@ -818,7 +1111,7 @@ async function renderMoviesList(moviesToRender) {
                     <p><strong>Rendező:</strong> ${movie.director}</p>
                     <p><strong>Időtartam:</strong> ${movie.duration} perc</p>
                     <p><strong>Műfaj:</strong> ${movie.genre}</p>
-                    <p><strong>Leírás:</strong> ${movie.description}</p>
+                    <p><strong>Leírás:</strong> ${getMovieDescription(movie)}</p>
                     <div class="screenings-buttons">
                         ${getScreeningsButtonsHtml(movie.screenings)}
                     </div>
@@ -894,16 +1187,22 @@ function renderCartPage() {
             <div class="mb-3">
                 <h3 class="h6">${item.movieTitle} — ${item.roomName ?? ''}</h3>
                 <p class="text-muted">${item.date ? new Date(item.date).toLocaleString('hu-HU') : ''}</p>
+                ${getTicketSummaryMarkup(item.tickets)}
                 <div>Székek: ${item.seats.map(s => `${s.rowNumber}.${s.seatNumber}`).join(', ')}</div>
             </div>
         `;
     }
     const totalSeats = items.reduce((sum, it) => sum + (it.seats?.length ?? 0), 0);
+    const totalPrice = items.reduce((sum, item) => {
+        const itemTotal = getTicketSelectionsTotalPrice(item.tickets);
+        return sum + (itemTotal ?? 0);
+    }, 0);
     const storedCartId = localStorage.getItem('paymentCartId') || '';
     content += `
                     <hr />
                     <div class="d-flex justify-content-between align-items-center">
-                        <div>Összesen: <strong>${totalSeats} db szék</strong>
+                        <div>Összesen: <strong>${totalSeats} db jegy / szék</strong>
+                        <div class="text-muted small">Végösszeg: ${formatPrice(totalPrice)}</div>
                         ${storedCartId ? `<div class="text-muted small">Cart id: ${storedCartId}</div>` : `<div class="text-danger small">Cart id missing</div>`}
                         </div>
                         <div class="cart-actions horizontal-symmetric">
@@ -920,6 +1219,7 @@ function renderCartPage() {
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
             saveCartItems([]);
+            localStorage.removeItem('paymentCartId');
             renderCartPage();
         });
     }
@@ -950,10 +1250,12 @@ function renderCartPage() {
                     roomName: it.roomName,
                     date: it.date,
                     seats: it.seats,
+                    tickets: it.tickets,
                     createdAt: new Date().toISOString(),
                     cartId,
                 };
                 saveReservation(saved);
+                clearSelectedSeats(saved.filmScreeningId, saved.seats.map((seat) => seat.seatId));
                 try {
                     const serverId = await createReservationOnServer(saved);
                     if (serverId && typeof serverId === 'number') {
@@ -970,16 +1272,14 @@ function renderCartPage() {
                 }
             }
             saveCartItems([]);
+            localStorage.removeItem('paymentCartId');
             const flash = anySyncSuccess && !anySyncFail
                 ? { message: 'Foglalás sikeresen elmentve és szinkronizálva.', isError: false }
                 : (anySyncSuccess && anySyncFail
                     ? { message: 'Foglalás elmentve, de a szerverrel való szinkronizálás részben sikertelen volt.', isError: true }
                     : { message: 'Foglalás elmentve helyben, nem sikerült szinkronizálni a szerverrel.', isError: true });
-            try {
-                localStorage.setItem('cinemaReservationFlash', JSON.stringify(flash));
-            }
-            catch (err) { }
-            window.location.href = 'Foglalasok.html';
+            renderCartPage();
+            showReservationMessage(flash.message, flash.isError);
         });
     }
 }
@@ -1024,7 +1324,6 @@ async function renderRoomPage() {
     const formattedDate = new Date(selectedScreening.date).toLocaleString("hu-HU");
     const bookingTarget = getCurrentUserEmail().trim() ? "Kosar.html" : "Bejelentkezes.html";
     const bookingLabel = getCurrentUserEmail().trim() ? "Kosárba" : "Bejelentkezés a kosárhoz";
-    const selectedSeatIds = new Set(getSelectedSeatIds(selectedScreening.filmScreeningId));
     let seats = [];
     try {
         seats = await fetchSeatsForRoom(selectedScreening.roomId, selectedScreening.filmScreeningId);
@@ -1033,7 +1332,15 @@ async function renderRoomPage() {
         console.error(error);
         seats = room?.seats ?? [];
     }
+    seats = mergeReservedSeatsForScreening(seats, selectedScreening.filmScreeningId);
+    const ticketTypes = await ensureTicketTypesLoaded();
+    const availableTickets = getAllowedTicketsForRoom(roomName, ticketTypes);
+    const availableSeatCount = seats.filter((seat) => !seat.isReserved).length;
+    let selectedTickets = clampSelectedTicketQuantities(getSelectedTicketQuantities(selectedScreening.filmScreeningId, availableTickets), availableSeatCount);
+    saveSelectedTicketQuantities(selectedScreening.filmScreeningId, selectedTickets);
+    const selectedSeatIds = getAvailableSelectedSeatIds(selectedScreening.filmScreeningId, seats, getSelectedTicketQuantityTotal(selectedTickets));
     const seatsMarkup = renderRoomSeatsMarkup(seats, selectedSeatIds);
+    const ticketsMarkup = renderRoomTicketSelectionMarkup(availableTickets, selectedTickets);
     roomDetails.innerHTML = `
         <section class="container py-4">
             <div class="card bg-dark text-light border-secondary room-details-card">
@@ -1041,6 +1348,9 @@ async function renderRoomPage() {
                     <h1 class="h3 mb-3">${roomName}</h1>
                     <p class="mb-2"><strong>Film:</strong> ${selectedScreening.movieTitle}</p>
                     <p class="mb-4"><strong>Időpont:</strong> ${formattedDate}</p>
+                    <div class="mb-4">
+                        ${ticketsMarkup}
+                    </div>
                     <div class="mb-4 room-seat-section">
                         <h2 class="h5 mb-3">Székek</h2>
                         ${seatsMarkup}
@@ -1052,13 +1362,122 @@ async function renderRoomPage() {
             </div>
         </section>
     `;
-    initializeRoomSeatSelection(selectedScreening.filmScreeningId);
     const addToCartButton = document.getElementById("addToCartButton");
+    const roomTicketSummary = document.getElementById('roomTicketSelectionSummary');
+    const roomSeatSummary = document.getElementById('roomSeatSelectionSummary');
+    const updateRoomSelectionState = () => {
+        selectedTickets = clampSelectedTicketQuantities(getSelectedTicketQuantities(selectedScreening.filmScreeningId, availableTickets), availableSeatCount);
+        saveSelectedTicketQuantities(selectedScreening.filmScreeningId, selectedTickets);
+        const totalTickets = getSelectedTicketQuantityTotal(selectedTickets);
+        const limitedSelectedSeatIds = getAvailableSelectedSeatIds(selectedScreening.filmScreeningId, seats, totalTickets);
+        for (const ticket of availableTickets) {
+            const ticketTypeId = getTicketTypeId(ticket);
+            if (ticketTypeId === null) {
+                continue;
+            }
+            const currentQuantity = selectedTickets.find((selectedTicket) => selectedTicket.ticketTypeId === ticketTypeId)?.quantity ?? 0;
+            const decrementButton = roomDetails.querySelector(`[data-ticket-action="decrement"][data-ticket-type-id="${ticketTypeId}"]`);
+            const incrementButton = roomDetails.querySelector(`[data-ticket-action="increment"][data-ticket-type-id="${ticketTypeId}"]`);
+            const counterValue = document.getElementById(`roomTicketCount-${ticketTypeId}`);
+            if (counterValue) {
+                counterValue.textContent = String(currentQuantity);
+            }
+            if (decrementButton) {
+                decrementButton.disabled = currentQuantity <= 0;
+            }
+            if (incrementButton) {
+                incrementButton.disabled = totalTickets >= availableSeatCount || availableSeatCount === 0;
+            }
+        }
+        const seatButtons = roomDetails.querySelectorAll('.room-seat-button[data-seat-id]');
+        for (const seatButton of seatButtons) {
+            const seatId = Number(seatButton.dataset.seatId);
+            const isSelected = limitedSelectedSeatIds.has(seatId);
+            const isSeatSelectionEnabled = totalTickets > 0;
+            seatButton.disabled = !isSeatSelectionEnabled;
+            seatButton.classList.toggle('room-seat-disabled', !isSeatSelectionEnabled);
+            seatButton.classList.toggle('room-seat-selected', isSelected);
+            seatButton.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+            seatButton.setAttribute('aria-disabled', seatButton.disabled ? 'true' : 'false');
+        }
+        if (roomTicketSummary) {
+            roomTicketSummary.textContent = totalTickets > 0
+                ? `Kiválasztott jegyek: ${getTicketSummaryText(selectedTickets)}`
+                : 'Előbb válassz jegytípust és darabszámot.';
+        }
+        if (roomSeatSummary) {
+            roomSeatSummary.textContent = totalTickets > 0
+                ? `Kiválasztott székek: ${limitedSelectedSeatIds.size}/${totalTickets}`
+                : 'Jegyválasztás után tudsz székeket kijelölni.';
+        }
+        if (addToCartButton) {
+            addToCartButton.disabled = totalTickets === 0 || limitedSelectedSeatIds.size !== totalTickets;
+        }
+    };
+    initializeRoomSeatSelection(selectedScreening.filmScreeningId, () => getSelectedTicketQuantityTotal(selectedTickets), updateRoomSelectionState);
+    const ticketStepperButtons = roomDetails.querySelectorAll('[data-ticket-action][data-ticket-type-id]');
+    for (const button of ticketStepperButtons) {
+        button.addEventListener('click', () => {
+            const ticketTypeId = Number(button.dataset.ticketTypeId);
+            const ticketAction = button.dataset.ticketAction;
+            if (!ticketTypeId || !ticketAction) {
+                return;
+            }
+            const currentQuantities = new Map(selectedTickets.map((ticket) => [ticket.ticketTypeId, ticket.quantity]));
+            const currentQuantity = currentQuantities.get(ticketTypeId) ?? 0;
+            const currentTotal = getSelectedTicketQuantityTotal(selectedTickets);
+            if (ticketAction === 'increment') {
+                if (currentTotal >= availableSeatCount) {
+                    return;
+                }
+                currentQuantities.set(ticketTypeId, currentQuantity + 1);
+            }
+            if (ticketAction === 'decrement') {
+                if (currentQuantity <= 1) {
+                    currentQuantities.delete(ticketTypeId);
+                }
+                else {
+                    currentQuantities.set(ticketTypeId, currentQuantity - 1);
+                }
+            }
+            selectedTickets = availableTickets
+                .map((ticket) => {
+                const nextTicketTypeId = getTicketTypeId(ticket);
+                if (nextTicketTypeId === null) {
+                    return null;
+                }
+                const quantity = currentQuantities.get(nextTicketTypeId) ?? 0;
+                if (quantity <= 0) {
+                    return null;
+                }
+                return {
+                    ticketTypeId: nextTicketTypeId,
+                    ticketName: getTicketName(ticket),
+                    unitPrice: getTicketPrice(ticket),
+                    quantity,
+                };
+            })
+                .filter((ticket) => Boolean(ticket));
+            saveSelectedTicketQuantities(selectedScreening.filmScreeningId, selectedTickets);
+            updateRoomSelectionState();
+        });
+    }
+    updateRoomSelectionState();
     if (addToCartButton) {
         addToCartButton.addEventListener("click", () => {
             const selectedIds = getSelectedSeatIds(selectedScreening.filmScreeningId);
             if (!selectedIds || selectedIds.length === 0) {
                 alert("Nincsenek kiválasztott székek.");
+                return;
+            }
+            const ticketsForCart = getSelectedTicketQuantities(selectedScreening.filmScreeningId, availableTickets);
+            const totalSelectedTickets = getSelectedTicketQuantityTotal(ticketsForCart);
+            if (totalSelectedTickets === 0) {
+                alert('Előbb válassz jegytípust és darabszámot.');
+                return;
+            }
+            if (selectedIds.length !== totalSelectedTickets) {
+                alert('A kiválasztott székek száma meg kell egyezzen a kiválasztott jegyek számával.');
                 return;
             }
             const seatsForCart = seats
@@ -1071,61 +1490,140 @@ async function renderRoomPage() {
                 roomName: selectedScreening.roomName,
                 date: selectedScreening.date,
                 seats: seatsForCart,
+                tickets: ticketsForCart,
             };
             addSeatsToCart(cartItem);
+            clearSelectedSeats(selectedScreening.filmScreeningId, selectedIds);
+            clearSelectedTicketQuantities(selectedScreening.filmScreeningId);
+            void renderRoomPage();
+            showReservationMessage(`A kiválasztott jegyek bekerültek a kosárba. Tovább: ${bookingTarget}`, false);
         });
     }
 }
-// SCREENINGS
-async function fetchScreeningsList() {
-    const response = await fetch(`${API_BASE}/api/cinema/getallscreenings`);
-    if (!response.ok)
-        throw new Error("Nem sikerült lekérni a vetítéseket.");
-    return await response.json();
-}
-async function renderScreeningsTable() {
-    if (!screeningsTbody)
-        return;
-    try {
-        const [screenings, rooms] = await Promise.all([fetchScreeningsList(), fetchRoomsList()]);
-        allRooms = rooms;
-        screeningsTbody.innerHTML = "";
-        if (screenings.length === 0) {
-            screeningsTbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center text-muted">Nincs megjeleníthető vetítés.</td>
-                </tr>
-            `;
-            return;
-        }
-        for (const screening of screenings) {
-            const row = document.createElement("tr");
-            const date = new Date(screening.date);
-            const formattedDate = date.toLocaleString('hu-HU');
-            const roomName = getRoomLabel(screening.roomId, screening.roomName);
-            row.innerHTML = `
-                <td>${screening.movieTitle}</td>
-                <td>${roomName}</td>
-                <td>${formattedDate}</td>
-                <td>
-                    <button class="btn btn-sm btn-success">Foglalás</button>
-                </td>
-            `;
-            screeningsTbody.appendChild(row);
-        }
-    }
-    catch (error) {
-        console.error(error);
-        if (screeningsTbody) {
-            screeningsTbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center text-danger">Hiba történt a vetítések betöltésekor.</td>
-                </tr>
-            `;
-        }
-    }
-}
 // AUTHENTICATION
+function getStoredProfiles() {
+    const rawProfiles = localStorage.getItem(userProfilesStorageKey);
+    if (!rawProfiles)
+        return [];
+    try {
+        return JSON.parse(rawProfiles);
+    }
+    catch {
+        return [];
+    }
+}
+function saveStoredProfile(email, fullName, billingAddress) {
+    const profiles = getStoredProfiles();
+    const existingIndex = profiles.findIndex((item) => item.email.toLowerCase() === email.toLowerCase());
+    const existingProfile = existingIndex >= 0 ? profiles[existingIndex] : null;
+    const mergedProfile = {
+        email,
+        fullName: fullName || existingProfile?.fullName || "",
+        billingAddress: billingAddress || existingProfile?.billingAddress || "",
+    };
+    if (existingIndex >= 0) {
+        profiles[existingIndex] = mergedProfile;
+    }
+    else {
+        profiles.push(mergedProfile);
+    }
+    localStorage.setItem(userProfilesStorageKey, JSON.stringify(profiles));
+}
+function updateStoredProfile(oldEmail, newEmail, fullName, billingAddress) {
+    const profiles = getStoredProfiles().filter((item) => item.email.toLowerCase() !== oldEmail.toLowerCase());
+    localStorage.setItem(userProfilesStorageKey, JSON.stringify(profiles));
+    saveStoredProfile(newEmail, fullName, billingAddress);
+}
+function getStoredProfile(email) {
+    const profiles = getStoredProfiles();
+    return profiles.find((item) => item.email.toLowerCase() === email.toLowerCase()) || null;
+}
+function setCurrentUserEmail(email) {
+    if (email) {
+        localStorage.setItem(currentUserStorageKey, email);
+        return;
+    }
+    localStorage.removeItem(currentUserStorageKey);
+}
+function getCurrentUserEmail() {
+    return localStorage.getItem(currentUserStorageKey) || "";
+}
+function updateFloatingCartButton() {
+    const existingButton = document.getElementById(cartButtonId);
+    if (existingButton) {
+        refreshFloatingCartBadge();
+        return;
+    }
+    const cartButton = document.createElement("button");
+    cartButton.id = cartButtonId;
+    cartButton.className = "floating-cart-button";
+    cartButton.type = "button";
+    cartButton.setAttribute("aria-label", "Kosár megnyitása");
+    cartButton.textContent = "🛒";
+    cartButton.addEventListener("click", () => {
+        window.location.href = "Kosar.html";
+    });
+    document.body.appendChild(cartButton);
+    refreshFloatingCartBadge();
+}
+function applyLoginState() {
+    const email = getCurrentUserEmail().trim();
+    const currentPage = window.location.pathname.split("/").pop() || "Cinema.html";
+    const navProfileArea = document.getElementById("navProfileArea");
+    const authLink = navProfileArea?.querySelector('a[href="Bejelentkezes.html"]');
+    if (authLink) {
+        authLink.href = email ? "Profile.html" : "Bejelentkezes.html";
+        authLink.textContent = email ? "Profil" : "Bejelentkezés/Regisztráció";
+    }
+    if (email && currentPage === "Bejelentkezes.html") {
+        window.location.replace("Profile.html");
+        return;
+    }
+    if (!email && currentPage === "Profile.html") {
+        window.location.replace("Bejelentkezes.html");
+        return;
+    }
+    updateFloatingCartButton();
+}
+function fillProfileFields(email, fullName, billingAddress) {
+    const emailField = document.getElementById("profileEmail");
+    const fullNameField = document.getElementById("profileFullName");
+    const billingField = document.getElementById("profileBilling");
+    if (!emailField || !fullNameField || !billingField)
+        return;
+    emailField.value = email;
+    fullNameField.value = fullName;
+    billingField.value = billingAddress;
+}
+function showProfileMessage(message, isError) {
+    const profileMessage = document.getElementById("profileMessage");
+    if (!profileMessage)
+        return;
+    profileMessage.textContent = message;
+    profileMessage.className = isError ? "alert alert-danger d-block" : "alert alert-success d-block";
+}
+async function handleProfileSave(event) {
+    event.preventDefault();
+    const oldEmail = getCurrentUserEmail();
+    const emailField = document.getElementById("profileEmail");
+    const fullNameField = document.getElementById("profileFullName");
+    const billingField = document.getElementById("profileBilling");
+    if (!oldEmail || !emailField || !fullNameField || !billingField) {
+        showProfileMessage("A profil mentése most nem sikerült.", true);
+        return;
+    }
+    const newEmail = emailField.value.trim();
+    const fullName = fullNameField.value.trim();
+    const billingAddress = billingField.value.trim();
+    if (!newEmail) {
+        showProfileMessage("Az email cím megadása kötelező.", true);
+        return;
+    }
+    updateStoredProfile(oldEmail, newEmail, fullName, billingAddress);
+    setCurrentUserEmail(newEmail);
+    fillProfileFields(newEmail, fullName, billingAddress);
+    showProfileMessage("A profil adatai elmentve.", false);
+}
 async function handleLoginSubmit(event) {
     event.preventDefault();
     const emailInput = document.getElementById("loginEmail");
@@ -1285,14 +1783,14 @@ async function loadProfileData() {
         fillProfileFields(storedEmail, "", "");
     }
 }
-// @ts-ignore
-window.handleLoginSubmit = handleLoginSubmit;
-// @ts-ignore
-window.handleRegisterSubmit = handleRegisterSubmit;
-// @ts-ignore
-window.handleLogout = handleLogout;
-// @ts-ignore
-window.handleProfileSave = handleProfileSave;
+Object.assign(window, {
+    handleDeleteReservation,
+    handleLoginSubmit,
+    handleRegisterSubmit,
+    handleLogout,
+    handleProfileSave,
+    renderSavedReservations,
+});
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', async () => {
     applyLoginState();
@@ -1310,9 +1808,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (roomDetails) {
         await renderRoomPage();
     }
-    if (screeningsTbody) {
-        renderScreeningsTable();
-    }
     const currentPageName = window.location.pathname.split("/").pop() || "";
     if (currentPageName.toLowerCase() === "kosar.html") {
         renderCartPage();
@@ -1322,68 +1817,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     await loadProfileData();
 });
-function renderSavedReservations() {
-    const mainSection = document.querySelector('main.page-section');
-    if (!mainSection)
-        return;
-    // show flash message from previous action
-    try {
-        const rawFlash = localStorage.getItem('cinemaReservationFlash');
-        if (rawFlash) {
-            const f = JSON.parse(rawFlash);
-            if (f && f.message)
-                showReservationMessage(f.message, !!f.isError);
-            localStorage.removeItem('cinemaReservationFlash');
-        }
-    }
-    catch (err) { }
-    const email = getCurrentUserEmail().trim();
-    if (!email) {
-        mainSection.innerHTML = `
-            <section class="container py-4">
-                <div class="alert alert-info">Jelentkezz be a foglalásaid megtekintéséhez.</div>
-            </section>
-        `;
-        return;
-    }
-    const reservations = getUserReservations(email);
-    if (!reservations || reservations.length === 0) {
-        mainSection.innerHTML = `
-            <section class="container py-4">
-                <div class="alert alert-info">Nincsenek aktív foglalásaid.</div>
-            </section>
-        `;
-        return;
-    }
-    let content = `
-        <section class="container py-4">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 class="h5 mb-0">Aktív foglalásaim</h2>
-                        <a class="btn btn-save-like btn-sm" href="Profile.html">← Vissza a profilra</a>
-                    </div>
-    `;
-    for (const r of reservations) {
-        content += `
-            <div class="mb-3">
-                <h3 class="h6">${r.movieTitle} — ${r.roomName ?? ''}</h3>
-                <p class="text-muted">${r.date ? new Date(r.date).toLocaleString('hu-HU') : ''}</p>
-                <div>Székek: ${r.seats.map(s => `${s.rowNumber}.${s.seatNumber}`).join(', ')}</div>
-                <div class="text-muted small">Mentve: ${new Date(r.createdAt).toLocaleString('hu-HU')}</div>
-                <div class="text-muted small">Cart id: ${r.cartId ?? '-'}</div>
-                <div class="mt-2">
-                    <button class="btn btn-danger btn-sm" onclick="window.handleDeleteReservation('${r.id}')">Törlés</button>
-                </div>
-            </div>
-        `;
-    }
-    content += `
-                </div>
-            </div>
-        </section>
-    `;
-    mainSection.innerHTML = content;
-}
-// @ts-ignore
-window.renderSavedReservations = renderSavedReservations;
