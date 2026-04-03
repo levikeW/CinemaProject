@@ -423,8 +423,8 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                await _adminModel.UploadImage(dto);
-                return Ok();
+               var res =  await _adminModel.UploadImage(dto);
+                return Ok(res);
             }
             catch (InvalidOperationException e)
             {

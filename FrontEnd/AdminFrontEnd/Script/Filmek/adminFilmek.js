@@ -136,6 +136,99 @@ async function Admin_handleMovieUpdate(event) {
         Admin_showMessage("adminMovieEditMessage", error.message, true);
     }
 }
+// ===================== IMAGES =====================
+async function Admin_deleteImage(imageId) {
+    await Admin_apiDelete(`/api/admin/deleteimage?imageId=${imageId}`);
+}
+async function Admin_handleImageUpload(event) {
+    event?.preventDefault();
+    try {
+        const fileInput = document.getElementById("imageFile");
+        const base64Textarea = document.getElementById("imageContentBase64");
+        const previewImg = document.getElementById("imagePreview");
+        const movieImageIdInput = document.getElementById("movieImageId");
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            throw new Error("Válassz ki egy képfájlt.");
+        }
+        const file = fileInput.files[0];
+        const base64Content = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const result = reader.result;
+                const base64 = result.includes(",") ? result.split(",")[1] : result;
+                resolve(base64);
+            };
+            reader.onerror = () => reject(new Error("Nem sikerült a kép beolvasása."));
+            reader.readAsDataURL(file);
+        });
+        if (base64Textarea) {
+            base64Textarea.value = base64Content;
+        }
+        if (previewImg) {
+            previewImg.src = `data:${file.type};base64,${base64Content}`;
+            previewImg.style.display = "block";
+        }
+        const dto = {
+            imageContent: base64Content
+        };
+        const result = await Admin_apiPost("/api/admin/uploadimage", dto);
+        if (!result || typeof result.imageId === "undefined") {
+            throw new Error("A szerver nem adott vissza imageId értéket.");
+        }
+        if (movieImageIdInput) {
+            movieImageIdInput.value = String(result.imageId ?? 0);
+        }
+        Admin_showMessage("adminImageMessage", `Kép feltöltve. Image ID: ${result.imageId}`);
+    }
+    catch (error) {
+        console.error(error);
+        Admin_showMessage("adminImageMessage", error.message, true);
+    }
+}
+async function Admin_handleImageDelete(event) {
+    event?.preventDefault();
+    try {
+        const deleteImageIdInput = document.getElementById("deleteImageId");
+        const movieImageIdInput = document.getElementById("movieImageId");
+        const editMovieImageIdInput = document.getElementById("editMovieImageId");
+        const previewImg = document.getElementById("imagePreview");
+        const base64Textarea = document.getElementById("imageContentBase64");
+        const fileInput = document.getElementById("imageFile");
+        const imageIdValue = deleteImageIdInput?.value.trim() ||
+            editMovieImageIdInput?.value.trim() ||
+            movieImageIdInput?.value.trim() ||
+            "";
+        if (!imageIdValue) {
+            throw new Error("Nincs megadva Image ID.");
+        }
+        const imageId = Number(imageIdValue);
+        if (!imageId || isNaN(imageId)) {
+            throw new Error("Az Image ID nem érvényes.");
+        }
+        if (!confirm("Biztosan törlöd a képet?"))
+            return;
+        await Admin_deleteImage(imageId);
+        if (deleteImageIdInput)
+            deleteImageIdInput.value = "";
+        if (movieImageIdInput)
+            movieImageIdInput.value = "";
+        if (editMovieImageIdInput)
+            editMovieImageIdInput.value = "";
+        if (base64Textarea)
+            base64Textarea.value = "";
+        if (fileInput)
+            fileInput.value = "";
+        if (previewImg) {
+            previewImg.src = "";
+            previewImg.style.display = "none";
+        }
+        Admin_showMessage("adminImageMessage", "Kép törölve.");
+    }
+    catch (error) {
+        console.error(error);
+        Admin_showMessage("adminImageMessage", error.message, true);
+    }
+}
 // ===================== WINDOW EXPORT =====================
 // @ts-ignore
 window.Admin_handleMovieCreate = Admin_handleMovieCreate;
@@ -147,6 +240,10 @@ window.Admin_removeMovie = Admin_removeMovie;
 window.Admin_editMovie = Admin_editMovie;
 // @ts-ignore
 window.Admin_loadMovieImage = Admin_loadMovieImage;
+// @ts-ignore
+window.Admin_handleImageUpload = Admin_handleImageUpload;
+// @ts-ignore
+window.Admin_handleImageDelete = Admin_handleImageDelete;
 // ===================== INIT =====================
 document.addEventListener("DOMContentLoaded", async () => {
     try {
