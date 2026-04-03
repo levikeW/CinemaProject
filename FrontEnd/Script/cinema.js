@@ -14,6 +14,7 @@ let allRooms = [];
 let allCategories = [];
 let allTicketTypes = [];
 const currentUserStorageKey = "cinemaCurrentUserEmail";
+const currentUserIdStorageKey = "cinemaCurrentUserId";
 const userProfilesStorageKey = "cinemaUserProfiles";
 const cartButtonId = "floatingCartButton";
 const selectedScreeningStorageKey = "cinemaSelectedScreening";
@@ -305,10 +306,13 @@ function saveReservation(reservation) {
     items.push(reservation);
     localStorage.setItem(reservationsStorageKey, JSON.stringify(items));
 }
+function isReservationSynced(reservation) {
+    return typeof reservation.paymentReservationId === 'number' && reservation.paymentReservationId > 0;
+}
 function getUserReservations(email) {
     if (!email)
         return [];
-    return getAllSavedReservations().filter(r => (r.userEmail || "").toLowerCase() === email.toLowerCase());
+    return getAllSavedReservations().filter(r => (r.userEmail || "").toLowerCase() === email.toLowerCase() && isReservationSynced(r));
 }
 function getReservedSeatIdsForScreening(screeningId) {
     const reservedSeatIds = new Set();
@@ -321,7 +325,7 @@ function getReservedSeatIdsForScreening(screeningId) {
         }
     }
     for (const reservation of getAllSavedReservations()) {
-        if (reservation.filmScreeningId !== screeningId) {
+        if (!isReservationSynced(reservation) || reservation.filmScreeningId !== screeningId) {
             continue;
         }
         for (const seat of reservation.seats) {
@@ -392,45 +396,166 @@ function updateSavedReservation(reservation) {
         localStorage.setItem(reservationsStorageKey, JSON.stringify(items));
     }
 }
-async function createReservationOnServer(reservation) {
-    const endpoints = [
-        '/api/payment/newreservation',
-        '/api/admin/newreservation',
-        '/api/reservation/new'
-    ];
-    for (const ep of endpoints) {
-        try {
-            const response = await fetch(`${API_BASE}${ep}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    cartId: reservation.cartId,
-                    filmScreeningId: reservation.filmScreeningId,
-                    amount: getSelectedTicketQuantityTotal(reservation.tickets) || reservation.seats?.length || 0,
-                    date: reservation.date,
-                    seats: reservation.seats,
-                    ticketSelections: reservation.tickets,
-                    movieTitle: reservation.movieTitle,
-                    userEmail: reservation.userEmail,
-                })
-            });
-            if (!response.ok) {
-                continue;
-            }
-            const payload = await response.json().catch(() => null);
-            if (!payload)
-                return null;
-            const id = (payload.paymentReservationId ?? payload.id ?? payload.reservationId);
-            if (typeof id === 'number')
-                return id;
-            return null;
-        }
-        catch (err) {
-            continue;
-        }
+function parseNumericId(value) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+        return value;
+    }
+    if (typeof value === 'string') {
+        const normalized = Number(value);
+        return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
     }
     return null;
+}
+function getCurrentUserId() {
+    return parseNumericId(localStorage.getItem(currentUserIdStorageKey));
+}
+function setCurrentUserId(userId) {
+    if (userId && userId > 0) {
+        localStorage.setItem(currentUserIdStorageKey, String(userId));
+        return;
+    }
+    localStorage.removeItem(currentUserIdStorageKey);
+}
+async function fetchAuthenticatedUserData() {
+    try {
+        const response = await fetch(`${API_BASE}/api/user/getmydata`, {
+            credentials: 'include'
+        });
+        if (!response.ok) {
+            return null;
+        }
+        return await response.json();
+    }
+    catch {
+        return null;
+    }
+}
+async function ensureCurrentUserIdLoaded() {
+    const storedUserId = getCurrentUserId();
+    if (storedUserId) {
+        return storedUserId;
+    }
+    const user = await fetchAuthenticatedUserData();
+    const userId = parseNumericId(user?.userId ?? user?.UserId);
+    if (userId) {
+        setCurrentUserId(userId);
+    }
+    return userId;
+}
+function getSelectedServerTicketTypeId(tickets) {
+    const selectedTickets = tickets.filter((ticket) => ticket.quantity > 0);
+    if (selectedTickets.length !== 1) {
+        return null;
+    }
+    return parseNumericId(selectedTickets[0].ticketTypeId);
+}
+function buildServerSeatDtos(reservation) {
+    return reservation.seats.map((seat) => ({
+        seatId: seat.seatId,
+        rowNumber: seat.rowNumber,
+        seatNumber: seat.seatNumber,
+        roomId: reservation.roomId,
+        isReserved: false,
+    }));
+}
+function normalizeCollectionPayload(payload) {
+    if (Array.isArray(payload)) {
+        return payload;
+    }
+    if (payload && Array.isArray(payload.value)) {
+        return payload.value;
+    }
+    return [];
+}
+async function fetchScreeningTickets(screeningId) {
+    try {
+        const response = await fetch(`${API_BASE}/api/cinema/getticketsbyscreening?screeningId=${encodeURIComponent(String(screeningId))}`, {
+            credentials: 'include'
+        });
+        if (!response.ok) {
+            return [];
+        }
+        const payload = await response.json().catch(() => null);
+        return normalizeCollectionPayload(payload);
+    }
+    catch {
+        return [];
+    }
+}
+async function resolveServerTicketId(reservation) {
+    const ticketTypeId = getSelectedServerTicketTypeId(reservation.tickets);
+    if (!ticketTypeId) {
+        return null;
+    }
+    const screeningTickets = await fetchScreeningTickets(reservation.filmScreeningId);
+    const matchingTicket = screeningTickets.find((ticket) => parseNumericId(ticket.ticketTypeId ?? ticket.TicketTypeId) === ticketTypeId);
+    return parseNumericId(matchingTicket?.ticketId ?? matchingTicket?.TicketId);
+}
+function getServerCartId(payload) {
+    const candidate = payload;
+    return parseNumericId(candidate?.cartId ?? candidate?.CartId);
+}
+function getServerReservationId(payload) {
+    const candidate = payload;
+    return parseNumericId(candidate?.reservationId
+        ?? candidate?.ReservationId
+        ?? candidate?.paymentReservationId
+        ?? candidate?.PaymentReservationId);
+}
+async function removeServerCart(cartId) {
+    try {
+        await fetch(`${API_BASE}/api/cart/removefromcart?cartId=${encodeURIComponent(String(cartId))}`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+    }
+    catch {
+    }
+}
+async function createReservationOnServer(reservation) {
+    const userId = await ensureCurrentUserIdLoaded();
+    const ticketId = await resolveServerTicketId(reservation);
+    const amount = getSelectedTicketQuantityTotal(reservation.tickets) || reservation.seats.length;
+    if (!userId || !ticketId || amount <= 0 || reservation.seats.length === 0) {
+        return null;
+    }
+    const addToCartResponse = await fetch(`${API_BASE}/api/cart/addtocart`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+            userId,
+            filmScreeningId: reservation.filmScreeningId,
+            ticketId,
+            amount,
+            seats: buildServerSeatDtos(reservation),
+        })
+    });
+    if (!addToCartResponse.ok) {
+        return null;
+    }
+    const cartPayload = await addToCartResponse.json().catch(() => null);
+    const cartId = getServerCartId(cartPayload);
+    if (!cartId) {
+        return null;
+    }
+    const createResponse = await fetch(`${API_BASE}/api/payment_reservation/createreservation?cartId=${encodeURIComponent(String(cartId))}`, {
+        method: 'POST',
+        credentials: 'include'
+    });
+    if (!createResponse.ok) {
+        await removeServerCart(cartId);
+        return null;
+    }
+    const confirmationPayload = await createResponse.json().catch(() => null);
+    const paymentReservationId = getServerReservationId(confirmationPayload);
+    if (!paymentReservationId) {
+        return null;
+    }
+    return {
+        paymentReservationId,
+        cartId,
+    };
 }
 function getTicketTypeId(ticket) {
     const t = ticket;
@@ -565,7 +690,9 @@ function normalizeSavedReservation(item) {
         seats: normalizeCartSeats(candidate.seats),
         tickets: normalizeSelectedTicketQuantities(candidate.tickets),
         createdAt,
-        cartId: candidate.cartId,
+        cartId: typeof candidate?.cartId !== 'undefined' && candidate?.cartId !== null
+            ? String(candidate.cartId)
+            : undefined,
         paymentReservationId: typeof candidate?.paymentReservationId === 'number'
             ? candidate.paymentReservationId
             : (typeof candidate?.paymentReservationId !== 'undefined' && !Number.isNaN(Number(candidate.paymentReservationId))
@@ -1197,13 +1324,11 @@ function renderCartPage() {
         const itemTotal = getTicketSelectionsTotalPrice(item.tickets);
         return sum + (itemTotal ?? 0);
     }, 0);
-    const storedCartId = localStorage.getItem('paymentCartId') || '';
     content += `
                     <hr />
                     <div class="d-flex justify-content-between align-items-center">
                         <div>Összesen: <strong>${totalSeats} db jegy / szék</strong>
                         <div class="text-muted small">Végösszeg: ${formatPrice(totalPrice)}</div>
-                        ${storedCartId ? `<div class="text-muted small">Cart id: ${storedCartId}</div>` : `<div class="text-danger small">Cart id missing</div>`}
                         </div>
                         <div class="cart-actions horizontal-symmetric">
                                 <button id="bookingButton" type="button" class="btn btn-success">Foglalás</button>
@@ -1219,7 +1344,6 @@ function renderCartPage() {
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
             saveCartItems([]);
-            localStorage.removeItem('paymentCartId');
             renderCartPage();
         });
     }
@@ -1236,10 +1360,9 @@ function renderCartPage() {
                 alert('A kosarad üres.');
                 return;
             }
-            const cartId = localStorage.getItem('paymentCartId') || generateCartId();
-            localStorage.setItem('paymentCartId', cartId);
-            let anySyncSuccess = false;
-            let anySyncFail = false;
+            const remainingItems = [];
+            let syncedCount = 0;
+            let failedCount = 0;
             for (const it of items) {
                 const saved = {
                     id: generateId(),
@@ -1252,32 +1375,32 @@ function renderCartPage() {
                     seats: it.seats,
                     tickets: it.tickets,
                     createdAt: new Date().toISOString(),
-                    cartId,
                 };
-                saveReservation(saved);
-                clearSelectedSeats(saved.filmScreeningId, saved.seats.map((seat) => seat.seatId));
                 try {
-                    const serverId = await createReservationOnServer(saved);
-                    if (serverId && typeof serverId === 'number') {
-                        saved.paymentReservationId = serverId;
-                        updateSavedReservation(saved);
-                        anySyncSuccess = true;
+                    const syncedReservation = await createReservationOnServer(saved);
+                    if (syncedReservation) {
+                        saved.paymentReservationId = syncedReservation.paymentReservationId;
+                        saved.cartId = String(syncedReservation.cartId);
+                        saveReservation(saved);
+                        clearSelectedSeats(saved.filmScreeningId, saved.seats.map((seat) => seat.seatId));
+                        syncedCount += 1;
                     }
                     else {
-                        anySyncFail = true;
+                        remainingItems.push(it);
+                        failedCount += 1;
                     }
                 }
-                catch (err) {
-                    anySyncFail = true;
+                catch {
+                    remainingItems.push(it);
+                    failedCount += 1;
                 }
             }
-            saveCartItems([]);
-            localStorage.removeItem('paymentCartId');
-            const flash = anySyncSuccess && !anySyncFail
+            saveCartItems(remainingItems);
+            const flash = syncedCount > 0 && failedCount === 0
                 ? { message: 'Foglalás sikeresen elmentve és szinkronizálva.', isError: false }
-                : (anySyncSuccess && anySyncFail
-                    ? { message: 'Foglalás elmentve, de a szerverrel való szinkronizálás részben sikertelen volt.', isError: true }
-                    : { message: 'Foglalás elmentve helyben, nem sikerült szinkronizálni a szerverrel.', isError: true });
+                : (syncedCount > 0 && failedCount > 0
+                    ? { message: 'A sikeres foglalások bekerültek a Foglalásaim közé, a sikertelen tételek a kosárban maradtak.', isError: true }
+                    : { message: 'A foglalás nem került a szerverre, ezért nem jelent meg a Foglalásaim között.', isError: true });
             renderCartPage();
             showReservationMessage(flash.message, flash.isError);
         });
@@ -1656,6 +1779,11 @@ async function handleLoginSubmit(event) {
             loginMessage.className = "text-success mb-3";
             loginMessage.textContent = "Sikeres bejelentkezés!";
         }
+        const payload = await response.json().catch(() => null);
+        const userId = parseNumericId(payload?.userId ?? payload?.UserId);
+        if (userId) {
+            setCurrentUserId(userId);
+        }
         setCurrentUserEmail(email);
         window.location.replace("Profile.html");
         return;
@@ -1730,6 +1858,7 @@ async function handleRegisterSubmit(event) {
 }
 async function handleLogout() {
     setCurrentUserEmail("");
+    setCurrentUserId(null);
     try {
         await fetch(`${API_BASE}/api/user/logout`, {
             method: "POST",
@@ -1747,10 +1876,8 @@ async function loadProfileData() {
     if (!emailField || !fullNameField || !billingField)
         return;
     try {
-        const response = await fetch(`${API_BASE}/api/user/current`, {
-            credentials: "include"
-        });
-        if (!response.ok) {
+        const authUser = await fetchAuthenticatedUserData();
+        if (!authUser) {
             const storedEmail = getCurrentUserEmail();
             const storedProfile = storedEmail ? getStoredProfile(storedEmail) : null;
             if (storedProfile) {
@@ -1761,12 +1888,28 @@ async function loadProfileData() {
             }
             return;
         }
-        const user = await response.json();
         const storedEmail = getCurrentUserEmail();
         const storedProfile = storedEmail ? getStoredProfile(storedEmail) : null;
-        const email = user.email || user.Email || storedEmail || "";
-        const fullName = user.fullName || user.FullName || storedProfile?.fullName || "";
-        const billingAddress = user.billingAddress || user.BillingAddress || storedProfile?.billingAddress || "";
+        const userId = parseNumericId(authUser.userId ?? authUser.UserId);
+        const email = authUser.email || authUser.Email || storedEmail || "";
+        let fullName = authUser.fullName || authUser.FullName || storedProfile?.fullName || "";
+        let billingAddress = authUser.billingAddress || authUser.BillingAddress || storedProfile?.billingAddress || "";
+        if (userId) {
+            setCurrentUserId(userId);
+            const profileResponse = await fetch(`${API_BASE}/api/user/viewprofile?userId=${encodeURIComponent(String(userId))}`, {
+                credentials: 'include'
+            });
+            if (profileResponse.ok) {
+                const payload = await profileResponse.json().catch(() => null);
+                const profile = Array.isArray(payload)
+                    ? payload[0]
+                    : (payload && Array.isArray(payload.value) ? payload.value[0] : null);
+                if (profile) {
+                    fullName = profile.fullName || profile.FullName || fullName;
+                    billingAddress = profile.billingAddress || profile.BillingAddress || billingAddress;
+                }
+            }
+        }
         if (email) {
             setCurrentUserEmail(email);
             saveStoredProfile(email, fullName, billingAddress);

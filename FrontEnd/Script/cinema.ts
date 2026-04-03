@@ -55,12 +55,23 @@ interface ImageDto {
 }
 
 interface CurrentUserDto {
+    userId?: string | number;
+    role?: string;
     email?: string;
     fullName?: string;
     billingAddress?: string;
+    UserId?: string | number;
+    Role?: string;
     Email?: string;
     FullName?: string;
     BillingAddress?: string;
+}
+
+interface LoginResponseDto {
+    userId?: string | number;
+    role?: string;
+    UserId?: string | number;
+    Role?: string;
 }
 
 interface SelectedScreeningState {
@@ -119,6 +130,27 @@ interface SavedReservation {
     paymentReservationId?: number;
 }
 
+interface ScreeningTicketDto {
+    ticketId?: number;
+    ticketTypeId?: number;
+    filmScreeningId?: number;
+    TicketId?: number;
+    TicketTypeId?: number;
+    FilmScreeningId?: number;
+}
+
+interface ServerCartDto {
+    cartId?: number;
+    CartId?: number;
+}
+
+interface ServerConfirmationDto {
+    reservationId?: number;
+    ReservationId?: number;
+    paymentReservationId?: number;
+    PaymentReservationId?: number;
+}
+
 interface SelectedTicketQuantity {
     ticketTypeId: number;
     ticketName: string;
@@ -148,6 +180,7 @@ let allCategories: CategoriesDto[] = [];
 let allTicketTypes: TicketTypeDto[] = [];
 
 const currentUserStorageKey = "cinemaCurrentUserEmail";
+const currentUserIdStorageKey = "cinemaCurrentUserId";
 const userProfilesStorageKey = "cinemaUserProfiles";
 const cartButtonId = "floatingCartButton";
 const selectedScreeningStorageKey = "cinemaSelectedScreening";
@@ -484,9 +517,13 @@ function saveReservation(reservation: SavedReservation): void {
     localStorage.setItem(reservationsStorageKey, JSON.stringify(items));
 }
 
+function isReservationSynced(reservation: SavedReservation): boolean {
+    return typeof reservation.paymentReservationId === 'number' && reservation.paymentReservationId > 0;
+}
+
 function getUserReservations(email: string): SavedReservation[] {
     if (!email) return [];
-    return getAllSavedReservations().filter(r => (r.userEmail || "").toLowerCase() === email.toLowerCase());
+    return getAllSavedReservations().filter(r => (r.userEmail || "").toLowerCase() === email.toLowerCase() && isReservationSynced(r));
 }
 
 function getReservedSeatIdsForScreening(screeningId: number): Set<number> {
@@ -503,7 +540,7 @@ function getReservedSeatIdsForScreening(screeningId: number): Set<number> {
     }
 
     for (const reservation of getAllSavedReservations()) {
-        if (reservation.filmScreeningId !== screeningId) {
+        if (!isReservationSynced(reservation) || reservation.filmScreeningId !== screeningId) {
             continue;
         }
 
@@ -592,47 +629,203 @@ function updateSavedReservation(reservation: SavedReservation): void {
     }
 }
 
-async function createReservationOnServer(reservation: SavedReservation): Promise<number | null> {
-    const endpoints = [
-        '/api/payment/newreservation',
-        '/api/admin/newreservation',
-        '/api/reservation/new'
-    ];
+function parseNumericId(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+        return value;
+    }
 
-    for (const ep of endpoints) {
-        try {
-            const response = await fetch(`${API_BASE}${ep}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    cartId: reservation.cartId,
-                    filmScreeningId: reservation.filmScreeningId,
-                    amount: getSelectedTicketQuantityTotal(reservation.tickets) || reservation.seats?.length || 0,
-                    date: reservation.date,
-                    seats: reservation.seats,
-                    ticketSelections: reservation.tickets,
-                    movieTitle: reservation.movieTitle,
-                    userEmail: reservation.userEmail,
-                })
-            });
-
-            if (!response.ok) {
-                continue;
-            }
-
-            const payload = await response.json().catch(() => null);
-            if (!payload) return null;
-
-            const id = (payload.paymentReservationId ?? payload.id ?? payload.reservationId) as number | undefined;
-            if (typeof id === 'number') return id;
-            return null;
-        } catch (err) {
-            continue;
-        }
+    if (typeof value === 'string') {
+        const normalized = Number(value);
+        return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
     }
 
     return null;
+}
+
+function getCurrentUserId(): number | null {
+    return parseNumericId(localStorage.getItem(currentUserIdStorageKey));
+}
+
+function setCurrentUserId(userId: number | null): void {
+    if (userId && userId > 0) {
+        localStorage.setItem(currentUserIdStorageKey, String(userId));
+        return;
+    }
+
+    localStorage.removeItem(currentUserIdStorageKey);
+}
+
+async function fetchAuthenticatedUserData(): Promise<CurrentUserDto | null> {
+    try {
+        const response = await fetch(`${API_BASE}/api/user/getmydata`, {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        return await response.json() as CurrentUserDto;
+    } catch {
+        return null;
+    }
+}
+
+async function ensureCurrentUserIdLoaded(): Promise<number | null> {
+    const storedUserId = getCurrentUserId();
+    if (storedUserId) {
+        return storedUserId;
+    }
+
+    const user = await fetchAuthenticatedUserData();
+    const userId = parseNumericId(user?.userId ?? user?.UserId);
+    if (userId) {
+        setCurrentUserId(userId);
+    }
+
+    return userId;
+}
+
+function getSelectedServerTicketTypeId(tickets: SelectedTicketQuantity[]): number | null {
+    const selectedTickets = tickets.filter((ticket) => ticket.quantity > 0);
+
+    if (selectedTickets.length !== 1) {
+        return null;
+    }
+
+    return parseNumericId(selectedTickets[0].ticketTypeId);
+}
+
+function buildServerSeatDtos(reservation: SavedReservation): SeatDto[] {
+    return reservation.seats.map((seat) => ({
+        seatId: seat.seatId,
+        rowNumber: seat.rowNumber,
+        seatNumber: seat.seatNumber,
+        roomId: reservation.roomId,
+        isReserved: false,
+    }));
+}
+
+function normalizeCollectionPayload<T>(payload: unknown): T[] {
+    if (Array.isArray(payload)) {
+        return payload as T[];
+    }
+
+    if (payload && Array.isArray((payload as { value?: unknown[] }).value)) {
+        return (payload as { value: T[] }).value;
+    }
+
+    return [];
+}
+
+async function fetchScreeningTickets(screeningId: number): Promise<ScreeningTicketDto[]> {
+    try {
+        const response = await fetch(`${API_BASE}/api/cinema/getticketsbyscreening?screeningId=${encodeURIComponent(String(screeningId))}`, {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            return [];
+        }
+
+        const payload = await response.json().catch(() => null);
+        return normalizeCollectionPayload<ScreeningTicketDto>(payload);
+    } catch {
+        return [];
+    }
+}
+
+async function resolveServerTicketId(reservation: SavedReservation): Promise<number | null> {
+    const ticketTypeId = getSelectedServerTicketTypeId(reservation.tickets);
+    if (!ticketTypeId) {
+        return null;
+    }
+
+    const screeningTickets = await fetchScreeningTickets(reservation.filmScreeningId);
+    const matchingTicket = screeningTickets.find((ticket) => parseNumericId(ticket.ticketTypeId ?? ticket.TicketTypeId) === ticketTypeId);
+
+    return parseNumericId(matchingTicket?.ticketId ?? matchingTicket?.TicketId);
+}
+
+function getServerCartId(payload: unknown): number | null {
+    const candidate = payload as ServerCartDto | null;
+    return parseNumericId(candidate?.cartId ?? candidate?.CartId);
+}
+
+function getServerReservationId(payload: unknown): number | null {
+    const candidate = payload as ServerConfirmationDto | null;
+    return parseNumericId(
+        candidate?.reservationId
+        ?? candidate?.ReservationId
+        ?? candidate?.paymentReservationId
+        ?? candidate?.PaymentReservationId,
+    );
+}
+
+async function removeServerCart(cartId: number): Promise<void> {
+    try {
+        await fetch(`${API_BASE}/api/cart/removefromcart?cartId=${encodeURIComponent(String(cartId))}`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch {
+    }
+}
+
+async function createReservationOnServer(reservation: SavedReservation): Promise<{ paymentReservationId: number; cartId: number } | null> {
+    const userId = await ensureCurrentUserIdLoaded();
+    const ticketId = await resolveServerTicketId(reservation);
+    const amount = getSelectedTicketQuantityTotal(reservation.tickets) || reservation.seats.length;
+
+    if (!userId || !ticketId || amount <= 0 || reservation.seats.length === 0) {
+        return null;
+    }
+
+    const addToCartResponse = await fetch(`${API_BASE}/api/cart/addtocart`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+            userId,
+            filmScreeningId: reservation.filmScreeningId,
+            ticketId,
+            amount,
+            seats: buildServerSeatDtos(reservation),
+        })
+    });
+
+    if (!addToCartResponse.ok) {
+        return null;
+    }
+
+    const cartPayload = await addToCartResponse.json().catch(() => null);
+    const cartId = getServerCartId(cartPayload);
+
+    if (!cartId) {
+        return null;
+    }
+
+    const createResponse = await fetch(`${API_BASE}/api/payment_reservation/createreservation?cartId=${encodeURIComponent(String(cartId))}`, {
+        method: 'POST',
+        credentials: 'include'
+    });
+
+    if (!createResponse.ok) {
+        await removeServerCart(cartId);
+        return null;
+    }
+
+    const confirmationPayload = await createResponse.json().catch(() => null);
+    const paymentReservationId = getServerReservationId(confirmationPayload);
+
+    if (!paymentReservationId) {
+        return null;
+    }
+
+    return {
+        paymentReservationId,
+        cartId,
+    };
 }
 
 function getTicketTypeId(ticket: TicketTypeDto): number | null {
@@ -801,7 +994,9 @@ function normalizeSavedReservation(item: unknown): SavedReservation | null {
         seats: normalizeCartSeats(candidate.seats),
         tickets: normalizeSelectedTicketQuantities(candidate.tickets),
         createdAt,
-        cartId: candidate.cartId,
+        cartId: typeof candidate?.cartId !== 'undefined' && candidate?.cartId !== null
+            ? String(candidate.cartId)
+            : undefined,
         paymentReservationId: typeof candidate?.paymentReservationId === 'number'
             ? candidate.paymentReservationId
             : (typeof candidate?.paymentReservationId !== 'undefined' && !Number.isNaN(Number(candidate.paymentReservationId))
@@ -1537,14 +1732,11 @@ function renderCartPage(): void {
         return sum + (itemTotal ?? 0);
     }, 0);
 
-    const storedCartId = localStorage.getItem('paymentCartId') || '';
-
     content += `
                     <hr />
                     <div class="d-flex justify-content-between align-items-center">
                         <div>Összesen: <strong>${totalSeats} db jegy / szék</strong>
                         <div class="text-muted small">Végösszeg: ${formatPrice(totalPrice)}</div>
-                        ${storedCartId ? `<div class="text-muted small">Cart id: ${storedCartId}</div>` : `<div class="text-danger small">Cart id missing</div>`}
                         </div>
                         <div class="cart-actions horizontal-symmetric">
                                 <button id="bookingButton" type="button" class="btn btn-success">Foglalás</button>
@@ -1562,7 +1754,6 @@ function renderCartPage(): void {
     if (clearBtn) {
         clearBtn.addEventListener('click', () => {
             saveCartItems([]);
-            localStorage.removeItem('paymentCartId');
             renderCartPage();
         });
     } 
@@ -1581,10 +1772,9 @@ function renderCartPage(): void {
                 return;
             }
 
-            const cartId = localStorage.getItem('paymentCartId') || generateCartId();
-            localStorage.setItem('paymentCartId', cartId);
-            let anySyncSuccess = false;
-            let anySyncFail = false;
+            const remainingItems: CartItem[] = [];
+            let syncedCount = 0;
+            let failedCount = 0;
 
             for (const it of items) {
                 const saved: SavedReservation = {
@@ -1598,34 +1788,33 @@ function renderCartPage(): void {
                     seats: it.seats,
                     tickets: it.tickets,
                     createdAt: new Date().toISOString(),
-                    cartId,
                 };
 
-                saveReservation(saved);
-                clearSelectedSeats(saved.filmScreeningId, saved.seats.map((seat) => seat.seatId));
-
                 try {
-                    const serverId = await createReservationOnServer(saved);
-                    if (serverId && typeof serverId === 'number') {
-                        saved.paymentReservationId = serverId;
-                        updateSavedReservation(saved);
-                        anySyncSuccess = true;
+                    const syncedReservation = await createReservationOnServer(saved);
+                    if (syncedReservation) {
+                        saved.paymentReservationId = syncedReservation.paymentReservationId;
+                        saved.cartId = String(syncedReservation.cartId);
+                        saveReservation(saved);
+                        clearSelectedSeats(saved.filmScreeningId, saved.seats.map((seat) => seat.seatId));
+                        syncedCount += 1;
                     } else {
-                        anySyncFail = true;
+                        remainingItems.push(it);
+                        failedCount += 1;
                     }
-                } catch (err) {
-                    anySyncFail = true;
+                } catch {
+                    remainingItems.push(it);
+                    failedCount += 1;
                 }
             }
 
-            saveCartItems([]);
-            localStorage.removeItem('paymentCartId');
+            saveCartItems(remainingItems);
 
-            const flash = anySyncSuccess && !anySyncFail
+            const flash = syncedCount > 0 && failedCount === 0
                 ? { message: 'Foglalás sikeresen elmentve és szinkronizálva.', isError: false }
-                : (anySyncSuccess && anySyncFail
-                    ? { message: 'Foglalás elmentve, de a szerverrel való szinkronizálás részben sikertelen volt.', isError: true }
-                    : { message: 'Foglalás elmentve helyben, nem sikerült szinkronizálni a szerverrel.', isError: true });
+                : (syncedCount > 0 && failedCount > 0
+                    ? { message: 'A sikeres foglalások bekerültek a Foglalásaim közé, a sikertelen tételek a kosárban maradtak.', isError: true }
+                    : { message: 'A foglalás nem került a szerverre, ezért nem jelent meg a Foglalásaim között.', isError: true });
 
             renderCartPage();
             showReservationMessage(flash.message, flash.isError);
@@ -2101,6 +2290,11 @@ async function handleLoginSubmit(event: Event) {
             loginMessage.className = "text-success mb-3";
             loginMessage.textContent = "Sikeres bejelentkezés!";
         }
+        const payload = await response.json().catch(() => null) as LoginResponseDto | null;
+        const userId = parseNumericId(payload?.userId ?? payload?.UserId);
+        if (userId) {
+            setCurrentUserId(userId);
+        }
         setCurrentUserEmail(email);
         window.location.replace("Profile.html");
         return;
@@ -2181,6 +2375,7 @@ async function handleRegisterSubmit(event: Event): Promise<void> {
 
 async function handleLogout(): Promise<void> {
     setCurrentUserEmail("");
+    setCurrentUserId(null);
 
     try {
         await fetch(`${API_BASE}/api/user/logout`, {
@@ -2201,11 +2396,8 @@ async function loadProfileData(): Promise<void> {
     if (!emailField || !fullNameField || !billingField) return;
 
     try {
-        const response = await fetch(`${API_BASE}/api/user/current`, {
-            credentials: "include"
-        });
-
-        if (!response.ok) {
+        const authUser = await fetchAuthenticatedUserData();
+        if (!authUser) {
             const storedEmail = getCurrentUserEmail();
             const storedProfile = storedEmail ? getStoredProfile(storedEmail) : null;
 
@@ -2217,13 +2409,33 @@ async function loadProfileData(): Promise<void> {
             return;
         }
 
-        const user = await response.json() as CurrentUserDto;
         const storedEmail = getCurrentUserEmail();
         const storedProfile = storedEmail ? getStoredProfile(storedEmail) : null;
 
-        const email = user.email || user.Email || storedEmail || "";
-        const fullName = user.fullName || user.FullName || storedProfile?.fullName || "";
-        const billingAddress = user.billingAddress || user.BillingAddress || storedProfile?.billingAddress || "";
+        const userId = parseNumericId(authUser.userId ?? authUser.UserId);
+        const email = authUser.email || authUser.Email || storedEmail || "";
+        let fullName = authUser.fullName || authUser.FullName || storedProfile?.fullName || "";
+        let billingAddress = authUser.billingAddress || authUser.BillingAddress || storedProfile?.billingAddress || "";
+
+        if (userId) {
+            setCurrentUserId(userId);
+
+            const profileResponse = await fetch(`${API_BASE}/api/user/viewprofile?userId=${encodeURIComponent(String(userId))}`, {
+                credentials: 'include'
+            });
+
+            if (profileResponse.ok) {
+                const payload = await profileResponse.json().catch(() => null) as { value?: CurrentUserDto[] } | CurrentUserDto[] | null;
+                const profile = Array.isArray(payload)
+                    ? payload[0]
+                    : (payload && Array.isArray(payload.value) ? payload.value[0] : null);
+
+                if (profile) {
+                    fullName = profile.fullName || profile.FullName || fullName;
+                    billingAddress = profile.billingAddress || profile.BillingAddress || billingAddress;
+                }
+            }
+        }
 
         if (email) {
             setCurrentUserEmail(email);
