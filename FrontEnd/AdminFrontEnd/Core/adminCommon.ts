@@ -57,6 +57,19 @@ function Admin_updateNavbarByAuth(): void {
         logoutItem?.classList.add("d-none");
     }
 }
+
+// ===================== LOGOUT =====================
+async function Admin_handleLogout(): Promise<void> {
+    Admin_clearAuthData();
+    Admin_updateNavbarByAuth();
+
+    try {
+        await Admin_apiPost<null>("/api/user/logout", null);
+    } catch {}
+
+    window.location.href = "../Főoldalak/AdminBejelentkezes.html";
+}
+
 // ===================== DATE =====================
 
 function Admin_toIsoDateTime(localValue: string): string {
@@ -76,5 +89,11 @@ function Admin_toDateTimeLocalValue(date: string): string {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+
+// ===================== WINDOW EXPORT =====================
+
 // @ts-ignore
 window.Admin_updateNavbarByAuth = Admin_updateNavbarByAuth;
+
+// @ts-ignore
+window.Admin_handleLogout = Admin_handleLogout;

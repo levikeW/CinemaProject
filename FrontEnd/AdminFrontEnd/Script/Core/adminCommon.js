@@ -47,6 +47,16 @@ function Admin_updateNavbarByAuth() {
         logoutItem?.classList.add("d-none");
     }
 }
+// ===================== LOGOUT =====================
+async function Admin_handleLogout() {
+    Admin_clearAuthData();
+    Admin_updateNavbarByAuth();
+    try {
+        await Admin_apiPost("/api/user/logout", null);
+    }
+    catch { }
+    window.location.href = "../Főoldalak/AdminBejelentkezes.html";
+}
 // ===================== DATE =====================
 function Admin_toIsoDateTime(localValue) {
     if (!localValue)
@@ -63,5 +73,8 @@ function Admin_toDateTimeLocalValue(date) {
     const minutes = String(d.getMinutes()).padStart(2, "0");
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
+// ===================== WINDOW EXPORT =====================
 // @ts-ignore
 window.Admin_updateNavbarByAuth = Admin_updateNavbarByAuth;
+// @ts-ignore
+window.Admin_handleLogout = Admin_handleLogout;
