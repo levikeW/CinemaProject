@@ -1772,11 +1772,25 @@ function renderCartPage(): void {
                 return;
             }
 
+            const userId = await ensureCurrentUserIdLoaded();
+            if (!userId) {
+                showReservationMessage('A szerveres foglaláshoz jelentkezz ki, majd be újra.', true);
+                return;
+            }
+
             const remainingItems: CartItem[] = [];
             let syncedCount = 0;
             let failedCount = 0;
+            let hasUnsupportedTicketMix = false;
 
             for (const it of items) {
+                if (it.tickets.filter((ticket) => ticket.quantity > 0).length !== 1) {
+                    remainingItems.push(it);
+                    failedCount += 1;
+                    hasUnsupportedTicketMix = true;
+                    continue;
+                }
+
                 const saved: SavedReservation = {
                     id: generateId(),
                     userEmail: email,
@@ -1813,8 +1827,8 @@ function renderCartPage(): void {
             const flash = syncedCount > 0 && failedCount === 0
                 ? { message: 'Foglalás sikeresen elmentve és szinkronizálva.', isError: false }
                 : (syncedCount > 0 && failedCount > 0
-                    ? { message: 'A sikeres foglalások bekerültek a Foglalásaim közé, a sikertelen tételek a kosárban maradtak.', isError: true }
-                    : { message: 'A foglalás nem került a szerverre, ezért nem jelent meg a Foglalásaim között.', isError: true });
+                    ? { message: hasUnsupportedTicketMix ? 'A sikeres foglalások bekerültek a Foglalásaim közé. A sikertelen tételeknél egyszerre csak egy jegytípus támogatott.' : 'A sikeres foglalások bekerültek a Foglalásaim közé, a sikertelen tételek a kosárban maradtak.', isError: true }
+                    : { message: hasUnsupportedTicketMix ? 'A szerveres foglaláshoz egy tételen belül egyszerre csak egy jegytípust válassz.' : 'A foglalás nem került a szerverre, ezért nem jelent meg a Foglalásaim között.', isError: true });
 
             renderCartPage();
             showReservationMessage(flash.message, flash.isError);
