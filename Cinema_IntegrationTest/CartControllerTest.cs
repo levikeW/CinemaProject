@@ -30,15 +30,7 @@ namespace Cinema_IntegrationTest
         [Fact]
         public async Task GetCart()
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, "api/cart/getcart?userId=2")
-            {
-                Content = new StringContent(
-                    JsonSerializer.Serialize(new CartDto()),
-                    Encoding.UTF8,
-                    "application/json")
-            };
-
-            var response = await _client.SendAsync(request);
+            var response = await _client.GetAsync("api/cart/getcart?userId=2");
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -79,10 +71,14 @@ namespace Cinema_IntegrationTest
                 "application/json");
 
             var response = await _client.PutAsync("api/cart/addtocart", content);
-            var body = await response.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.False(string.IsNullOrWhiteSpace(body));
+            var cart = JsonSerializer.Deserialize<CartDto>(
+                await response.Content.ReadAsStringAsync(),
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            Assert.NotNull(cart);
+            Assert.True(cart.CartId > 0);
         }
 
         [Fact]

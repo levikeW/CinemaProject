@@ -17,12 +17,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPost("createreservation")]
-        public async Task<ActionResult> CreateReservation([FromQuery] int cartId)
+        public async Task<ActionResult<ConfirmationDto>> CreateReservation([FromQuery] int cartId)
         {
             try
             {
-                await _paymentReservationModel.CreateReservation(cartId);
-                return Ok();
+                return Ok(await _paymentReservationModel.CreateReservation(cartId));
             }
             catch (InvalidOperationException e)
             {

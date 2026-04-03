@@ -275,11 +275,28 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("selecttickettype")]
-        public async Task<ActionResult<TicketDto>> SelectTicketType()
+        public async Task<ActionResult<TicketTypeDto>> SelectTicketType()
         {
             try
             {
                 return Ok(await _cinemaModel.SelectTicketType());
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet("getticketsbyscreening")]
+        public async Task<ActionResult<IEnumerable<TicketDto>>> GetTicketsByScreening([FromQuery] int screeningId)
+        {
+            try
+            {
+                return Ok(await _cinemaModel.GetTicketsByScreening(screeningId));
             }
             catch (InvalidOperationException e)
             {
