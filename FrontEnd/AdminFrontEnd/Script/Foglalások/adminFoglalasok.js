@@ -69,7 +69,7 @@ async function Admin_handleReservationUpdate(event) {
         const dto = {
             paymentReservationId: reservationId,
             cartId: Number(document.getElementById("editReservationCartId").value),
-            date: document.getElementById("editReservationDate").value,
+            date: Admin_toIsoDateTime(document.getElementById("editReservationDate").value),
             isPaid: document.getElementById("editReservationIsPaid").value === "true",
             filmScreeningId: Number(document.getElementById("editReservationScreeningId").value),
             amount: Number(document.getElementById("editReservationAmount").value),
