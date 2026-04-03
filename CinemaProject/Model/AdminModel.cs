@@ -414,11 +414,25 @@ namespace CinemaProject.Model
 
         public async Task DeleteReservation(int reservationId)
         {
-            var reservation = await _context.paymentReservations.FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
+            var reservation = await _context.paymentReservations
+                .Include(x => x.Cart)
+                    .ThenInclude(x => x.Seats)
+                .FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
             if (reservation == null)
                 throw new InvalidOperationException("Reservation not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
+
+            if (reservation.Cart != null)
+            {
+                foreach (var seat in reservation.Cart.Seats)
+                {
+                    seat.CartId = null;
+                    seat.IsReserved = false;
+                }
+
+                _context.carts.Remove(reservation.Cart);
+            }
 
             _context.paymentReservations.Remove(reservation);
 

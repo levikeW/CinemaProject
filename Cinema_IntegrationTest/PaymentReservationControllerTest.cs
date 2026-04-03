@@ -29,6 +29,13 @@ public class PaymentReservationControllerTest : IClassFixture<CustomApplicationF
         var response = await _client.PostAsync($"/api/payment_reservation/createreservation?cartId={cart.CartId}", null);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var confirmation = JsonSerializer.Deserialize<ConfirmationDto>(
+            await response.Content.ReadAsStringAsync(),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        Assert.NotNull(confirmation);
+        Assert.True(confirmation.ReservationId > 0);
     }
 
     [Fact]

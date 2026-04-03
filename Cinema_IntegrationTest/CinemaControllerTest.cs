@@ -240,6 +240,24 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
     }
 
     [Fact]
+    public async Task GetTicketsByScreening()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+        var screening = db.filmScreenings.First();
+
+        var response = await _client.GetAsync($"/api/cinema/getticketsbyscreening?screeningId={screening.FilmScreeningId}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var tickets = JsonSerializer.Deserialize<List<TicketDto>>(
+            await response.Content.ReadAsStringAsync(),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        Assert.NotNull(tickets);
+        Assert.NotEmpty(tickets);
+    }
+
+    [Fact]
     public async Task SetQuantity()
     {
         using var scope = _factory.Services.CreateScope();

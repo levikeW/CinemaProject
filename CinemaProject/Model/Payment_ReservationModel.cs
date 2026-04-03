@@ -2,6 +2,7 @@
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace CinemaProject.Model
 {
@@ -22,6 +23,8 @@ namespace CinemaProject.Model
                 throw new InvalidOperationException("Cart not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
+
+            await AlignPaymentReservationSequenceAsync();
 
             var reservation = new PaymentReservation
             {
@@ -53,9 +56,26 @@ namespace CinemaProject.Model
                 }).FirstAsync();
         }
 
+        private async Task AlignPaymentReservationSequenceAsync()
+        {
+            if (!string.Equals(_context.Database.ProviderName, "Npgsql.EntityFrameworkCore.PostgreSQL", StringComparison.Ordinal))
+                return;
+
+            await _context.Database.ExecuteSqlRawAsync(@"
+                SELECT setval(
+                    pg_get_serial_sequence('""paymentReservations""', 'PaymentReservationId'),
+                    COALESCE((SELECT MAX(""PaymentReservationId"") FROM ""paymentReservations""), 0) + 1,
+                    false
+                );
+            ");
+        }
+
         public async Task CancelReservation(int reservationId)
         {
-            var reservation = await _context.paymentReservations.FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
+            var reservation = await _context.paymentReservations
+                .Include(x => x.Cart)
+                    .ThenInclude(x => x.Seats)
+                .FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
 
             if (reservation == null)
                 throw new InvalidOperationException("Reservation not found");
@@ -64,6 +84,17 @@ namespace CinemaProject.Model
                 throw new InvalidOperationException("Cannot cancel a paid reservation");
 
             using var trx = await _context.Database.BeginTransactionAsync();
+
+            if (reservation.Cart != null)
+            {
+                foreach (var seat in reservation.Cart.Seats)
+                {
+                    seat.CartId = null;
+                    seat.IsReserved = false;
+                }
+
+                _context.carts.Remove(reservation.Cart);
+            }
 
             _context.paymentReservations.Remove(reservation);
             await _context.SaveChangesAsync();

@@ -260,6 +260,18 @@ namespace CinemaProject.Model
                 }).FirstOrDefaultAsync();
         }
 
+        public async Task<List<TicketDto>> GetTicketsByScreening(int screeningId)
+        {
+            return await _context.tickets
+                .Where(x => x.FilmScreeningId == screeningId)
+                .Select(x => new TicketDto
+                {
+                    TicketId = x.TicketId,
+                    TicketTypeId = x.TicketTypeId,
+                    FilmScreeningId = x.FilmScreeningId ?? 0
+                }).ToListAsync();
+        }
+
         public async Task SetQuantity(int cartId, int amount)
         {
             var cart = await _context.carts.Include(x => x.Ticket).FirstOrDefaultAsync(x => x.CartId == cartId);
