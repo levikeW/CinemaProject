@@ -21,7 +21,7 @@ interface NewScreeningDto {
 }
 
 interface ModifyFilmScreeningDto {
-    movieId: number;
+    filmScreeningId: number;
     movieTitle: string;
     roomId: number;
     roomName: string;
@@ -37,8 +37,8 @@ async function Admin_createScreening(dto: NewScreeningDto): Promise<void> {
     await Admin_apiPost<NewScreeningDto>("/api/admin/newscreening", dto);
 }
 
-async function Admin_updateScreening(screeningId: number, dto: ModifyFilmScreeningDto): Promise<void> {
-    await Admin_apiPut<ModifyFilmScreeningDto>(`/api/admin/modifyfilmscreening?screeningId=${screeningId}`, dto);
+async function Admin_updateScreening(dto: ModifyFilmScreeningDto): Promise<void> {
+    await Admin_apiPut<ModifyFilmScreeningDto>(`/api/admin/modifyfilmscreening`, dto);
 }
 
 async function Admin_deleteScreening(screeningId: number): Promise<void> {
@@ -209,21 +209,23 @@ async function Admin_handleScreeningUpdate(event: Event): Promise<void> {
 
         const movieSelect = document.getElementById("editScreeningMovieId") as HTMLSelectElement;
         const roomSelect = document.getElementById("editScreeningRoomId") as HTMLSelectElement;
+        const dateInput = document.getElementById("editScreeningDate") as HTMLInputElement;
 
-        const dto = {
-            movieId: Number(movieSelect.value),
-            movieTitle: movieSelect.options[movieSelect.selectedIndex].text,
+        const dto: ModifyFilmScreeningDto = {
+            filmScreeningId: screeningId,
+            movieTitle: movieSelect.options[movieSelect.selectedIndex].text.trim(),
             roomId: Number(roomSelect.value),
-            roomName: roomSelect.options[roomSelect.selectedIndex].text,
-           date: Admin_toIsoDateTime((document.getElementById("editScreeningDate") as HTMLInputElement).value)
+            roomName: roomSelect.options[roomSelect.selectedIndex].text.trim(),
+            date: Admin_toIsoDateTime(dateInput.value)
         };
 
-        await Admin_updateScreening(screeningId, dto as any);
+        await Admin_updateScreening(dto);
         Admin_showMessage("adminScreeningEditMessage", "Vetítés módosítva.");
 
         await Admin_renderScreeningsAdminTable();
         await Admin_renderScreeningsByMovie();
     } catch (error) {
+        console.error(error);
         Admin_showMessage("adminScreeningEditMessage", (error as Error).message, true);
     }
 }
@@ -276,17 +278,6 @@ async function Admin_handleLoginSubmit(event: Event) {
             loginMessage.textContent = err.message || "Hiba a bejelentkezés során.";
         }
     }
-}
-// ===================== LOGOUT =====================
-async function Admin_handleLogout(): Promise<void> {
-    Admin_clearAuthData();
-    Admin_updateNavbarByAuth();
-
-    try {
-        await Admin_apiPost<null>("/api/user/logout", null);
-    } catch {}
-
-    window.location.href = "AdminBejelentkezes.html";
 }
 
 // ===================== REGISTER =====================
@@ -358,7 +349,7 @@ async function Admin_loadProfileData(): Promise<void> {
         }>("/api/user/getmydata");
 
         if (user.role !== "Admin") {
-            window.location.replace("AdminBejelentkezes.html");
+            window.location.replace("../Főoldalak/AdminBejelentkezes.html");
             return;
         }
 
@@ -367,7 +358,7 @@ async function Admin_loadProfileData(): Promise<void> {
         Admin_setAdminId(user.userId);
 
     } catch {
-        window.location.replace("AdminBejelentkezes.html");
+        window.location.replace("../Főoldalak/AdminBejelentkezes.html");
     }
 }
  
@@ -422,9 +413,6 @@ window.Admin_editScreening = Admin_editScreening;
 window.Admin_handleLoginSubmit = Admin_handleLoginSubmit;
 // @ts-ignore
 window.Admin_loadProfileData = Admin_loadProfileData;
-
-// @ts-ignore
-window.Admin_handleLogout = Admin_handleLogout;
 
 //@ts-ignore
 window.Admin_handleRegisterSubmit = Admin_handleRegisterSubmit;
