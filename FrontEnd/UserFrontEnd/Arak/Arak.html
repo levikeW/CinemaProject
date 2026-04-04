@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="../Cinema.css"/>
+    <title>Document</title>
+</head>
+<body class="arak-page">
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand" href="../Fooldalak/Cinema.html"><img src="../Logo.png" alt="Logo" height="50"></a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCinema" aria-controls="navbarCinema" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarCinema">
+         <form class="d-flex ms-3" onsubmit="return false;">
+                    <input class="form-control me-2 site-search-input" type="search" placeholder="Keresés" aria-label="Keresés">
+        </form>
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0" id="navProfileArea">
+                    <li class="nav-item"><a class="nav-link" href="../Fooldalak/Cinema.html">Főoldal</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="../Arak/Arak.html">Árak</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Kategoriak/Kategoriak.html">Kategóriák</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Fooldalak/Rolunk.html">Rólunk</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Fooldalak/Bejelentkezes.html">Bejelentkezés/Regisztráció</a></li>
+                </ul>
+      </div>
+    </nav>
+  </header>
+  <main class="Arakall page-section">
+    <section class="arak-hero categories-intro">
+      <h1 class="Arakh1">Jegyárak</h1>
+      <p class="arak-lead">Nézd meg az aktuális jegytípusokat és válaszd ki a neked megfelelő opciót a következő mozizáshoz.</p>
+    </section>
+
+    <section class="arak-shell">
+      <div class="Arakkeret arak-panel card-like-panel">
+        <div class="arak-panel-header">
+          <h2>Aktuális árlista</h2>
+        </div>
+
+        <div class="arak-table-wrap">
+          <table class="table table-striped table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>Jegytípus</th>
+                <th>Ár (Ft)</th>
+              </tr>
+            </thead>
+            <tbody id="jegyekTbody">
+              <tr>
+                <td colspan="2" class="text-center">
+                  <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Betöltés...</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="../Script/Arak/arak.js"></script>
+</body>
+</html>
