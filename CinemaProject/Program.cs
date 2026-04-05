@@ -60,22 +60,76 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 var app = builder.Build();
 
-//  Adatb�zis l�trehoz�sa �s seedel�s
-/*using (var scope = app.Services.CreateScope())
+using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    var context = services.GetRequiredService<CinemaDbContext>();
-    var seeder = services.GetRequiredService<DbSeeder>();
+    var context = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-    // L�trehozza az adatb�zist �s a t�bl�kat, ha nem l�teznek
-      var databaseCreated = context.Database.EnsureCreated();
-
-    // Seedel�s csak, ha �res az adatb�zis
-     if (databaseCreated)
+    if (string.Equals(context.Database.ProviderName, "Npgsql.EntityFrameworkCore.PostgreSQL", StringComparison.Ordinal))
     {
-        seeder.Seed();
+        context.Database.ExecuteSqlRaw(@"
+            SELECT setval(
+                pg_get_serial_sequence('""tickets""', 'TicketId'),
+                COALESCE((SELECT MAX(""TicketId"") FROM ""tickets""), 0) + 1,
+                false
+            );
+        ");
     }
-}*/
+
+    var screenings = context.filmScreenings
+        .Include(x => x.Room)
+        .ToList();
+
+    var ticketTypes = context.ticketTypes.ToList();
+    var tickets = context.tickets.ToList();
+    var createdMissingTickets = false;
+
+    foreach (var screening in screenings)
+    {
+        var roomName = (screening.Room?.RoomName ?? screening.RoomName ?? string.Empty).Trim();
+        var roomIsVip = roomName.ToLower().Contains("vip");
+
+        foreach (var ticketType in ticketTypes)
+        {
+            var ticketName = (ticketType.TicketType ?? string.Empty).Trim();
+            var ticketIsVip = ticketName.ToLower().Contains("vip");
+            var shouldExist = roomIsVip ? ticketIsVip : !ticketIsVip;
+
+            if (!shouldExist)
+            {
+                continue;
+            }
+
+            var exists = false;
+
+            foreach (var ticket in tickets)
+            {
+                if (ticket.FilmScreeningId == screening.FilmScreeningId && ticket.TicketTypeId == ticketType.TicketTypeId)
+                {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists)
+            {
+                var newTicket = new Ticket
+                {
+                    FilmScreeningId = screening.FilmScreeningId,
+                    TicketTypeId = ticketType.TicketTypeId,
+                };
+
+                context.tickets.Add(newTicket);
+                tickets.Add(newTicket);
+                createdMissingTickets = true;
+            }
+        }
+    }
+
+    if (createdMissingTickets)
+    {
+        context.SaveChanges();
+    }
+}
 
 
 // Configure the HTTP request pipeline.

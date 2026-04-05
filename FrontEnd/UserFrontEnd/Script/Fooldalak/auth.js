@@ -1,10 +1,14 @@
 import { fetchAuthenticatedUserData, loginUser, logoutUser, registerUser } from "../Core/api.js";
 import { cartButtonId, parseNumericId } from "../Core/common.js";
+// LocalStorage kulcsok
 const currentUserStorageKey = "cinemaCurrentUserEmail";
 const currentUserIdStorageKey = "cinemaCurrentUserId";
+// A jelenlegi user email lekérése localStorage-ból
 export function getCurrentUserEmail() {
     return localStorage.getItem(currentUserStorageKey) || "";
 }
+// A jelenlegi user email mentése localStorage-ba
+// Ha üres, akkor törli
 export function setCurrentUserEmail(email) {
     if (email) {
         localStorage.setItem(currentUserStorageKey, email);
@@ -12,9 +16,12 @@ export function setCurrentUserEmail(email) {
     }
     localStorage.removeItem(currentUserStorageKey);
 }
+// A jelenlegi user id lekérése localStorage-ból
 export function getCurrentUserId() {
     return parseNumericId(localStorage.getItem(currentUserIdStorageKey));
 }
+// A jelenlegi user id mentése localStorage-ba
+// Ha nincs értelmes id, akkor törli
 export function setCurrentUserId(userId) {
     if (userId && userId > 0) {
         localStorage.setItem(currentUserIdStorageKey, String(userId));
@@ -22,10 +29,12 @@ export function setCurrentUserId(userId) {
     }
     localStorage.removeItem(currentUserIdStorageKey);
 }
+// Ha a userId még nincs localStorage-ban, megpróbálja betölteni a szerverről
 export async function ensureCurrentUserIdLoaded() {
     const storedUserId = getCurrentUserId();
-    if (storedUserId)
+    if (storedUserId) {
         return storedUserId;
+    }
     const user = await fetchAuthenticatedUserData();
     const userId = parseNumericId(user?.userId ?? user?.UserId);
     if (userId) {
@@ -37,10 +46,12 @@ export async function ensureCurrentUserIdLoaded() {
     }
     return userId;
 }
+// Lebegő kosár gomb kirakása, ha még nincs az oldalon
 export function updateFloatingCartButton() {
     const existingButton = document.getElementById(cartButtonId);
-    if (existingButton)
+    if (existingButton) {
         return;
+    }
     const cartButton = document.createElement("button");
     cartButton.id = cartButtonId;
     cartButton.className = "floating-cart-button";
@@ -52,38 +63,46 @@ export function updateFloatingCartButton() {
     });
     document.body.appendChild(cartButton);
 }
+// Beállítja a login állapothoz tartozó UI-t
 export function applyLoginState() {
     const email = getCurrentUserEmail().trim();
     const currentPage = window.location.pathname.split("/").pop() || "Cinema.html";
     const navProfileArea = document.getElementById("navProfileArea");
     const authLink = navProfileArea?.querySelector('a[href*="Bejelentkezes.html"]');
+    // Ha van fejlécben login/profil link, átírjuk az állapot alapján
     if (authLink) {
         authLink.href = email ? "../Fooldalak/Profile.html" : "../Fooldalak/Bejelentkezes.html";
         authLink.textContent = email ? "Profil" : "Bejelentkezés/Regisztráció";
     }
+    // Ha már be van lépve és a login oldalra menne, dobjuk át profilra
     if (email && currentPage === "Bejelentkezes.html") {
         window.location.replace("../Fooldalak/Profile.html");
         return;
     }
+    // Ha nincs belépve és a profiloldalt nyitná meg, dobjuk át loginra
     if (!email && currentPage === "Profile.html") {
         window.location.replace("../Fooldalak/Bejelentkezes.html");
         return;
     }
     updateFloatingCartButton();
 }
+// Login form elküldése
 export async function handleLoginSubmit(event) {
     event.preventDefault();
     const emailInput = document.getElementById("loginEmail");
     const passwordInput = document.getElementById("loginPassword");
     const loginMessage = document.getElementById("loginMessage");
-    if (!emailInput || !passwordInput)
+    if (!emailInput || !passwordInput) {
         return;
+    }
+    // Üzenet törlése induláskor
     if (loginMessage) {
         loginMessage.className = "mb-3";
         loginMessage.textContent = "";
     }
     try {
         const response = await loginUser(emailInput.value, passwordInput.value);
+        // Sikertelen login
         if (!response.ok) {
             const text = await response.text().catch(() => "");
             if (loginMessage) {
@@ -92,14 +111,17 @@ export async function handleLoginSubmit(event) {
             }
             return;
         }
+        // Sikeres login
         if (loginMessage) {
             loginMessage.className = "text-success mb-3";
             loginMessage.textContent = "Sikeres bejelentkezés!";
         }
+        // Lekérjük a belépett user adatait, és eltároljuk
         const authUser = await fetchAuthenticatedUserData();
         const userId = parseNumericId(authUser?.userId ?? authUser?.UserId);
-        if (userId)
+        if (userId) {
             setCurrentUserId(userId);
+        }
         setCurrentUserEmail(emailInput.value.trim());
         window.location.replace("../Fooldalak/Profile.html");
     }
@@ -110,6 +132,7 @@ export async function handleLoginSubmit(event) {
         }
     }
 }
+// Regisztrációs form elküldése
 export async function handleRegisterSubmit(event) {
     event.preventDefault();
     const emailInput = document.getElementById("registerEmail");
@@ -118,12 +141,15 @@ export async function handleRegisterSubmit(event) {
     const passwordInput = document.getElementById("registerPassword");
     const passwordConfirmInput = document.getElementById("registerPasswordConfirm");
     const registerMessage = document.getElementById("registerMessage");
-    if (!emailInput || !fullNameInput || !addressInput || !passwordInput || !passwordConfirmInput)
+    if (!emailInput || !fullNameInput || !addressInput || !passwordInput || !passwordConfirmInput) {
         return;
+    }
+    // Üzenet törlése induláskor
     if (registerMessage) {
         registerMessage.className = "mb-3";
         registerMessage.textContent = "";
     }
+    // Jelszó egyezés ellenőrzése
     if (passwordInput.value !== passwordConfirmInput.value) {
         if (registerMessage) {
             registerMessage.className = "text-danger mb-3";
@@ -133,20 +159,24 @@ export async function handleRegisterSubmit(event) {
     }
     try {
         const response = await registerUser(emailInput.value, fullNameInput.value, passwordInput.value, addressInput.value);
+        // Sikertelen regisztráció
         if (!response.ok) {
             const text = await response.text().catch(() => "");
             if (registerMessage) {
                 registerMessage.className = "text-danger mb-3";
-                registerMessage.textContent = response.status === 409 || /letezik|exists/i.test(text)
-                    ? "Ez a felhasználó már létezik."
-                    : (text || "Sikertelen regisztráció.");
+                registerMessage.textContent =
+                    response.status === 409 || /letezik|exists/i.test(text)
+                        ? "Ez a felhasználó már létezik."
+                        : (text || "Sikertelen regisztráció.");
             }
             return;
         }
+        // Sikeres regisztráció
         if (registerMessage) {
             registerMessage.className = "text-success mb-3";
             registerMessage.textContent = "Sikeres regisztráció!";
         }
+        // Form ürítése
         emailInput.value = "";
         fullNameInput.value = "";
         addressInput.value = "";
@@ -160,21 +190,26 @@ export async function handleRegisterSubmit(event) {
         }
     }
 }
+// Kijelentkezés
 export async function handleLogout() {
+    // Először helyben töröljük a user adatokat
     setCurrentUserEmail("");
     setCurrentUserId(null);
     try {
         await logoutUser();
     }
     catch {
+        // Ha a szerver oldali logout elhasal, attól még megyünk tovább
     }
     window.location.href = "../Fooldalak/Bejelentkezes.html";
 }
+// Hogy a HTML onclick vagy egyéb globális hívás is elérje ezeket
 Object.assign(window, {
     handleLoginSubmit,
     handleRegisterSubmit,
     handleLogout,
 });
+// Oldalbetöltéskor beállítjuk a login állapotot
 document.addEventListener("DOMContentLoaded", () => {
     applyLoginState();
 });

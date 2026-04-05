@@ -1,10 +1,12 @@
 import { addToServerCart, fetchScreeningTickets, fetchSeatsForRoom } from "../Core/api.js";
 import { showReservationMessage } from "../Core/common.js";
+import { refreshFloatingCartBadge } from "../Kosar/kosar.js";
 import { ensureCurrentUserIdLoaded, applyLoginState } from "../Fooldalak/auth.js";
 import { ensureRoomsLoaded, getRoomById, getRoomLabel } from "../Fooldalak/cinema.js";
 import {
     clampSelectedTicketQuantities,
     clearSelectedTicketQuantities,
+    getAllowedTicketsForScreening,
     ensureTicketTypesLoaded,
     getAllowedTicketsForRoom,
     getSelectedTicketQuantities,
@@ -12,12 +14,11 @@ import {
     getTicketName,
     getTicketPrice,
     getTicketSummaryText,
-    getTicketTypeId,
     renderRoomTicketSelectionMarkup,
     saveSelectedTicketQuantities,
-    TicketTypeDto,
     SelectedTicketQuantity,
     ScreeningTicketDto,
+    TicketTypeDto
 } from "../Arak/arak.js";
 
 export interface SelectedScreeningState {
@@ -42,17 +43,28 @@ interface CartSeat {
     seatNumber: number;
 }
 
+interface CartRequestItem {
+    ticketId: number;
+    amount: number;
+    seats: CartSeat[];
+}
+
 const selectedScreeningStorageKey = "cinemaSelectedScreening";
 const selectedSeatStorageKeyPrefix = "cinemaSelectedSeats";
 const roomDetails = document.getElementById("roomDetails") as HTMLElement | null;
 
+// Megmondja, hogy adott vetítéshez milyen kulccsal mentsük a kiválasztott székeket sessionStorage-ba
 export function getSelectedSeatStorageKey(screeningId: number): string {
     return `${selectedSeatStorageKeyPrefix}:${screeningId}`;
 }
 
+// Visszaolvassa a korábban kiválasztott vetítést a sessionStorage-ból
 export function getSelectedScreeningState(): SelectedScreeningState | null {
     const rawScreening = sessionStorage.getItem(selectedScreeningStorageKey);
-    if (!rawScreening) return null;
+
+    if (!rawScreening) {
+        return null;
+    }
 
     try {
         return JSON.parse(rawScreening) as SelectedScreeningState;
@@ -61,108 +73,159 @@ export function getSelectedScreeningState(): SelectedScreeningState | null {
     }
 }
 
+// Elmenti, hogy melyik vetítést választotta ki a user
 export function setSelectedScreeningState(screening: SelectedScreeningState): void {
     sessionStorage.setItem(selectedScreeningStorageKey, JSON.stringify(screening));
 }
 
+// Visszaadja az adott vetítéshez kiválasztott székek ID-jait
 export function getSelectedSeatIds(screeningId: number): number[] {
     const rawSeatIds = sessionStorage.getItem(getSelectedSeatStorageKey(screeningId));
-    if (!rawSeatIds) return [];
+
+    if (!rawSeatIds) {
+        return [];
+    }
 
     try {
-        const parsedSeatIds = JSON.parse(rawSeatIds) as unknown;
-        return Array.isArray(parsedSeatIds)
-            ? parsedSeatIds.filter((value): value is number => typeof value === "number")
-            : [];
+        const parsedSeatIds = JSON.parse(rawSeatIds);
+
+        if (!Array.isArray(parsedSeatIds)) {
+            return [];
+        }
+
+        const result: number[] = [];
+
+        for (let i = 0; i < parsedSeatIds.length; i++) {
+            const seatId = Number(parsedSeatIds[i]);
+
+            if (seatId > 0) {
+                result.push(seatId);
+            }
+        }
+
+        return result;
     } catch {
         return [];
     }
 }
 
+// Elmenti a kiválasztott székeket
 export function saveSelectedSeatIds(screeningId: number, seatIds: number[]): void {
     sessionStorage.setItem(getSelectedSeatStorageKey(screeningId), JSON.stringify(seatIds));
 }
 
+// Törli a kiválasztott székeket adott vetítéshez
 export function clearSelectedSeats(screeningId: number): void {
     sessionStorage.removeItem(getSelectedSeatStorageKey(screeningId));
 }
 
-export function renderRoomSeatsMarkup(seats: SeatDto[], selectedSeatIds: Set<number>): string {
+// Kirajzolja a terem székeit HTML-ként
+export function renderRoomSeatsMarkup(seats: SeatDto[], selectedSeatIds: number[]): string {
     if (seats.length === 0) {
-        return `
-            <div class="alert alert-secondary mb-0" role="alert">
+        return `<div class="alert alert-secondary mb-0" role="alert">
                 Ehhez a teremhez most nem érkezett ülésadat az API-ból.
-            </div>
-        `;
+            </div>`;
     }
 
-    const seatsByRow = new Map<number, Map<number, SeatDto>>();
     let maxSeatNumber = 0;
+    let maxRowNumber = 0;
 
-    for (const seat of seats) {
-        const rowSeats = seatsByRow.get(seat.rowNumber) ?? new Map<number, SeatDto>();
-        rowSeats.set(seat.seatNumber, seat);
-        seatsByRow.set(seat.rowNumber, rowSeats);
-        maxSeatNumber = Math.max(maxSeatNumber, seat.seatNumber);
+    // Megkeressük, hány sor és soronként max hány szék van
+    for (let i = 0; i < seats.length; i++) {
+        if (seats[i].seatNumber > maxSeatNumber) {
+            maxSeatNumber = seats[i].seatNumber;
+        }
+
+        if (seats[i].rowNumber > maxRowNumber) {
+            maxRowNumber = seats[i].rowNumber;
+        }
     }
 
-    const sortedRows = Array.from(seatsByRow.entries()).sort((left, right) => left[0] - right[0]);
-    const aisleIndex = maxSeatNumber >= 6 ? Math.ceil(maxSeatNumber / 2) : 0;
+    // Ha elég sok szék van egy sorban, középre beszúrunk egy "folyosót"
+    let aisleIndex = 0;
+    if (maxSeatNumber >= 6) {
+        aisleIndex = Math.ceil(maxSeatNumber / 2);
+    }
 
-    const seatRowsMarkup = sortedRows.map(([rowNumber, rowSeats]) => {
-        const seatCells: string[] = [];
 
+    let html = 
+        `<div class="room-seat-map">
+            <div class="room-seat-screen">Vászon</div>
+            <div class="room-seat-layout">`;
+
+    // Soronként végigmegyünk a termen
+    for (let rowNumber = 1; rowNumber <= maxRowNumber; rowNumber++) {
+        html += 
+            `<div class="room-seat-row">
+                <div class="room-seat-row-label">${rowNumber}. sor</div>
+                <div class="room-seat-row-grid" style="--seat-columns: ${maxSeatNumber}; --seat-aisle-columns: ${aisleIndex ? maxSeatNumber + 1 : maxSeatNumber};">`;
+
+        // Soron belül végigmegyünk a székhelyeken
         for (let seatNumber = 1; seatNumber <= maxSeatNumber; seatNumber++) {
-            const seat = rowSeats.get(seatNumber);
+            let currentSeat: SeatDto | null = null;
 
-            if (!seat) {
-                seatCells.push('<span class="room-seat room-seat-empty" aria-hidden="true"></span>');
-            } else {
-                const stateLabel = seat.isReserved ? "Foglalt" : "Szabad";
-                const isSelected = selectedSeatIds.has(seat.seatId);
-
-                if (seat.isReserved) {
-                    seatCells.push(`
-                        <button
-                            type="button"
-                            class="room-seat room-seat-button room-seat-occupied"
-                            title="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
-                            aria-label="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
-                            disabled
-                            aria-disabled="true"
-                        ></button>
-                    `);
-                } else {
-                    seatCells.push(`
-                        <button
-                            type="button"
-                            class="room-seat room-seat-button room-seat-available${isSelected ? " room-seat-selected" : ""}"
-                            title="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
-                            aria-label="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
-                            aria-pressed="${isSelected ? "true" : "false"}"
-                            data-seat-id="${seat.seatId}"
-                        ></button>
-                    `);
+            // Megkeressük, van-e ezen a helyen tényleges szék
+            for (let i = 0; i < seats.length; i++) {
+                if (seats[i].rowNumber === rowNumber && seats[i].seatNumber === seatNumber) {
+                    currentSeat = seats[i];
+                    break;
                 }
             }
 
-            if (aisleIndex && seatNumber === aisleIndex) {
-                seatCells.push('<span class="room-seat-aisle" aria-hidden="true"></span>');
+            if (!currentSeat) {
+                html += `<span class="room-seat room-seat-empty" aria-hidden="true"></span>`;
+            }
+            else{
+                let isSelected = false;
+
+            // Megnézzük, hogy ez a szék ki van-e jelölve
+            for (let i = 0; i < selectedSeatIds.length; i++) {
+                if (selectedSeatIds[i] === currentSeat.seatId) {
+                    isSelected = true;
+                    break;
+                }
+            }
+
+            const stateLabel = currentSeat.isReserved ? "Foglalt" : "Szabad";
+
+            // Ha foglalt, tiltott gombként rajzoljuk ki
+            if (currentSeat.isReserved) {
+                html += 
+                    `<button
+                        type="button"
+                        class="room-seat room-seat-button room-seat-occupied"
+                        title="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
+                        aria-label="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
+                        disabled
+                        aria-disabled="true"
+                    ></button>`;
+            } else {
+                // Ha szabad, akkor kattintható gomb lesz
+                html += 
+                    `<button
+                        type="button"
+                        class="room-seat room-seat-button room-seat-available${isSelected ? " room-seat-selected" : ""}"
+                        title="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
+                        aria-label="${rowNumber}. sor ${seatNumber}. szék - ${stateLabel}"
+                        aria-pressed="${isSelected ? "true" : "false"}"
+                        data-seat-id="${currentSeat.seatId}"
+                    ></button>`;
             }
         }
 
-        return `
-            <div class="room-seat-row">
-                <div class="room-seat-row-label">${rowNumber}. sor</div>
-                <div class="room-seat-row-grid" style="--seat-columns: ${maxSeatNumber}; --seat-aisle-columns: ${aisleIndex ? maxSeatNumber + 1 : maxSeatNumber};">${seatCells.join("")}</div>
-            </div>
-        `;
-    }).join("");
+        // Ide jön a folyosó
+            if (aisleIndex && seatNumber === aisleIndex) {
+                html += `<span class="room-seat-aisle" aria-hidden="true"></span>`;
+            }
+        }
 
-    return `
-        <div class="room-seat-map">
-            <div class="room-seat-screen">Vászon</div>
-            <div class="room-seat-layout">${seatRowsMarkup}</div>
+
+        html += `</div>
+            </div>`;
+    }
+
+    html += 
+        `</div>
             <div class="room-seat-legend" aria-label="Szék állapot jelmagyarázat">
                 <span class="room-seat-legend-item">
                     <span class="room-seat-legend-swatch room-seat-legend-available"></span>
@@ -177,97 +240,199 @@ export function renderRoomSeatsMarkup(seats: SeatDto[], selectedSeatIds: Set<num
                     Foglalt
                 </span>
             </div>
-        </div>
-    `;
+        </div>`;
+
+    return html;
 }
 
-export function getAvailableSelectedSeatIds(screeningId: number, seats: SeatDto[], maxAllowed = Number.MAX_SAFE_INTEGER): Set<number> {
-    const reservedSeatIds = new Set<number>(
-        seats.filter((seat) => Boolean(seat.isReserved)).map((seat) => seat.seatId),
-    );
+// Megnézi, hogy a korábban kiválasztott székek közül melyek maradtak még érvényesek
+// ha időközben egy szék foglalttá vált, azt kidobja
+export function getAvailableSelectedSeatIds(
+    screeningId: number,
+    seats: SeatDto[],
+    maxAllowed: number
+): number[] {
+    const savedSeatIds = getSelectedSeatIds(screeningId);
+    const result: number[] = [];
 
-    const selectedSeatIds = getSelectedSeatIds(screeningId)
-        .filter((seatId) => !reservedSeatIds.has(seatId))
-        .slice(0, Math.max(0, maxAllowed));
+    for (let i = 0; i < savedSeatIds.length; i++) {
+        const seatId = savedSeatIds[i];
+        let reserved = false;
 
-    saveSelectedSeatIds(screeningId, selectedSeatIds);
-    return new Set<number>(selectedSeatIds);
+        for (let j = 0; j < seats.length; j++) {
+            if (seats[j].seatId === seatId && seats[j].isReserved) {
+                reserved = true;
+                break;
+            }
+        }
+
+        if (!reserved) {
+            result.push(seatId);
+        }
+
+        // Ne lehessen több kijelölt szék, mint amennyi jegy van
+        if (result.length >= maxAllowed) {
+            break;
+        }
+    }
+
+    saveSelectedSeatIds(screeningId, result);
+    return result;
 }
 
+// Rárakja a kattintáskezelőt a székekre
 export function initializeRoomSeatSelection(
     screeningId: number,
     getSeatSelectionLimit: () => number,
-    onSelectionChange: () => void,
+    onSelectionChange: () => void
 ): void {
-    if (!roomDetails) return;
+    if (!roomDetails) {
+        return;
+    }
 
     const seatButtons = roomDetails.querySelectorAll<HTMLButtonElement>(".room-seat-button[data-seat-id]");
-    Array.from(seatButtons).forEach((seatButton) => {
+
+    for (let i = 0; i < seatButtons.length; i++) {
+        const seatButton = seatButtons[i];
+
         seatButton.addEventListener("click", () => {
-            if (seatButton.disabled) return;
+            if (seatButton.disabled) {
+                return;
+            }
 
             const seatId = Number(seatButton.dataset.seatId);
-            if (!seatId) return;
+
+            if (!seatId) {
+                return;
+            }
 
             const selectedSeatIds = getSelectedSeatIds(screeningId);
-            const isSelected = selectedSeatIds.includes(seatId);
             const seatSelectionLimit = getSeatSelectionLimit();
 
+            let isSelected = false;
+
+            for (let j = 0; j < selectedSeatIds.length; j++) {
+                if (selectedSeatIds[j] === seatId) {
+                    isSelected = true;
+                    break;
+                }
+            }
+
+            // Ha már ki volt jelölve, akkor kivesszük
             if (isSelected) {
-                saveSelectedSeatIds(screeningId, selectedSeatIds.filter((id) => id !== seatId));
+                const newSelectedSeatIds: number[] = [];
+
+                for (let j = 0; j < selectedSeatIds.length; j++) {
+                    if (selectedSeatIds[j] !== seatId) {
+                        newSelectedSeatIds.push(selectedSeatIds[j]);
+                    }
+                }
+
+                saveSelectedSeatIds(screeningId, newSelectedSeatIds);
             } else {
+                // Ha még nincs kiválasztva jegy, nem engedünk széket választani
                 if (seatSelectionLimit <= 0) {
                     alert("Előbb válassz jegytípust és darabszámot.");
                     return;
                 }
 
+                // Több széket nem lehet választani, mint ahány jegy van
                 if (selectedSeatIds.length >= seatSelectionLimit) {
                     alert("Csak annyi helyet választhatsz, amennyi jegyet beállítottál.");
                     return;
                 }
 
-                saveSelectedSeatIds(screeningId, [...selectedSeatIds, seatId]);
+                selectedSeatIds.push(seatId);
+                saveSelectedSeatIds(screeningId, selectedSeatIds);
             }
 
+            // Minden kattintás után újrafrissítjük az állapotot
             onSelectionChange();
         });
-    });
+    }
 }
 
-function resolveServerTicketId(
+// A backend csak egy ticketId-s kosár sort tud fogadni,
+// ezért a frontend a vegyes jegyválasztást több külön kérésre bontja szét.
+function buildCartRequestItems(
     tickets: SelectedTicketQuantity[],
     screeningTickets: ScreeningTicketDto[],
-): number | null {
-    const selected = tickets.filter((ticket) => ticket.quantity > 0);
+    seats: SeatDto[],
+    selectedSeatIds: number[]
+): CartRequestItem[] {
+    const selectedSeats: CartSeat[] = [];
 
-    if (selected.length !== 1) {
-        return null;
+    // Először összerakjuk a ténylegesen kiválasztott székeket a teljes terem seat listából.
+    for (let i = 0; i < selectedSeatIds.length; i++) {
+        for (let j = 0; j < seats.length; j++) {
+            if (seats[j].seatId === selectedSeatIds[i]) {
+                selectedSeats.push({
+                    seatId: seats[j].seatId,
+                    rowNumber: seats[j].rowNumber,
+                    seatNumber: seats[j].seatNumber,
+                });
+                break;
+            }
+        }
     }
 
-    const ticketTypeId = selected[0].ticketTypeId;
-    const matchingTicket = screeningTickets.find(
-        (ticket) => Number(ticket.ticketTypeId ?? ticket.TicketTypeId) === ticketTypeId,
-    );
+    const requests: CartRequestItem[] = [];
+    let nextSeatIndex = 0;
 
-    return Number(matchingTicket?.ticketId ?? matchingTicket?.TicketId) || null;
+    for (let i = 0; i < tickets.length; i++) {
+        if (tickets[i].quantity <= 0) {
+            continue;
+        }
+
+        let ticketId = 0;
+
+        for (let j = 0; j < screeningTickets.length; j++) {
+            if (screeningTickets[j].ticketTypeId === tickets[i].ticketTypeId) {
+                ticketId = screeningTickets[j].ticketId;
+                break;
+            }
+        }
+
+        if (!ticketId) {
+            return [];
+        }
+
+        const requestSeats: CartSeat[] = [];
+
+        // A kiválasztott székeket sorban kiosztjuk az egyes jegytípusokhoz.
+        for (let j = 0; j < tickets[i].quantity; j++) {
+            if (nextSeatIndex >= selectedSeats.length) {
+                return [];
+            }
+
+            requestSeats.push(selectedSeats[nextSeatIndex]);
+            nextSeatIndex++;
+        }
+
+        requests.push({
+            ticketId: ticketId,
+            amount: requestSeats.length,
+            seats: requestSeats,
+        });
+    }
+
+    if (nextSeatIndex !== selectedSeats.length) {
+        return [];
+    }
+
+    return requests;
 }
 
-function buildServerSeatDtos(roomId: number, seats: CartSeat[]): SeatDto[] {
-    return seats.map((seat) => ({
-        seatId: seat.seatId,
-        rowNumber: seat.rowNumber,
-        seatNumber: seat.seatNumber,
-        roomId,
-        isReserved: false,
-    }));
-}
-
+// Ez rajzolja ki az egész terem oldalt
 export async function renderRoomPage(): Promise<void> {
-    if (!roomDetails) return;
+    if (!roomDetails) {
+        return;
+    }
 
     const selectedScreening = getSelectedScreeningState();
+
     if (!selectedScreening) {
-        window.location.replace("../Főoldalak/Cinema.html");
+        window.location.replace("../Fooldalak/Cinema.html");
         return;
     }
 
@@ -276,36 +441,57 @@ export async function renderRoomPage(): Promise<void> {
     const room = getRoomById(selectedScreening.roomId);
     const roomName = getRoomLabel(selectedScreening.roomId, selectedScreening.roomName);
     const formattedDate = new Date(selectedScreening.date).toLocaleString("hu-HU");
-    const isLoggedIn = Boolean((await ensureCurrentUserIdLoaded()) || false);
+
+    const currentUserId = await ensureCurrentUserIdLoaded();
+    const isLoggedIn = Boolean(currentUserId);
     const bookingLabel = isLoggedIn ? "Kosárba" : "Bejelentkezés a kosárhoz";
 
     let seats: SeatDto[] = [];
+
+    // Betöltjük a székeket API-ról
     try {
         seats = await fetchSeatsForRoom(selectedScreening.roomId, selectedScreening.filmScreeningId) as SeatDto[];
     } catch (error) {
         console.error(error);
-        seats = (room?.seats as SeatDto[] | undefined) ?? [];
+
+        // Ha az API nem megy, megpróbáljuk a terem adatból visszavenni
+        if (room && room.seats) {
+            seats = room.seats as SeatDto[];
+        } else {
+            seats = [];
+        }
     }
 
     const ticketTypes = await ensureTicketTypesLoaded();
-    const availableTickets = getAllowedTicketsForRoom(roomName, ticketTypes);
     const screeningTickets = await fetchScreeningTickets(selectedScreening.filmScreeningId) as ScreeningTicketDto[];
-    const availableSeatCount = seats.filter((seat) => !seat.isReserved).length;
+    const availableTickets = getAllowedTicketsForScreening(roomName, ticketTypes, screeningTickets);
 
+    let availableSeatCount = 0;
+
+    // Összeszámoljuk a szabad székeket
+    for (let i = 0; i < seats.length; i++) {
+        if (!seats[i].isReserved) {
+            availableSeatCount++;
+        }
+    }
+
+    // Betöltjük a kiválasztott jegyeket, és levágjuk max a szabad helyek számáig
     let selectedTickets = clampSelectedTicketQuantities(
         getSelectedTicketQuantities(selectedScreening.filmScreeningId, availableTickets),
-        availableSeatCount,
+        availableSeatCount
     );
+
     saveSelectedTicketQuantities(selectedScreening.filmScreeningId, selectedTickets);
 
     const selectedSeatIds = getAvailableSelectedSeatIds(
         selectedScreening.filmScreeningId,
         seats,
-        getSelectedTicketQuantityTotal(selectedTickets),
+        getSelectedTicketQuantityTotal(selectedTickets)
     );
 
-    roomDetails.innerHTML = `
-        <section class="container py-4">
+    // Itt kerül ki a teljes oldal HTML-je
+    roomDetails.innerHTML = 
+        `<section class="container py-4">
             <div class="card bg-dark text-light border-secondary room-details-card">
                 <div class="card-body">
                     <h1 class="h3 mb-3">${roomName}</h1>
@@ -323,31 +509,44 @@ export async function renderRoomPage(): Promise<void> {
                     </div>
                 </div>
             </div>
-        </section>
-    `;
+        </section>`;
 
     const addToCartButton = document.getElementById("addToCartButton") as HTMLButtonElement | null;
     const roomTicketSummary = document.getElementById("roomTicketSelectionSummary") as HTMLElement | null;
     const roomSeatSummary = document.getElementById("roomSeatSelectionSummary") as HTMLElement | null;
 
+    // Ez frissíti a képernyőt minden változás után
     const updateRoomSelectionState = (): void => {
         selectedTickets = clampSelectedTicketQuantities(
             getSelectedTicketQuantities(selectedScreening.filmScreeningId, availableTickets),
-            availableSeatCount,
+            availableSeatCount
         );
+
         saveSelectedTicketQuantities(selectedScreening.filmScreeningId, selectedTickets);
 
         const totalTickets = getSelectedTicketQuantityTotal(selectedTickets);
         const limitedSelectedSeatIds = getAvailableSelectedSeatIds(
             selectedScreening.filmScreeningId,
             seats,
-            totalTickets,
+            totalTickets
         );
 
         const seatButtons = roomDetails.querySelectorAll<HTMLButtonElement>(".room-seat-button[data-seat-id]");
-        Array.from(seatButtons).forEach((seatButton) => {
+
+        // Székek kinézete és tiltása/frissítése
+        for (let i = 0; i < seatButtons.length; i++) {
+            const seatButton = seatButtons[i];
             const seatId = Number(seatButton.dataset.seatId);
-            const isSelected = limitedSelectedSeatIds.has(seatId);
+
+            let isSelected = false;
+
+            for (let j = 0; j < limitedSelectedSeatIds.length; j++) {
+                if (limitedSelectedSeatIds[j] === seatId) {
+                    isSelected = true;
+                    break;
+                }
+            }
+
             const isSeatSelectionEnabled = totalTickets > 0;
 
             seatButton.disabled = !isSeatSelectionEnabled;
@@ -355,112 +554,175 @@ export async function renderRoomPage(): Promise<void> {
             seatButton.classList.toggle("room-seat-selected", isSelected);
             seatButton.setAttribute("aria-pressed", isSelected ? "true" : "false");
             seatButton.setAttribute("aria-disabled", seatButton.disabled ? "true" : "false");
-        });
+        }
 
-        for (const ticket of availableTickets) {
-            const ticketTypeId = getTicketTypeId(ticket);
-            if (ticketTypeId === null) continue;
+        // Jegyszámlálók frissítése
+        for (let i = 0; i < availableTickets.length; i++) {
+            const ticket = availableTickets[i];
+            const ticketTypeId = ticket.ticketTypeId;
 
-            const currentQuantity = selectedTickets.find((selectedTicket) => selectedTicket.ticketTypeId === ticketTypeId)?.quantity ?? 0;
+            let currentQuantity = 0;
+
+            for (let j = 0; j < selectedTickets.length; j++) {
+                if (selectedTickets[j].ticketTypeId === ticketTypeId) {
+                    currentQuantity = selectedTickets[j].quantity;
+                    break;
+                }
+            }
+
             const decrementButton = roomDetails.querySelector<HTMLButtonElement>(`[data-ticket-action="decrement"][data-ticket-type-id="${ticketTypeId}"]`);
             const incrementButton = roomDetails.querySelector<HTMLButtonElement>(`[data-ticket-action="increment"][data-ticket-type-id="${ticketTypeId}"]`);
             const counterValue = document.getElementById(`roomTicketCount-${ticketTypeId}`);
 
-            if (counterValue) counterValue.textContent = String(currentQuantity);
-            if (decrementButton) decrementButton.disabled = currentQuantity <= 0;
-            if (incrementButton) incrementButton.disabled = totalTickets >= availableSeatCount || availableSeatCount === 0;
+            if (counterValue) {
+                counterValue.textContent = String(currentQuantity);
+            }
+
+            if (decrementButton) {
+                decrementButton.disabled = currentQuantity <= 0;
+            }
+
+            if (incrementButton) {
+                incrementButton.disabled = totalTickets >= availableSeatCount || availableSeatCount === 0;
+            }
         }
 
+        // Alul az összefoglaló frissítése
         if (roomTicketSummary) {
-            roomTicketSummary.textContent = totalTickets > 0
-                ? `Kiválasztott jegyek: ${getTicketSummaryText(selectedTickets)}`
-                : "Előbb válassz jegytípust és darabszámot.";
+            if (totalTickets > 0) {
+                roomTicketSummary.textContent = `Kiválasztott jegyek: ${getTicketSummaryText(selectedTickets)}`;
+            } else {
+                roomTicketSummary.textContent = "Előbb válassz jegytípust és darabszámot.";
+            }
         }
 
         if (roomSeatSummary) {
-            roomSeatSummary.textContent = totalTickets > 0
-                ? `Kiválasztott székek: ${limitedSelectedSeatIds.size}/${totalTickets}`
-                : "Jegyválasztás után tudsz székeket kijelölni.";
+            if (totalTickets > 0) {
+                roomSeatSummary.textContent = `Kiválasztott székek: ${limitedSelectedSeatIds.length}/${totalTickets}`;
+            } else {
+                roomSeatSummary.textContent = "Jegyválasztás után tudsz székeket kijelölni.";
+            }
         }
 
+        // Csak akkor legyen nyomható a gomb, ha a jegyek és székek száma egyezik
         if (addToCartButton) {
-            addToCartButton.disabled = totalTickets === 0 || limitedSelectedSeatIds.size !== totalTickets;
+            addToCartButton.disabled = totalTickets === 0 || limitedSelectedSeatIds.length !== totalTickets;
         }
     };
 
     initializeRoomSeatSelection(
         selectedScreening.filmScreeningId,
         () => getSelectedTicketQuantityTotal(selectedTickets),
-        updateRoomSelectionState,
+        updateRoomSelectionState
     );
 
     const ticketStepperButtons = roomDetails.querySelectorAll<HTMLButtonElement>("[data-ticket-action][data-ticket-type-id]");
-    Array.from(ticketStepperButtons).forEach((button) => {
+
+    // Jegy darabszám növelés/csökkentés
+    for (let i = 0; i < ticketStepperButtons.length; i++) {
+        const button = ticketStepperButtons[i];
+
         button.addEventListener("click", () => {
             const ticketTypeId = Number(button.dataset.ticketTypeId);
             const ticketAction = button.dataset.ticketAction;
 
-            if (!ticketTypeId || !ticketAction) return;
-
-            const currentQuantities = new Map<number, number>(
-                selectedTickets.map((ticket) => [ticket.ticketTypeId, ticket.quantity]),
-            );
-            const currentQuantity = currentQuantities.get(ticketTypeId) ?? 0;
-            const currentTotal = getSelectedTicketQuantityTotal(selectedTickets);
-
-            if (ticketAction === "increment") {
-                if (currentTotal >= availableSeatCount) return;
-                currentQuantities.set(ticketTypeId, currentQuantity + 1);
+            if (!ticketTypeId || !ticketAction) {
+                return;
             }
 
-            if (ticketAction === "decrement") {
-                if (currentQuantity <= 1) {
-                    currentQuantities.delete(ticketTypeId);
-                } else {
-                    currentQuantities.set(ticketTypeId, currentQuantity - 1);
+            let currentQuantity = 0;
+
+            for (let j = 0; j < selectedTickets.length; j++) {
+                if (selectedTickets[j].ticketTypeId === ticketTypeId) {
+                    currentQuantity = selectedTickets[j].quantity;
+                    break;
                 }
             }
 
-            selectedTickets = availableTickets
-                .map((ticket) => {
-                    const nextTicketTypeId = getTicketTypeId(ticket);
-                    if (nextTicketTypeId === null) return null;
+            const currentTotal = getSelectedTicketQuantityTotal(selectedTickets);
+            const newSelectedTickets: SelectedTicketQuantity[] = [];
 
-                    const quantity = currentQuantities.get(nextTicketTypeId) ?? 0;
-                    if (quantity <= 0) return null;
+            if (ticketAction === "increment") {
+                if (currentTotal >= availableSeatCount) {
+                    return;
+                }
 
-                    return {
-                        ticketTypeId: nextTicketTypeId,
-                        ticketName: getTicketName(ticket),
-                        unitPrice: getTicketPrice(ticket),
-                        quantity,
-                    };
-                })
-                .filter((ticket): ticket is SelectedTicketQuantity => Boolean(ticket));
+                let found = false;
 
+                for (let j = 0; j < selectedTickets.length; j++) {
+                    if (selectedTickets[j].ticketTypeId === ticketTypeId) {
+                        newSelectedTickets.push({
+                            ticketTypeId: selectedTickets[j].ticketTypeId,
+                            ticketType: selectedTickets[j].ticketType,
+                            unitPrice: selectedTickets[j].unitPrice,
+                            quantity: selectedTickets[j].quantity + 1,
+                        });
+                        found = true;
+                    } else {
+                        newSelectedTickets.push(selectedTickets[j]);
+                    }
+                }
+
+                if (!found) {
+                    for (let j = 0; j < availableTickets.length; j++) {
+                        if (availableTickets[j].ticketTypeId === ticketTypeId) {
+                            newSelectedTickets.push({
+                                ticketTypeId: availableTickets[j].ticketTypeId,
+                                ticketType: getTicketName(availableTickets[j]),
+                                unitPrice: getTicketPrice(availableTickets[j]),
+                                quantity: 1,
+                            });
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (ticketAction === "decrement") {
+                for (let j = 0; j < selectedTickets.length; j++) {
+                    if (selectedTickets[j].ticketTypeId === ticketTypeId) {
+                        if (selectedTickets[j].quantity > 1) {
+                            newSelectedTickets.push({
+                                ticketTypeId: selectedTickets[j].ticketTypeId,
+                                ticketType: selectedTickets[j].ticketType,
+                                unitPrice: selectedTickets[j].unitPrice,
+                                quantity: selectedTickets[j].quantity - 1,
+                            });
+                        }
+                    } else {
+                        newSelectedTickets.push(selectedTickets[j]);
+                    }
+                }
+            }
+
+            selectedTickets = newSelectedTickets;
             saveSelectedTicketQuantities(selectedScreening.filmScreeningId, selectedTickets);
             updateRoomSelectionState();
         });
-    });
+    }
 
     updateRoomSelectionState();
 
     if (addToCartButton) {
         addToCartButton.addEventListener("click", async () => {
             const userId = await ensureCurrentUserIdLoaded();
+
+            // Ha nincs bejelentkezve, átdobjuk loginra
             if (!userId) {
-                window.location.href = "../Főoldalak/Bejelentkezes.html";
+                window.location.href = "../Fooldalak/Bejelentkezes.html";
                 return;
             }
 
             const selectedIds = getSelectedSeatIds(selectedScreening.filmScreeningId);
-            if (!selectedIds.length) {
+
+            if (selectedIds.length === 0) {
                 alert("Nincsenek kiválasztott székek.");
                 return;
             }
 
             const ticketsForCart = getSelectedTicketQuantities(selectedScreening.filmScreeningId, availableTickets);
             const totalSelectedTickets = getSelectedTicketQuantityTotal(ticketsForCart);
+
             if (totalSelectedTickets === 0) {
                 alert("Előbb válassz jegytípust és darabszámot.");
                 return;
@@ -471,37 +733,63 @@ export async function renderRoomPage(): Promise<void> {
                 return;
             }
 
-            const ticketId = resolveServerTicketId(ticketsForCart, screeningTickets);
-            if (!ticketId) {
-                alert("Ehhez az összeállításhoz a backend jelenleg egyszerre egy jegytípust támogat.");
+            // Itt bontjuk szét a vegyes jegyválasztást több egyjegytípusos szerveres kérésre.
+            const cartRequestItems = buildCartRequestItems(
+                ticketsForCart,
+                screeningTickets,
+                seats,
+                selectedIds,
+            );
+
+            if (cartRequestItems.length === 0) {
+                alert("A kiválasztott jegyeket most nem sikerült a szerveres kosártételekhez összerakni.");
                 return;
             }
 
-            const seatsForCart: CartSeat[] = seats
-                .filter((seat) => selectedIds.includes(seat.seatId))
-                .map((seat) => ({
-                    seatId: seat.seatId,
-                    rowNumber: seat.rowNumber,
-                    seatNumber: seat.seatNumber,
-                }));
+            let successCount = 0;
+            let failedCount = 0;
 
-            const addedCart = await addToServerCart({
-                userId,
-                filmScreeningId: selectedScreening.filmScreeningId,
-                ticketId,
-                amount: totalSelectedTickets,
-                seats: buildServerSeatDtos(selectedScreening.roomId, seatsForCart),
-            });
+            // Minden jegytípus külön kosártételként megy fel a jelenlegi backend szerződés miatt.
+            for (let i = 0; i < cartRequestItems.length; i++) {
+                const addedCart = await addToServerCart({
+                    userId,
+                    filmScreeningId: selectedScreening.filmScreeningId,
+                    ticketId: cartRequestItems[i].ticketId,
+                    amount: cartRequestItems[i].amount,
+                    seats: cartRequestItems[i].seats,
+                });
 
-            if (!addedCart || !Number(addedCart.cartId ?? addedCart.CartId)) {
+                if (addedCart && Number(addedCart.cartId ?? addedCart.CartId)) {
+                    successCount++;
+                } else {
+                    failedCount++;
+                }
+            }
+
+            if (successCount === 0) {
                 showReservationMessage("A kosárba helyezés nem sikerült.", true);
                 return;
             }
 
+            // Sikeres kosárba rakás után töröljük a helyi kijelöléseket
             clearSelectedSeats(selectedScreening.filmScreeningId);
             clearSelectedTicketQuantities(selectedScreening.filmScreeningId);
+
+            // Újrarajzoljuk az oldalt és frissítjük a kis kosár számot
             await renderRoomPage();
-            showReservationMessage("A kiválasztott jegyek bekerültek a szerveres kosárba.", false);
+            await refreshFloatingCartBadge();
+
+            if (failedCount === 0) {
+                if (cartRequestItems.length > 1) {
+                    showReservationMessage("A kiválasztott jegyek külön kosártételként bekerültek a kosárba.", false);
+                } else {
+                    showReservationMessage("A kiválasztott jegyek bekerültek a kosárba.", false);
+                }
+
+                return;
+            }
+
+            showReservationMessage("A kiválasztott jegyek egy része bekerült a kosárba, egy része nem.", true);
         });
     }
 }

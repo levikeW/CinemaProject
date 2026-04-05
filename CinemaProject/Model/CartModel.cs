@@ -20,7 +20,9 @@ namespace CinemaProject.Model
                 .Include(x => x.FilmScreening)
                 .Include(x => x.Ticket)
                     .ThenInclude(x => x.TicketType)
-                .Include(x => x.Seats).Where(x => x.UserId == userId)
+                .Include(x => x.Seats)
+                .Where(x => x.UserId == userId)
+                .Where(x => !_context.paymentReservations.Any(p => p.CartId == x.CartId))
                 .Select(x => new CartDto
                 {
                     CartId = x.CartId,
@@ -111,6 +113,9 @@ namespace CinemaProject.Model
 
         public async Task RemoveFromCart(int cartId)
         {
+            if (await _context.paymentReservations.AnyAsync(x => x.CartId == cartId))
+                throw new InvalidOperationException("This cart already belongs to a reservation.");
+
             var cart = await _context.carts.Include(x => x.Seats).FirstOrDefaultAsync(x => x.CartId == cartId);
 
             if (cart == null)
@@ -132,6 +137,9 @@ namespace CinemaProject.Model
 
         public async Task UpdateCart(CartDto dto, int cartId)
         {
+            if (await _context.paymentReservations.AnyAsync(x => x.CartId == cartId))
+                throw new InvalidOperationException("This cart already belongs to a reservation.");
+
             var cart = await _context.carts
                 .Include(x => x.Seats)
                 .Include(x => x.Ticket)
@@ -189,6 +197,9 @@ namespace CinemaProject.Model
 
         public async Task ModifyCart(ModifyCartDto dto)
         {
+            if (await _context.paymentReservations.AnyAsync(x => x.CartId == dto.CartId))
+                throw new InvalidOperationException("This cart already belongs to a reservation.");
+
             var cart = await _context.carts
                 .Include(x => x.Seats)
                 .Include(x => x.Ticket)
@@ -235,7 +246,11 @@ namespace CinemaProject.Model
 
         public async Task ClearCart(int userId)
         {
-            var carts = await _context.carts.Include(x => x.Seats).Where(x => x.UserId == userId).ToListAsync();
+            var carts = await _context.carts
+                .Include(x => x.Seats)
+                .Where(x => x.UserId == userId)
+                .Where(x => !_context.paymentReservations.Any(p => p.CartId == x.CartId))
+                .ToListAsync();
 
             if (!carts.Any())
                 return;

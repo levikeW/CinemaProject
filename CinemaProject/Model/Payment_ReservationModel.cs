@@ -17,6 +17,9 @@ namespace CinemaProject.Model
 
         public async Task<ConfirmationDto> CreateReservation(int cartId)
         {
+            if (await _context.paymentReservations.AnyAsync(x => x.CartId == cartId))
+                throw new InvalidOperationException("Reservation already exists for this cart");
+
             var cart = await _context.carts.FirstOrDefaultAsync(c => c.CartId == cartId);
 
             if (cart == null)
@@ -180,7 +183,8 @@ namespace CinemaProject.Model
                 .Include(p => p.Cart)
                     .ThenInclude(c => c.Seats)
                 .Include(p => p.Cart)
-                    .ThenInclude(c => c.FilmScreening).Where(x => x.Cart.UserId == userId && x.Cart.FilmScreening.Date >= now)
+                    .ThenInclude(c => c.FilmScreening)
+                .Where(x => x.UserId == userId && x.FilmScreening.Date >= now)
                 .Select(x => new PaymentReservationDto
                 {
                     PaymentReservationId = x.PaymentReservationId,
@@ -210,7 +214,8 @@ namespace CinemaProject.Model
                 .Include(p => p.Cart)
                     .ThenInclude(c => c.Seats)
                 .Include(p => p.Cart)
-                    .ThenInclude(c => c.FilmScreening).Where(x => x.Cart.UserId == userId && x.Cart.FilmScreening.Date < now)
+                    .ThenInclude(c => c.FilmScreening)
+                .Where(x => x.UserId == userId && x.FilmScreening.Date < now)
                 .Select(x => new PaymentReservationDto
                 {
                     PaymentReservationId = x.PaymentReservationId,

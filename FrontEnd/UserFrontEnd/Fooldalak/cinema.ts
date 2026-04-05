@@ -1,5 +1,5 @@
 import { fetchCategoriesList, fetchImages, fetchMoviesList, fetchRoomsList } from "../Core/api.js";
-import { getImageSource, movieDescriptionTranslations, moviePosterFallbacks } from "../Core/common.js";
+import { getImageSource, moviePosterFallbacks } from "../Core/common.js";
 import { applyLoginState } from "./auth.js";
 import { setSelectedScreeningState, SelectedScreeningState } from "../Termek/terem.js";
 
@@ -52,44 +52,85 @@ const movieFilter = document.getElementById("movieFilter") as HTMLSelectElement 
 const dateFilter = document.getElementById("dateFilter") as HTMLInputElement | null;
 const movieSearchInput = document.getElementById("movieSearchInput") as HTMLInputElement | null;
 
+// Ide töltjük be az adatokat
 let allMovies: MovieDto[] = [];
 let allRooms: RoomDto[] = [];
 let allCategories: CategoriesDto[] = [];
 
+// Kategória nevének kiolvasása
 export function getCategoryName(category: CategoriesDto): string {
     return (category.categoryName ?? category.categName ?? category.name ?? "").trim();
 }
 
+// Filmhez fallback poszter kiválasztása
 export function getMovieFallbackPoster(movie: MovieDto): string {
     const normalizedTitle = movie.movieTitle.trim().toLowerCase();
     return moviePosterFallbacks[normalizedTitle] ?? "Logo.png";
 }
 
+// Film leírás visszaadása
+// Ha van saját fordításunk, azt használjuk, különben a backendből jött leírást
 export function getMovieDescription(movie: MovieDto): string {
-    const normalizedTitle = movie.movieTitle.trim().toLowerCase();
-    return movieDescriptionTranslations[normalizedTitle] ?? movie.description;
+    return movie.description ? movie.description : "Nincs leírás.";
 }
 
+// Terem neve visszaadása
+// Ha nincs roomName megadva, megpróbáljuk a roomId alapján megtalálni
 export function getRoomLabel(roomId: number, roomName?: string | null): string {
-    if (roomName && roomName.trim()) return roomName;
-    const matchingRoom = allRooms.find((room) => room.roomId === roomId);
-    return matchingRoom?.roomName ?? `Terem #${roomId}`;
+    if (roomName && roomName.trim()) {
+        return roomName;
+    }
+
+    for (let i = 0; i < allRooms.length; i++) {
+        if (allRooms[i].roomId === roomId) {
+            return allRooms[i].roomName;
+        }
+    }
+
+    return `Terem #${roomId}`;
 }
 
+// Terem lekérése roomId alapján
 export function getRoomById(roomId: number): RoomDto | undefined {
-    return allRooms.find((room) => room.roomId === roomId);
+    for (let i = 0; i < allRooms.length; i++) {
+        if (allRooms[i].roomId === roomId) {
+            return allRooms[i];
+        }
+    }
+
+    return undefined;
 }
 
+// A film vetítéseit úgy alakítjuk át, hogy mindegyiknél biztosan legyen rendes teremnév
 export function normalizeMovieScreenings(movie: MovieDto): MovieDto {
-    return {
-        ...movie,
-        screenings: movie.screenings.map((screening) => ({
-            ...screening,
+    const normalizedScreenings: FilmScreeningDto[] = [];
+
+    for (let i = 0; i < movie.screenings.length; i++) {
+        const screening = movie.screenings[i];
+
+        normalizedScreenings.push({
+            filmScreeningId: screening.filmScreeningId,
+            movieId: screening.movieId,
+            movieTitle: screening.movieTitle,
+            roomId: screening.roomId,
             roomName: getRoomLabel(screening.roomId, screening.roomName),
-        })),
+            date: screening.date,
+        });
+    }
+
+    return {
+        movieId: movie.movieId,
+        movieTitle: movie.movieTitle,
+        duration: movie.duration,
+        genre: movie.genre,
+        director: movie.director,
+        description: movie.description,
+        imageId: movie.imageId,
+        screenings: normalizedScreenings,
     };
 }
 
+// Termek betöltése, ha még nincsenek memóriában
 export async function ensureRoomsLoaded(): Promise<RoomDto[]> {
     if (allRooms.length === 0) {
         allRooms = await fetchRoomsList() as RoomDto[];
@@ -98,29 +139,38 @@ export async function ensureRoomsLoaded(): Promise<RoomDto[]> {
     return allRooms;
 }
 
+// Filmek, termek és kategóriák betöltése egyszerre
 export async function ensureMoviesLoaded(): Promise<MovieDto[]> {
     if (allMovies.length === 0) {
-        const [movies, rooms, categories] = await Promise.all([
-            fetchMoviesList() as Promise<MovieDto[]>,
-            fetchRoomsList() as Promise<RoomDto[]>,
-            fetchCategoriesList() as Promise<CategoriesDto[]>,
-        ]);
+        const movies = await fetchMoviesList() as MovieDto[];
+        const rooms = await fetchRoomsList() as RoomDto[];
+        const categories = await fetchCategoriesList() as CategoriesDto[];
 
         allRooms = rooms;
         allCategories = categories;
-        allMovies = movies.map((movie) => normalizeMovieScreenings(movie));
+
+        const normalizedMovies: MovieDto[] = [];
+
+        for (let i = 0; i < movies.length; i++) {
+            normalizedMovies.push(normalizeMovieScreenings(movies[i]));
+        }
+
+        allMovies = normalizedMovies;
     }
 
     return allMovies;
 }
 
+// Egy select feltöltése opciókkal
 export function renderMovieOptions(
     select: HTMLSelectElement | null,
     values: string[],
     defaultLabel: string,
     getLabel?: (value: string) => string,
 ): void {
-    if (!select) return;
+    if (!select) {
+        return;
+    }
 
     const currentValue = select.value;
     select.innerHTML = "";
@@ -130,60 +180,147 @@ export function renderMovieOptions(
     defaultOption.textContent = defaultLabel;
     select.appendChild(defaultOption);
 
-    for (const value of values) {
+    for (let i = 0; i < values.length; i++) {
+        const value = values[i];
         const option = document.createElement("option");
         option.value = value;
         option.textContent = getLabel ? getLabel(value) : value;
         select.appendChild(option);
     }
 
-    if (values.indexOf(currentValue) !== -1) {
+    // Ha a korábban kiválasztott érték még mindig létezik, visszaállítjuk
+    let valueStillExists = false;
+
+    for (let i = 0; i < values.length; i++) {
+        if (values[i] === currentValue) {
+            valueStillExists = true;
+            break;
+        }
+    }
+
+    if (valueStillExists) {
         select.value = currentValue;
     }
 }
 
+// A szűrők feltöltése az aktuális filmek alapján
 export function populateMovieFilters(movies: MovieDto[]): void {
-    const roomIdSet = new Set<number>();
-    const movieTitleSet = new Set<string>();
+    const roomIds: number[] = [];
+    const movieTitles: string[] = [];
 
-    for (const movie of movies) {
-        for (const screening of movie.screenings) {
-            roomIdSet.add(screening.roomId);
+    for (let i = 0; i < movies.length; i++) {
+        const movie = movies[i];
+
+        for (let j = 0; j < movie.screenings.length; j++) {
+            const roomId = movie.screenings[j].roomId;
+
+            let roomExists = false;
+            for (let k = 0; k < roomIds.length; k++) {
+                if (roomIds[k] === roomId) {
+                    roomExists = true;
+                    break;
+                }
+            }
+
+            if (!roomExists) {
+                roomIds.push(roomId);
+            }
         }
 
         if (movie.movieTitle) {
-            movieTitleSet.add(movie.movieTitle);
+            let titleExists = false;
+
+            for (let j = 0; j < movieTitles.length; j++) {
+                if (movieTitles[j] === movie.movieTitle) {
+                    titleExists = true;
+                    break;
+                }
+            }
+
+            if (!titleExists) {
+                movieTitles.push(movie.movieTitle);
+            }
         }
     }
 
-    const roomIds = Array.from(roomIdSet).sort((a, b) => a - b).map(String);
-    const genres = allCategories
-        .map((category) => getCategoryName(category))
-        .filter(Boolean)
-        .sort((a, b) => a.localeCompare(b, "hu"));
-    const movieTitles = Array.from(movieTitleSet).sort((a, b) => a.localeCompare(b, "hu"));
+    roomIds.sort(function (a, b) {
+        return a - b;
+    });
 
-    renderMovieOptions(locationFilter, roomIds, "Összes terem", (roomValue) => getRoomLabel(Number(roomValue)));
+    const roomIdStrings: string[] = [];
+    for (let i = 0; i < roomIds.length; i++) {
+        roomIdStrings.push(String(roomIds[i]));
+    }
+
+    const genres: string[] = [];
+
+    for (let i = 0; i < allCategories.length; i++) {
+        const categoryName = getCategoryName(allCategories[i]);
+
+        if (!categoryName) {
+            continue;
+        }
+
+        let exists = false;
+        for (let j = 0; j < genres.length; j++) {
+            if (genres[j] === categoryName) {
+                exists = true;
+                break;
+            }
+        }
+
+        if (!exists) {
+            genres.push(categoryName);
+        }
+    }
+
+    genres.sort(function (a, b) {
+        return a.localeCompare(b, "hu");
+    });
+
+    movieTitles.sort(function (a, b) {
+        return a.localeCompare(b, "hu");
+    });
+
+    renderMovieOptions(locationFilter, roomIdStrings, "Összes terem", function (roomValue) {
+        return getRoomLabel(Number(roomValue));
+    });
+
     renderMovieOptions(genreFilter, genres, "Összes kategória");
     renderMovieOptions(movieFilter, movieTitles, "Összes film");
 }
 
+// A kiválasztott szűrők alapján visszaadja a szűrt film listát
 export function getFilteredMovies(): MovieDto[] {
     const selectedLocation = locationFilter?.value ?? "";
     const selectedGenre = genreFilter?.value ?? "";
     const selectedMovie = movieFilter?.value ?? "";
     const selectedDate = dateFilter?.value ?? "";
     const searchText = (movieSearchInput?.value ?? "").trim().toLowerCase();
+
     const hasScreeningFilters = Boolean(selectedLocation || selectedDate);
     const filteredMovies: MovieDto[] = [];
 
-    for (const movie of allMovies) {
-        if (selectedGenre && movie.genre !== selectedGenre) continue;
-        if (selectedMovie && movie.movieTitle !== selectedMovie) continue;
+    for (let i = 0; i < allMovies.length; i++) {
+        const movie = allMovies[i];
+
+        if (selectedGenre && movie.genre !== selectedGenre) {
+            continue;
+        }
+
+        if (selectedMovie && movie.movieTitle !== selectedMovie) {
+            continue;
+        }
+
+        if (searchText && !movie.movieTitle.toLowerCase().includes(searchText)) {
+            continue;
+        }
 
         const filteredScreenings: FilmScreeningDto[] = [];
 
-        for (const screening of movie.screenings) {
+        for (let j = 0; j < movie.screenings.length; j++) {
+            const screening = movie.screenings[j];
+
             const matchesLocation = !selectedLocation || String(screening.roomId) === selectedLocation;
             const matchesDate = !selectedDate || screening.date.slice(0, 10) === selectedDate;
 
@@ -193,10 +330,14 @@ export function getFilteredMovies(): MovieDto[] {
         }
 
         if (filteredScreenings.length > 0 || !hasScreeningFilters) {
-            if (searchText && !(movie.movieTitle ?? "").toLowerCase().includes(searchText)) continue;
-
             filteredMovies.push({
-                ...movie,
+                movieId: movie.movieId,
+                movieTitle: movie.movieTitle,
+                duration: movie.duration,
+                genre: movie.genre,
+                director: movie.director,
+                description: movie.description,
+                imageId: movie.imageId,
                 screenings: filteredScreenings,
             });
         }
@@ -205,30 +346,44 @@ export function getFilteredMovies(): MovieDto[] {
     return filteredMovies;
 }
 
+// Egy film képének lekérése
+// Ha nem sikerül, fallback képet ad vissza
 export async function getMovieImageSource(movie: MovieDto): Promise<string> {
     const fallbackSource = getMovieFallbackPoster(movie);
 
     try {
-        return getImageSource(await fetchImages(movie.movieId) as ImageDto[], fallbackSource);
+        const imageData = await fetchImages(movie.movieId) as ImageDto[];
+        return getImageSource(imageData, fallbackSource);
     } catch {
         return fallbackSource;
     }
 }
 
+// Vetítés gombok HTML-jének összeállítása
 export function getScreeningsButtonsHtml(screenings: FilmScreeningDto[]): string {
     if (screenings.length === 0) {
         return '<p class="text-muted">Nincs elérhető vetítés</p>';
     }
 
-    return screenings.map((screening, index) => `
-        <button class="btn btn-primary btn-sm me-2" type="button" data-screening-id="${screening.filmScreeningId}">
-            Vetítés ${index + 1} (${new Date(screening.date).toLocaleString("hu-HU")})
-        </button>
-    `).join("");
+    let html = "";
+
+    for (let i = 0; i < screenings.length; i++) {
+        const screening = screenings[i];
+
+        html += 
+            `<button class="btn btn-primary btn-sm me-2" type="button" data-screening-id="${screening.filmScreeningId}">
+                Vetítés ${i + 1} (${new Date(screening.date).toLocaleString("hu-HU")})
+            </button>`;
+    }
+
+    return html;
 }
 
+// Filmkártyák kirajzolása
 export async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<void> {
-    if (!movieList) return;
+    if (!movieList) {
+        return;
+    }
 
     try {
         if (allMovies.length === 0) {
@@ -244,12 +399,14 @@ export async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<voi
             return;
         }
 
-        for (const movie of movies) {
+        for (let i = 0; i < movies.length; i++) {
+            const movie = movies[i];
             const image = await getMovieImageSource(movie);
+
             const movieCard = document.createElement("div");
             movieCard.className = "movie-card my-3";
-            movieCard.innerHTML = `
-                <div class="movie-card-poster">
+            movieCard.innerHTML = 
+            `<div class="movie-card-poster">
                     <img src="${image}" alt="${movie.movieTitle}">
                 </div>
                 <div class="movie-card-content">
@@ -261,8 +418,8 @@ export async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<voi
                     <div class="screenings-buttons">
                         ${getScreeningsButtonsHtml(movie.screenings)}
                     </div>
-                </div>
-            `;
+                </div>`;
+
             movieList.appendChild(movieCard);
         }
     } catch (error) {
@@ -271,10 +428,12 @@ export async function renderMoviesList(moviesToRender?: MovieDto[]): Promise<voi
     }
 }
 
+// Szűrők alkalmazása
 export function applyMovieFilters(): void {
     void renderMoviesList(getFilteredMovies());
 }
 
+// Eseménykezelők rárakása a szűrőkre
 export function initializeMovieFilters(): void {
     locationFilter?.addEventListener("change", applyMovieFilters);
     genreFilter?.addEventListener("change", applyMovieFilters);
@@ -283,9 +442,14 @@ export function initializeMovieFilters(): void {
     movieSearchInput?.addEventListener("input", applyMovieFilters);
 }
 
+// Vetítés megkeresése screeningId alapján
 export function findScreeningById(screeningId: number): SelectedScreeningState | null {
-    for (const movie of allMovies) {
-        for (const screening of movie.screenings) {
+    for (let i = 0; i < allMovies.length; i++) {
+        const movie = allMovies[i];
+
+        for (let j = 0; j < movie.screenings.length; j++) {
+            const screening = movie.screenings[j];
+
             if (screening.filmScreeningId === screeningId) {
                 return {
                     filmScreeningId: screening.filmScreeningId,
@@ -301,18 +465,29 @@ export function findScreeningById(screeningId: number): SelectedScreeningState |
     return null;
 }
 
+// Kattintás figyelése a vetítés gombokra
 export function initializeScreeningButtons(): void {
     movieList?.addEventListener("click", (event) => {
         const target = event.target as HTMLElement | null;
         const screeningButton = target?.closest("[data-screening-id]") as HTMLButtonElement | null;
-        if (!screeningButton) return;
+
+        if (!screeningButton) {
+            return;
+        }
 
         const screeningId = Number(screeningButton.dataset.screeningId);
-        if (!screeningId) return;
+
+        if (!screeningId) {
+            return;
+        }
 
         const selectedScreening = findScreeningById(screeningId);
-        if (!selectedScreening) return;
 
+        if (!selectedScreening) {
+            return;
+        }
+
+        // Elmentjük a kiválasztott vetítést, majd átmegyünk a terem oldalra
         setSelectedScreeningState(selectedScreening);
         window.location.href = "../Termek/Terem.html";
     });
