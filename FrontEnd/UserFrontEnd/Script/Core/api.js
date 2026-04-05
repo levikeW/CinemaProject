@@ -258,8 +258,7 @@ function normalizeReservationSeatLabels(seats) {
     }
     return result;
 }
-// A frontend ide menti el a frissen létrehozott foglalásokat,
-// hogy akkor is meg lehessen őket jeleníteni, ha a lista endpoint üresen válaszol.
+// A frontend ide menti el a frissen létrehozott foglalásokat
 export function fetchStoredReservations(userId) {
     const rawReservations = localStorage.getItem(getReservationStorageKey(userId));
     if (!rawReservations) {
@@ -326,8 +325,7 @@ export function fetchHiddenReservationIds(userId) {
         return [];
     }
 }
-// Itt mindig felülírjuk ugyanazzal az azonosítóval a helyi mentést,
-// így a frontend cache nem duplikálódik ugyanarra a foglalásra.
+//Felülírjuk ugyanazzal az azonosítóval a helyi mentést
 export function saveStoredReservation(userId, reservation) {
     const storedReservations = fetchStoredReservations(userId);
     const nextReservations = [];

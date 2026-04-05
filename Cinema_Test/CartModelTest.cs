@@ -46,7 +46,7 @@ namespace Cinema_Test
                 }
             };
 
-            var result = await _cartModel.GetCart(dto, userId);
+            var result = await _cartModel.GetCart(userId);
 
             Assert.NotNull(result);
         }

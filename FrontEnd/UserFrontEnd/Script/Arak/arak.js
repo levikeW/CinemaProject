@@ -3,7 +3,7 @@ import { formatPrice } from "../Core/common.js";
 const selectedTicketStorageKeyPrefix = "cinemaSelectedTickets";
 let allTicketTypes = [];
 const jegyekTbody = document.getElementById("jegyekTbody");
-// Ticket objektumból kiolvassák a fontos adatokat
+// Ticket objektumból kiolvassa a fontos adatokat
 export function getTicketName(ticket) {
     return ticket.ticketType;
 }

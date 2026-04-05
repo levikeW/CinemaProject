@@ -29,7 +29,7 @@ const selectedTicketStorageKeyPrefix = "cinemaSelectedTickets";
 let allTicketTypes: TicketTypeDto[] = [];
 const jegyekTbody = document.getElementById("jegyekTbody") as HTMLTableSectionElement | null;
 
-// Ticket objektumból kiolvassák a fontos adatokat
+// Ticket objektumból kiolvassa a fontos adatokat
 export function getTicketName(ticket: TicketTypeDto): string {
     return ticket.ticketType;
 }
@@ -309,8 +309,7 @@ export function getTicketSummaryMarkup(tickets: SelectedTicketQuantity[]): strin
 export function resolveTicketSelectionFromServerItem(
     item: { ticketId?: number; amount?: number },
     screeningTickets: ScreeningTicketDto[],
-    ticketTypes: TicketTypeDto[],
-): SelectedTicketQuantity[] {
+    ticketTypes: TicketTypeDto[],): SelectedTicketQuantity[] {
     if (!item.ticketId) {
         return [];
     }
