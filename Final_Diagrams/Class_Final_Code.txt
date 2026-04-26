@@ -1,0 +1,326 @@
+@startuml
+
+class CinemaDbContext {
+  +DbSet<User> users
+  +DbSet<Movie> movies
+  +DbSet<Image> images
+  +DbSet<Room> rooms
+  +DbSet<Seat> seats
+  +DbSet<FilmScreening> filmScreenings
+  +DbSet<Ticket> tickets
+  +DbSet<TicketTypes> ticketTypes
+  +DbSet<Cart> carts
+  +DbSet<PaymentReservation> paymentReservations
+  +DbSet<Receipt> receipts
+  +DbSet<ReservationConfirmation> reservationConfirmations
+  +DbSet<CategoriesForHTML> categoriesForHTML
+}
+
+class User {
+  +int UserId
+  +string Email
+  +string Password
+  +string FullName
+  +string BillingAddress
+  +string Role
+}
+
+class Movie {
+  +int MovieId
+  +string MovieTitle
+  +int Duration
+  +string Genre
+  +string Director
+  +string Description
+  +int ImageId
+  +MovieStatus Status
+}
+
+class Image {
+  +int ImageId
+  +byte[] ImageContent
+}
+
+class Room {
+  +int RoomId
+  +string RoomName
+  +ICollection<Seat> seats
+}
+
+class Seat {
+  +int SeatId
+  +int RowNumber
+  +int SeatNumber
+  +int RoomId
+  +bool IsReserved
+  +int? CartId
+}
+
+class FilmScreening {
+  +int FilmScreeningId
+  +int MovieId
+  +int RoomId
+  +string RoomName
+  +DateTimeOffset Date
+}
+
+class TicketTypes {
+  +int TicketTypeId
+  +string TicketType
+  +int TicketPrice
+}
+
+class Ticket {
+  +int TicketId
+  +int TicketTypeId
+  +int? FilmScreeningId
+}
+
+class Cart {
+  +int CartId
+  +int UserId
+  +int FilmScreeningId
+  +int TicketId
+  +int Amount
+  +int TotalPrice
+  +ICollection<Seat> seats
+}
+
+class PaymentReservation {
+  +int PaymentReservationId
+  +int CartId
+  +DateTimeOffset Date
+  +int FilmScreeningId
+  +int Amount
+  +int UserId
+  +bool IsPaid
+}
+
+class Receipt {
+  +int ReceiptId
+  +int PaymentReservationId
+  +string MovieTitle
+  +DateTimeOffset ScreeningDate
+  +string RoomName
+  +int TicketId
+  +int Amount
+  +int TotalPrice
+  +DateTimeOffset PaymentDate
+  +string UserEmail
+  +ICollection<Seat> seats
+}
+
+class ReservationConfirmation {
+  +int ConfirmationId
+  +int PaymentReservationId
+  +string MovieTitle
+  +DateTimeOffset ScreeningDate
+  +string RoomName
+  +ICollection<Seat> seats
+  +int TicketId
+  +int Amount
+  +int TotalPrice
+  +string UserEmail
+}
+
+class CategoriesForHTML {
+  +int CategoryId
+  +string CategoryName
+  +string CategoryDescription
+}
+
+class UserModel {
+  -CinemaDbContext _context
+  
+  +Regist(dto, role) : Task
+  +ValidateUser(dto) : Task<User?>
+  +ViewProfile(userId) : Task<UserDto?>
+  +DeleteProfile(userId) : Task
+  +UpdateProfile(dto) : Task
+  +ChangePassword(userId, oldPass, newPass) : Task
+}
+
+class CinemaModel {
+  -CinemaDbContext _context
+  +GetAllMovies() : Task<IEnumerable<MovieDto>>
+  +GetAllScreenings() : Task<IEnumerable<FilmScreeningDto>>
+  +GetAllRooms() : Task<IEnumerable<RoomDto>>
+  +GetAllTicketType() : Task<IEnumerable<TicketTypeDto>>
+  +GetAllCategories() : Task<IEnumerable<CategoriesDto>>
+  +SearchMovieByTitle(item) : Task<IEnumerable<MovieDto>>
+  +SearchMovieByGenre(item) : Task<IEnumerable<MovieDto>>
+  +SearchMovieByDirector(item) : Task<IEnumerable<MovieDto>>
+  +GetScreeningDetails(time) : Task<IEnumerable<FilmScreeningDto>>
+  +GetUpcomingScreenings() : Task<List<FilmScreeningDto>>
+  +IsMovieNowRunning(movieTitle) : Task<bool>
+  +GetRoomCapacity(roomId) : Task<int>
+  +GetSeats(roomId, screeningId) : Task<List<SeatDto>>
+  +IsSeatAvailable(seatId, screeningId) : Task<bool>
+  +HasFreeSeats(screeningId, requiredSeats) : Task<bool>
+  +EnsureTicketsExist() : void
+  +GetTicketsByScreening(screeningId) : Task<List<TicketDto>>
+  +SetQuantity(cartId, amount) : Task
+  +GetImage(movieId) : Task<ImageDto?>
+}
+
+class CartModel {
+  -CinemaDbContext _context
+  +GetCart(userId) : Task<IEnumerable<CartDto>>
+  +AddToCart(dto) : Task<CartDto>
+  +RemoveFromCart(cartId) : Task
+  +UpdateCart(dto, cartId) : Task
+  +ModifyCart(dto) : Task
+  +ClearCart(userId) : Task
+}
+
+class Payment_ReservationModel {
+  -CinemaDbContext _context
+  +CreateReservation(cartId) : Task<ConfirmationDto>
+  +CancelReservation(reservationId) : Task
+  +PayReservation(reservationId) : Task<ReceiptDto>
+  +GetReceipt(reservationId) : Task<ReceiptDto?>
+  +GetConfirmation(reservationId) : Task<ConfirmationDto?>
+  +ViewUpcomigReservations(userId) : Task<List<PaymentReservationDto>>
+  +ViewPastReservations(userId) : Task<List<PaymentReservationDto>>
+}
+
+class AdminModel {
+  -CinemaDbContext _context
+  +GetAllUsers() : Task<IEnumerable<UserDto>>
+  +GetAllReservations() : Task<IEnumerable<PaymentReservationDto>>
+  +SearchUser(item) : Task<IEnumerable<UserDto>>
+  +NewMovie(dto) : Task<NewMovieDto>
+  +NewScreening(dto) : Task<NewScreeningDto>
+  +NewRoom(dto) : Task<NewRoomDto>
+  +NewTicketType(dto) : Task<NewTicketTypeDto>
+  +NewCateg(dto) : Task<NewCategDto>>
+  +ModifyMovie(dto) : Task
+  +ModifyFilmScreening(dto) : Task
+  +ModifyReservation(dto) : Task
+  +ModifyRoom(dto) : Task
+  +ModifyTicketType(dto) : Task
+  +ModifyCateg(dto) : Task
+  +DeleteUser(userId) : Task
+  +DeleteMovie(movieId) : Task
+  +DeleteScreening(screeningId) : Task
+  +DeleteRoom(roomId) : Task
+  +DeleteReservation(reservationId) : Task
+  +DeleteTicketT(ticketTId) : Task
+  +DeleteCateg(categId) : Task
+  +UploadImage(dto) : Task<ImageDto>
+  +DeleteImage(imageId) : Task
+  +ChangeRole(userId, newRole, actAdminId) : Task
+}
+
+class UserController {
+  - UserModel _userModel
+  + Regist(dto, IsAdmin)
+  + LogIn(dto)
+  + LogOut()
+  + ViewProfile(userId)
+  + DeleteProfile(userId)
+  + UpdateProfile(dto)
+  + ChangePassword(userId, oldPass, newPass)
+  + WhoAmI()
+}
+
+class CinemaController {
+  - CinemaModel _cinemaModel
+  + GetAllMovies()
+  + GetAllScreening()
+  + GetAllRoom()
+  + GetAllTicketType()
+  + GetAllCateg()
+  + SearchMovieByTitle(item)
+  + SearchMovieByGenre(item)
+  + SearchMovieByDirector(item)
+  + GetScreeningDetails(time)
+  + GetUpcomingScreenings()
+  + IsMovieNowRunning(movieTitle)
+  + GetRoomCapacity(roomId)
+  + GetSeats(roomId, screeningId)
+  + IsSeatAvailable(seatId, screeningId)
+  + HasFreeSeat(screeningId, requiredSeats)
+  + GetTicketsByScreening(screeningId)
+  + SetQuantity(cartId, amount)
+  + GetImage(movieId)
+}
+
+class CartController {
+  - CartModel _cartModel
+  + GetCart(userId)
+  + AddToCart(dto)
+  + RemoveFromCart(cartId)
+  + UpdateCart(dto, cartId)
+  + ModifyCart(dto)
+  + ClearCart(userId)
+}
+
+class Payment_ReservationController {
+  - Payment_ReservationModel _paymentReservationModel
+  + CreateReservation(cartId)
+  + CancelReservation(reservationId)
+  + PayReservation(reservationId)
+  + GetReceipt(reservationId)
+  + GetConfirmation(reservationId)
+  + ViewUpcomingReservation(userId)
+  + ViewPastReservations(userId)
+}
+
+class AdminController {
+  - AdminModel _adminModel
+  + GetAllUser()
+  + GetAllReservation()
+  + SearchUser(item)
+  + NewMovie(dto)
+  + NewScreening(dto)
+  + NewRoom(dto)
+  + NewTicketType(dto)
+  + NewCateg(dto)
+  + ModifyMovie(dto)
+  + ModifyFilmScreening(dto)
+  + ModifyReservation(dto)
+  + ModifyRoom(dto, roomId)
+  + ModifyTicketType(dto, ticketTId)
+  + ModifyCateg(dto, categId)
+  + DeleteUser(userId)
+  + DeleteMovie(movieId)
+  + DeleteScreening(screeningId)
+  + DeleteReservation(reservationId)
+  + DeleteRoom(roomId)
+  + DeleteTicketType(ticketTId)
+  + DeleteCateg(categId)
+  + UploadImage(dto)
+  + DeleteImage(imageId)
+  + ChangeRole(userId, newRole, actAdminId)
+}
+
+PaymentReservation --> CinemaDbContext
+User --> CinemaDbContext
+Movie --> CinemaDbContext
+Image --> CinemaDbContext
+Room --> CinemaDbContext
+Seat --> CinemaDbContext
+FilmScreening --> CinemaDbContext
+Cart --> CinemaDbContext
+Ticket --> CinemaDbContext
+TicketTypes --> CinemaDbContext
+Receipt --> CinemaDbContext
+ReservationConfirmation --> CinemaDbContext
+CategoriesForHTML --> CinemaDbContext
+
+
+CinemaDbContext --> UserModel
+CinemaDbContext --> CinemaModel
+CinemaDbContext --> CartModel
+CinemaDbContext --> Payment_ReservationModel
+CinemaDbContext --> AdminModel
+
+
+UserModel --> UserController
+CinemaModel --> CinemaController
+CartModel --> CartController
+Payment_ReservationModel --> Payment_ReservationController
+AdminModel --> AdminController
+
+@enduml

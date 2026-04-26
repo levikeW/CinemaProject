@@ -1,0 +1,129 @@
+Table users {
+  UserId int [pk, increment]
+  Email varchar [unique, not null]
+  Password varchar [not null]
+  FullName varchar [not null]
+  BillingAddress text
+  Role varchar
+}
+
+Table images {
+  ImageId int [pk, increment]
+  ImageContent bytea
+}
+
+Table movies {
+  MovieId int [pk, increment]
+  MovieTitle varchar [not null]
+  Duration int [not null]
+  Genre varchar [not null]
+  Director varchar [not null]
+  Description text [not null]
+  ImageId int [not null]
+  Status varchar
+}
+
+Table rooms {
+  RoomId int [pk, increment]
+  RoomName varchar [not null]
+}
+
+Table seats {
+  SeatId int [pk, increment]
+  RowNumber int
+  SeatNumber int
+  RoomId int [not null]
+  IsReserved boolean
+  CartId int
+}
+
+Table filmScreenings {
+  FilmScreeningId int [pk, increment]
+  MovieId int [not null]
+  RoomId int [not null]
+  RoomName varchar
+  Date datetime [not null]
+}
+
+Table ticketTypes {
+  TicketTypeId int [pk, increment]
+  TicketType varchar [not null]
+  TicketPrice int [not null]
+}
+
+Table tickets {
+  TicketId int [pk, increment]
+  TicketTypeId int [not null]
+  FilmScreeningId int
+}
+
+Table carts {
+  CartId int [pk, increment]
+  UserId int [not null]
+  FilmScreeningId int [not null]
+  TicketId int [not null]
+  Amount int
+  TotalPrice int
+}
+
+Table paymentReservations {
+  PaymentReservationId int [pk, increment]
+  CartId int [not null]
+  Date datetime [not null]
+  FilmScreeningId int [not null]
+  Amount int [not null]
+  UserId int [not null]
+  IsPaid boolean [not null]
+}
+
+Table receipts {
+  ReceiptId int [pk, increment]
+  PaymentReservationId int [not null]
+  MovieTitle varchar
+  ScreeningDate datetime
+  RoomName varchar
+  TicketId int
+  Amount int
+  TotalPrice int
+  PaymentDate datetime
+  UserEmail varchar
+}
+
+Table reservationConfirmations {
+  ConfirmationId int [pk, increment]
+  PaymentReservationId int [not null]
+  MovieTitle varchar
+  ScreeningDate datetime
+  RoomName varchar
+  TicketId int
+  Amount int
+  TotalPrice int
+  UserEmail varchar
+}
+
+Table categoriesForHTML {
+  CategoryId int [pk, increment]
+  CategoryName varchar [not null]
+  CategoryDescription text [not null]
+}
+
+Ref: movies.ImageId > images.ImageId
+Ref: filmScreenings.MovieId > movies.MovieId
+Ref: filmScreenings.RoomId > rooms.RoomId
+
+Ref: tickets.TicketTypeId > ticketTypes.TicketTypeId
+Ref: tickets.FilmScreeningId > filmScreenings.FilmScreeningId
+
+Ref: carts.UserId > users.UserId
+Ref: carts.FilmScreeningId > filmScreenings.FilmScreeningId
+Ref: carts.TicketId > tickets.TicketId
+
+Ref: seats.RoomId > rooms.RoomId
+Ref: seats.CartId > carts.CartId
+
+Ref: paymentReservations.CartId > carts.CartId
+Ref: paymentReservations.FilmScreeningId > filmScreenings.FilmScreeningId
+Ref: paymentReservations.UserId > users.UserId
+
+Ref: receipts.PaymentReservationId > paymentReservations.PaymentReservationId
+Ref: reservationConfirmations.PaymentReservationId > paymentReservations.PaymentReservationId

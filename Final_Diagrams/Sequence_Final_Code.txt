@@ -1,0 +1,86 @@
+@startuml
+autonumber
+actor "Felhasználó" as User
+participant "Frontend" as Frontend
+participant "UserController" as UserController
+participant "CinemaController" as CinemaController
+participant "CartController" as CartController
+participant "Payment_ReservationController" as PaymentController
+participant "UserModel" as UserModel
+participant "CinemaModel" as CinemaModel
+participant "CartModel" as CartModel
+participant "Payment_ReservationModel" as PaymentModel
+database "CinemaDbContext" as Db
+
+== Bejelentkezés ==
+User -> Frontend : Email + jelszó megadása
+Frontend -> UserController : POST /api/User/login
+UserController -> UserModel : ValidateUser(dto)
+UserModel -> Db : Felhasználó keresése email + hash alapján
+Db --> UserModel : User / null
+UserModel --> UserController : User / null
+UserController --> Frontend : Cookie + userId + role / hiba
+Frontend --> User : Sikeres / sikertelen belépés
+
+== Film és vetítés kiválasztása ==
+User -> Frontend : Filmek megtekintése / keresése
+Frontend -> CinemaController : GET /api/Cinema/getallmovies vagy searchmovie...
+CinemaController -> CinemaModel : GetAllMovies() / SearchMovie...
+CinemaModel -> Db : Filmek, képek, vetítések lekérése
+Db --> CinemaModel : MovieDto lista
+CinemaModel --> CinemaController : MovieDto lista
+CinemaController --> Frontend : Filmek adatai
+Frontend --> User : Filmek megjelenítése
+
+User -> Frontend : Vetítés, jegytípus és szék kiválasztása
+Frontend -> CinemaController : GET /api/Cinema/getseats
+CinemaController -> CinemaModel : GetSeats(roomId, screeningId)
+CinemaModel -> Db : Székek + foglaltság lekérése
+Db --> CinemaModel : SeatDto lista
+CinemaModel --> CinemaController : SeatDto lista
+CinemaController --> Frontend : Székek állapota
+
+Frontend -> CinemaController : GET /api/Cinema/getticketsbyscreening
+CinemaController -> CinemaModel : GetTicketsByScreening(screeningId)
+CinemaModel -> Db : Ticket lekérése vetítés alapján
+Db --> CinemaModel : TicketDto lista
+CinemaModel --> CinemaController : TicketDto lista
+CinemaController --> Frontend : Elérhető ticketek
+
+== Kosárba helyezés ==
+User -> Frontend : Kosárba teszi a kiválasztott adatokat
+Frontend -> CartController : PUT /api/Cart/addtocart
+CartController -> CartModel : AddToCart(dto)
+CartModel -> Db : Székek, ticket és ütközések ellenőrzése
+Db --> CartModel : Ellenőrzött adatok
+CartModel -> Db : Cart létrehozása, székek foglaltra állítása
+Db --> CartModel : Mentés sikeres
+CartModel --> CartController : CartDto
+CartController --> Frontend : Kosár adatai
+Frontend --> User : Kosár frissítve
+
+== Foglalás ==
+User -> Frontend : Foglalás létrehozása
+Frontend -> PaymentController : POST /api/Payment_Reservation/createreservation
+PaymentController -> PaymentModel : CreateReservation(cartId)
+PaymentModel -> Db : Cart ellenőrzése, reservation létrehozása
+Db --> PaymentModel : ConfirmationDto adatok
+PaymentModel --> PaymentController : ConfirmationDto
+PaymentController --> Frontend : Visszaigazolás
+Frontend --> User : Foglalás visszaigazolva
+
+== Admin ==
+actor "Admin" as Admin
+participant "AdminController" as AdminController
+participant "AdminModel" as AdminModel
+
+Admin -> Frontend : Film / vetítés / terem / jegytípus módosítása
+Frontend -> AdminController : POST/PUT/DELETE /api/Admin/...
+AdminController -> AdminModel : Megfelelő admin metódus
+AdminModel -> Db : Adatok létrehozása, módosítása vagy törlése
+Db --> AdminModel : Mentés sikeres
+AdminModel --> AdminController : Eredmény
+AdminController --> Frontend : OK / hiba
+Frontend --> Admin : Admin művelet eredménye
+
+@enduml

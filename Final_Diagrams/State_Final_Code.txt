@@ -1,0 +1,37 @@
+@startuml
+[*] --> Kijelentkezve
+
+Kijelentkezve --> Regisztralt : Regisztráció
+Kijelentkezve --> Bejelentkezve : Bejelentkezés
+Regisztralt --> Bejelentkezve : Bejelentkezés
+Bejelentkezve --> Kijelentkezve : Kijelentkezés
+
+' ==== USER ====
+Bejelentkezve --> FilmLista : Filmek megtekintése
+
+FilmLista --> FilmKivalasztva : Film kiválasztása
+FilmKivalasztva --> VetitesKivalasztva : Vetítés kiválasztása
+VetitesKivalasztva --> JegyKivalasztva : Jegytípus kiválasztása
+JegyKivalasztva --> SzekKivalasztva : Szék(ek) kiválasztása
+SzekKivalasztva --> Kosarban : Kosárba helyezés
+
+Kosarban --> Kosarban : Módosítás (szék / mennyiség)
+Kosarban --> FilmLista : Kosár törlés
+
+Kosarban --> FoglalasLetrehozva : Foglalás létrehozása
+FoglalasLetrehozva --> [*] : Visszaigazolás
+
+' ==== ADMIN ====
+state Admin {
+  [*] --> AdminBejelentkezve
+  
+  AdminBejelentkezve --> FilmKezeles : Film kezelés
+  AdminBejelentkezve --> VetitesKezeles : Vetítés kezelés
+  AdminBejelentkezve --> TeremKezeles : Terem kezelés
+  AdminBejelentkezve --> JegytipusKezeles : Jegytípus kezelés
+  AdminBejelentkezve --> FelhasznaloKezeles : Felhasználó kezelés
+  AdminBejelentkezve --> FoglalasKezeles : Foglalás kezelés
+  AdminBejelentkezve --> KepKezeles : Kép kezelés
+}
+
+@enduml

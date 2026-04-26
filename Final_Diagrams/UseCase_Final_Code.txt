@@ -1,0 +1,70 @@
+@startuml
+left to right direction
+
+actor User
+actor Admin
+
+rectangle CinemaProject {
+
+  rectangle "Felhasználói" {
+    (Regisztráció)
+    (Bejelentkezés)
+    (Kijelentkezés)
+    (Profil kezelése)
+  }
+
+  rectangle "Filmek és vetítések" {
+    (Filmek böngészése)
+    (Film keresése)
+    (Vetítés kiválasztása)
+    (Kép megtekintése)
+  }
+
+  rectangle "Kosár és foglalás" {
+    (Jegytípus kiválasztása)
+    (Szék kiválasztása)
+    (Kosár kezelése)
+    (Foglalás létrehozása)
+    (Foglalás megtekintése)
+    (Foglalás törlése)
+  }
+
+  rectangle "Admin " {
+    (Film kezelés)
+    (Vetítés kezelés)
+    (Terem kezelés)
+    (Jegytípus kezelés)
+    (Felhasználó kezelés)
+    (Foglalás kezelés)
+    (Kép kezelés)
+    (Kategória kezelés)
+  }
+}
+
+User --> (Regisztráció)
+User --> (Bejelentkezés)
+User --> (Kijelentkezés)
+User --> (Profil kezelése)
+
+User --> (Filmek böngészése)
+User --> (Film keresése)
+User --> (Vetítés kiválasztása)
+User --> (Kép megtekintése)
+
+User --> (Jegytípus kiválasztása)
+User --> (Szék kiválasztása)
+User --> (Kosár kezelése)
+User --> (Foglalás létrehozása)
+User --> (Foglalás megtekintése)
+User --> (Foglalás törlése)
+
+Admin --> (Film kezelés)
+Admin --> (Vetítés kezelés)
+Admin --> (Terem kezelés)
+Admin --> (Jegytípus kezelés)
+Admin --> (Felhasználó kezelés)
+Admin --> (Foglalás kezelés)
+Admin --> (Kép kezelés)
+Admin --> (Kategória kezelés)
+
+@enduml
