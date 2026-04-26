@@ -34,7 +34,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (InvalidDataException e)
+            {
+                return StatusCode(StatusCodes.Status406NotAcceptable, e.Message);
             }
             catch (Exception e)
             {
@@ -55,7 +59,7 @@ namespace CinemaProject.Controllers
                 Debug.WriteLine("User found: " + (user != null));
                 if (user == null)
                 {
-                    return Unauthorized("Hibás email vagy jelszó.");
+                    return Conflict("Hibás email vagy jelszó.");
                 }
 
                 List<Claim> claims = new()
@@ -90,9 +94,9 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _userModel.ViewProfile(userId));
             }
-            catch (InvalidOperationException e)
+            catch (KeyNotFoundException e)
             {
-                return BadRequest(e.Message);
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -109,9 +113,9 @@ namespace CinemaProject.Controllers
                 await _userModel.DeleteProfile(userId);
                 return Ok();
             }
-            catch (InvalidOperationException e)
+            catch (KeyNotFoundException e)
             {
-                return BadRequest(e.Message);
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -128,9 +132,13 @@ namespace CinemaProject.Controllers
                 await _userModel.UpdateProfile(dto);
                 return Ok();
             }
-            catch (InvalidOperationException e)
+            catch (KeyNotFoundException e)
             {
-                return BadRequest(e.Message);
+                return NotFound(e.Message);
+            }
+            catch (InvalidDataException e)
+            {
+                return StatusCode(StatusCodes.Status406NotAcceptable, e.Message);
             }
             catch (Exception e)
             {
@@ -147,9 +155,13 @@ namespace CinemaProject.Controllers
                 await _userModel.ChangePassword(userId, oldPass, newPass);
                 return Ok();
             }
-            catch (InvalidOperationException e)
+            catch (KeyNotFoundException e)
             {
-                return BadRequest(e.Message);
+                return NotFound(e.Message);
+            }
+            catch (InvalidDataException e)
+            {
+                return StatusCode(StatusCodes.Status406NotAcceptable, e.Message);
             }
             catch (Exception e)
             {

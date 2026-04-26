@@ -26,9 +26,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetAllMovies());
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -43,9 +47,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetAllScreenings());
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -60,9 +68,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetAllRooms());
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -77,9 +89,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetAllTicketType());
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -94,9 +110,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetAllCategories());
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -111,9 +131,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.SearchMovieByTitle(item));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -128,9 +152,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.SearchMovieByGenre(item));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -145,9 +173,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.SearchMovieByDirector(item));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -162,9 +194,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetScreeningDetails(time));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -179,9 +215,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetUpcomingScreenings());
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -196,9 +236,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.IsMovieNowRunning(movieTitle));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -213,9 +257,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetRoomCapacity(roomId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -230,9 +278,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetSeats(roomId, screeningId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -247,9 +299,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.IsSeatAvailable(seatId, screeningId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -264,26 +320,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(_cinemaModel.HasFreeSeats(screeningId, requiredSeats));
             }
-            catch (InvalidOperationException e)
+            catch (KeyNotFoundException e)
             {
-                return BadRequest(e.Message);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [HttpGet("selecttickettype")]
-        public async Task<ActionResult<TicketTypeDto>> SelectTicketType()
-        {
-            try
-            {
-                return Ok(await _cinemaModel.SelectTicketType());
+                return NotFound(e.Message);
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -298,9 +341,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetTicketsByScreening(screeningId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -316,9 +363,13 @@ namespace CinemaProject.Controllers
                 await _cinemaModel.SetQuantity(cartId, amount);
                 return Ok();
             }
-            catch (InvalidOperationException e)
+            catch (KeyNotFoundException e)
             {
-                return BadRequest(e.Message);
+                return NotFound(e.Message);
+            }
+            catch (InvalidDataException e)
+            {
+                return StatusCode(StatusCodes.Status406NotAcceptable, e.Message);
             }
             catch (Exception e)
             {
@@ -333,9 +384,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cinemaModel.GetImage(movieId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {

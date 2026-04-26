@@ -25,7 +25,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch(KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -41,9 +45,13 @@ namespace CinemaProject.Controllers
                 await _paymentReservationModel.CancelReservation(reservationId);
                 return Ok();
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -59,9 +67,13 @@ namespace CinemaProject.Controllers
                 await _paymentReservationModel.PayReservation(reservationId);
                 return Ok();
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -76,9 +88,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _paymentReservationModel.GetReceipt(reservationId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -93,9 +109,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _paymentReservationModel.GetConfirmation(reservationId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -110,9 +130,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _paymentReservationModel.ViewUpcomigReservations(userId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -127,9 +151,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _paymentReservationModel.ViewPastReservations(userId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {

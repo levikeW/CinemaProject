@@ -26,9 +26,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cartModel.GetCart(userId));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -43,9 +47,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _cartModel.AddToCart(dto));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -63,7 +71,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -81,7 +93,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -100,7 +116,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -117,34 +137,18 @@ namespace CinemaProject.Controllers
                 await _cartModel.ClearCart(userId);
                 return Ok();
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
                 return BadRequest(e.Message);
             }
         }
-
-
-        /* [HttpDelete("/deletecart")]
-         public ActionResult DeleteCart(int cartId)
-         {
-             try
-             {
-                 _cartModel.DeleteCart(cartId);
-                 return Ok();
-             }
-             catch (InvalidOperationException e)
-             {
-                 return BadRequest(e.Message);
-             }
-             catch (Exception e)
-             {
-                 return BadRequest(e.Message);
-             }
-         }
-        */
     }
 }

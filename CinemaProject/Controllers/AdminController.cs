@@ -28,9 +28,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _adminModel.GetAllUsers());
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -47,9 +51,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _adminModel.GetAllReservations());
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -65,9 +73,13 @@ namespace CinemaProject.Controllers
             {
                 return Ok(await _adminModel.SearchUser(item));
             }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
@@ -86,7 +98,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -105,7 +121,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -124,7 +144,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -143,7 +167,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -162,7 +190,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -181,7 +213,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -200,7 +236,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -219,7 +259,15 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch(InvalidDataException e)
+            {
+                return StatusCode(StatusCodes.Status406NotAcceptable, e.Message);
             }
             catch (Exception e)
             {
@@ -238,7 +286,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -257,7 +309,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -276,7 +332,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -295,7 +355,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -333,7 +397,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -352,7 +420,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -371,7 +443,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -390,7 +466,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -409,7 +489,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -428,7 +512,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -447,7 +535,11 @@ namespace CinemaProject.Controllers
             }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
             }
             catch (Exception e)
             {
@@ -464,9 +556,17 @@ namespace CinemaProject.Controllers
                 await _adminModel.ChangeRole(userId, newRole, actAdminId);
                 return Ok();
             }
+            catch (InvalidCastException e)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, e.Message);
+            }
+            catch (KeyNotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
             catch (InvalidOperationException e)
             {
-                return BadRequest(e.Message);
+                return Conflict(e.Message);
             }
             catch (Exception e)
             {
