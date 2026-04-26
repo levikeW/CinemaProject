@@ -53,23 +53,6 @@ namespace CinemaProject.Controllers
             }
         }
 
-        [HttpGet("getallticket")]
-        public async Task<ActionResult<IEnumerable<TicketDto>>> GetAllTicket()
-        {
-            try
-            {
-                return Ok(await _cinemaModel.GetAllTickets());
-            }
-            catch (InvalidOperationException e)
-            {
-                return BadRequest(e.Message);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
         [HttpGet("getallrooms")]
         public async Task<ActionResult<IEnumerable<RoomDto>>> GetAllRoom()
         {
@@ -292,11 +275,28 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("selecttickettype")]
-        public async Task<ActionResult<TicketDto>> SelectTicketType([FromQuery] int screeningId)
+        public async Task<ActionResult<TicketTypeDto>> SelectTicketType()
         {
             try
             {
-                return Ok(await _cinemaModel.SelectTicketType(screeningId));
+                return Ok(await _cinemaModel.SelectTicketType());
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet("getticketsbyscreening")]
+        public async Task<ActionResult<IEnumerable<TicketDto>>> GetTicketsByScreening([FromQuery] int screeningId)
+        {
+            try
+            {
+                return Ok(await _cinemaModel.GetTicketsByScreening(screeningId));
             }
             catch (InvalidOperationException e)
             {

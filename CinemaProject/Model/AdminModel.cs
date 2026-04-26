@@ -38,7 +38,7 @@ namespace CinemaProject.Model
                     FilmScreeningId = x.FilmScreeningId,
                     UserId = x.UserId,
                     Amount = x.Cart.Amount,
-                    Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    Price = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     Seats = x.Cart.Seats.Select(s => new SeatDto
                     {
                         SeatId = s.SeatId,
@@ -100,12 +100,18 @@ namespace CinemaProject.Model
                 throw new InvalidOperationException("Already exists");
             }
 
+            var movie = await _context.movies.FirstOrDefaultAsync(x => x.MovieTitle == dto.MovieTitle);
+
+            if (movie == null)
+            {
+                throw new InvalidOperationException("Not Found");
+            }
+
             using var trx = await _context.Database.BeginTransactionAsync();
 
             _context.filmScreenings.Add(new Persistence.FilmScreening
             {
-                MovieId = dto.MovieId,
-                MovieTitle = dto.MovieTitle,
+                MovieId = movie.MovieId,
                 RoomId = dto.RoomId,
                 RoomName = dto.RoomName,
                 Date = dto.Date.ToUniversalTime()
@@ -138,15 +144,15 @@ namespace CinemaProject.Model
 
         public async Task<NewTicketTypeDto> NewTicketType(NewTicketTypeDto dto)
         {
-            if (dto.TicketId != 0 && await _context.ticketsForHTML.AnyAsync(x => x.TicketId == dto.TicketId))
+            if (dto.TicketTypeId != 0 && await _context.ticketTypes.AnyAsync(x => x.TicketTypeId == dto.TicketTypeId))
                 throw new InvalidOperationException("Already exists");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
-            _context.ticketsForHTML.Add(new Persistence.TicketForHTML
+            _context.ticketTypes.Add(new Persistence.TicketTypes
             {
-                TicketType = dto.Name,
-                TicketPrice = dto.Price
+                TicketType = dto.TicketType,
+                TicketPrice = dto.TicketPrice,
             });
 
             await _context.SaveChangesAsync();
@@ -195,20 +201,22 @@ namespace CinemaProject.Model
             movie.ImageId = imageId;
             movie.Status = dto.Status;
 
+
             await _context.SaveChangesAsync();
             await trx.CommitAsync();
         }
 
-        public async Task ModifyFilmScreening(ModifyFilmScreeningDto dto, int screeningId)
+        public async Task ModifyFilmScreening(ModifyFilmScreeningDto dto)
         {
-            var screening = await _context.filmScreenings.FirstOrDefaultAsync(x => x.FilmScreeningId == screeningId);
+            var screening = await _context.filmScreenings.FirstOrDefaultAsync(x => x.FilmScreeningId == dto.FilmScreeningId);
             if (screening == null)
                 throw new InvalidOperationException("Screening not found");
 
+            var MovieId = await _context.movies.FirstAsync(x => x.MovieTitle == dto.MovieTitle);
+
             using var trx = await _context.Database.BeginTransactionAsync();
 
-            screening.MovieId = dto.MovieId;
-            screening.MovieTitle = dto.MovieTitle;
+            screening.MovieId = MovieId.MovieId;
             screening.RoomId = dto.RoomId;
             screening.RoomName = dto.RoomName;
             screening.Date = dto.Date.ToUniversalTime();
@@ -217,16 +225,16 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
-        public async Task ModifyReservation(ModifyReservationDto dto, int reservationId)
+        public async Task ModifyReservation(ModifyReservationDto dto)
         {
             var reservation = await _context.paymentReservations
                 .Include(p => p.Cart)
-                    .ThenInclude(c => c.Seats).FirstOrDefaultAsync(p => p.PaymentReservationId == reservationId);
+                    .ThenInclude(c => c.Seats).FirstOrDefaultAsync(p => p.PaymentReservationId == dto.PaymentReservationId);
 
             if (reservation == null)
                 throw new InvalidOperationException("Reservation not found");
 
-            var ticket = await _context.tickets.FirstOrDefaultAsync(t => t.TicketId == reservation.Cart.TicketId);
+            var ticket = await _context.tickets.Include(x=> x.TicketType).FirstOrDefaultAsync(t => t.TicketId == reservation.Cart.TicketId);
             if (ticket == null)
                 throw new InvalidOperationException("Ticket not found");
 
@@ -258,7 +266,7 @@ namespace CinemaProject.Model
             reservation.IsPaid = dto.IsPaid;
             reservation.Date = dto.Date;
             reservation.Cart.Amount = dto.Amount;
-            reservation.Cart.TotalPrice = ticket.TicketPrice * dto.Amount;
+            reservation.Cart.TotalPrice = ticket.TicketType.TicketPrice * dto.Amount;
 
             foreach (var oldSeat in reservation.Cart.Seats)
             {
@@ -278,21 +286,6 @@ namespace CinemaProject.Model
             await _context.SaveChangesAsync();
         }
 
-        public async Task ModifyTicket(ModifyTicketDto dto, int ticketId)
-        {
-            var ticket = await _context.tickets.FirstOrDefaultAsync(x => x.TicketId == ticketId);
-            if (ticket == null)
-                throw new InvalidOperationException("TicketType not found");
-
-            using var trx = await _context.Database.BeginTransactionAsync();
-
-            ticket.TicketType = dto.TicketType;
-            ticket.TicketPrice = dto.TicketPrice;
-
-            await _context.SaveChangesAsync();
-            await trx.CommitAsync();
-        }
-
         public async Task ModifyRoom(ModifyRoomDto dto, int roomId)
         {
             var room = await _context.rooms.FirstOrDefaultAsync(x => x.RoomId == roomId);
@@ -309,14 +302,14 @@ namespace CinemaProject.Model
 
         public async Task ModifyTicketType(ModifyTicketTypeDto dto, int ticketTId)
         {
-            var ticketT = await _context.ticketsForHTML.FirstOrDefaultAsync(x => x.TicketId == ticketTId);
+            var ticketT = await _context.ticketTypes.FirstOrDefaultAsync(x => x.TicketTypeId == ticketTId);
             if (ticketT == null)
                 throw new InvalidOperationException("TicketType not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
-            ticketT.TicketType = dto.TicketName;
-            ticketT.TicketPrice = dto.Price;
+            ticketT.TicketType = dto.TicketType;
+            ticketT.TicketPrice = dto.TicketPrice;
 
             await _context.SaveChangesAsync();
             await trx.CommitAsync();
@@ -330,7 +323,7 @@ namespace CinemaProject.Model
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
-            categ.CategoryName = dto.CategName;
+            categ.CategoryName = dto.Name;
             categ.CategoryDescription = dto.Description;
 
             await _context.SaveChangesAsync();
@@ -421,11 +414,25 @@ namespace CinemaProject.Model
 
         public async Task DeleteReservation(int reservationId)
         {
-            var reservation = await _context.paymentReservations.FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
+            var reservation = await _context.paymentReservations
+                .Include(x => x.Cart)
+                    .ThenInclude(x => x.Seats)
+                .FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
             if (reservation == null)
                 throw new InvalidOperationException("Reservation not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
+
+            if (reservation.Cart != null)
+            {
+                foreach (var seat in reservation.Cart.Seats)
+                {
+                    seat.CartId = null;
+                    seat.IsReserved = false;
+                }
+
+                _context.carts.Remove(reservation.Cart);
+            }
 
             _context.paymentReservations.Remove(reservation);
 
@@ -435,13 +442,13 @@ namespace CinemaProject.Model
 
         public async Task DeleteTicketT(int ticketTId)
         {
-            var ticketType = await _context.ticketsForHTML.FirstOrDefaultAsync(x => x.TicketId == ticketTId);
+            var ticketType = await _context.ticketTypes.FirstOrDefaultAsync(x => x.TicketTypeId == ticketTId);
             if (ticketType == null)
                 throw new InvalidOperationException("Ticket type not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
-            _context.ticketsForHTML.Remove(ticketType);
+            _context.ticketTypes.Remove(ticketType);
 
             await _context.SaveChangesAsync();
             await trx.CommitAsync();

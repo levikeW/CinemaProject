@@ -97,8 +97,8 @@ namespace CinemaProject_Avalonia.ViewModels
                 {
                     var dto = new ModifyCategDto
                     {
-                        Id = Id,
-                        CategName = Name,
+                        CategId = Id,
+                        Name = Name,
                         Description = Description
                     };
 

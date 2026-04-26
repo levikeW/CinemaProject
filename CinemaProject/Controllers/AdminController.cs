@@ -191,11 +191,11 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("modifyfilmscreening")]
-        public async Task<ActionResult> ModifyFilmScreening([FromBody] ModifyFilmScreeningDto dto, [FromQuery] int screeningId)
+        public async Task<ActionResult> ModifyFilmScreening([FromBody] ModifyFilmScreeningDto dto)
         {
             try
             {
-                await _adminModel.ModifyFilmScreening(dto, screeningId);
+                await _adminModel.ModifyFilmScreening(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -210,30 +210,11 @@ namespace CinemaProject.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPut("modifyreservation")]
-        public async Task<ActionResult> ModifyReservation([FromBody] ModifyReservationDto dto, [FromQuery] int reservationId)
+        public async Task<ActionResult> ModifyReservation([FromBody] ModifyReservationDto dto)
         {
             try
             {
-                await _adminModel.ModifyReservation(dto, reservationId);
-                return Ok();
-            }
-            catch (InvalidOperationException e)
-            {
-                return BadRequest(e.Message);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
-
-        [Authorize(Roles = "Admin")]
-        [HttpPut("modifyticket")]
-        public async Task<ActionResult> ModifyTicket([FromBody] ModifyTicketDto dto, [FromQuery] int ticketId)
-        {
-            try
-            {
-                await _adminModel.ModifyTicket(dto, ticketId);
+                await _adminModel.ModifyReservation(dto);
                 return Ok();
             }
             catch (InvalidOperationException e)
@@ -442,8 +423,8 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                await _adminModel.UploadImage(dto);
-                return Ok();
+               var res =  await _adminModel.UploadImage(dto);
+                return Ok(res);
             }
             catch (InvalidOperationException e)
             {

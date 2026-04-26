@@ -2,8 +2,8 @@
 {
     public class NewTicketTypeDto
     {
-        public int TicketId { get; set; }
-        public string Name { get; set; }
-        public int Price { get; set; }  
+        public int TicketTypeId { get; set; }
+        public string TicketType { get; set; }
+        public int TicketPrice { get; set; }  
     }
 }

@@ -91,10 +91,6 @@ namespace CinemaProject.Migrations
                     b.Property<int>("MovieId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("MovieTitle")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<int>("RoomId")
                         .HasColumnType("integer");
 
@@ -362,27 +358,25 @@ namespace CinemaProject.Migrations
                     b.Property<int?>("FilmScreeningId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("TicketPrice")
+                    b.Property<int>("TicketTypeId")
                         .HasColumnType("integer");
-
-                    b.Property<string>("TicketType")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.HasKey("TicketId");
 
                     b.HasIndex("FilmScreeningId");
 
+                    b.HasIndex("TicketTypeId");
+
                     b.ToTable("tickets");
                 });
 
-            modelBuilder.Entity("CinemaProject.Persistence.TicketForHTML", b =>
+            modelBuilder.Entity("CinemaProject.Persistence.TicketTypes", b =>
                 {
-                    b.Property<int>("TicketId")
+                    b.Property<int>("TicketTypeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TicketId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TicketTypeId"));
 
                     b.Property<int>("TicketPrice")
                         .HasColumnType("integer");
@@ -391,9 +385,9 @@ namespace CinemaProject.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("TicketId");
+                    b.HasKey("TicketTypeId");
 
-                    b.ToTable("ticketsForHTML");
+                    b.ToTable("ticketTypes");
                 });
 
             modelBuilder.Entity("CinemaProject.Persistence.User", b =>
@@ -405,7 +399,6 @@ namespace CinemaProject.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserId"));
 
                     b.Property<string>("BillingAddress")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Email")
@@ -569,7 +562,15 @@ namespace CinemaProject.Migrations
                         .WithMany()
                         .HasForeignKey("FilmScreeningId");
 
+                    b.HasOne("CinemaProject.Persistence.TicketTypes", "TicketType")
+                        .WithMany()
+                        .HasForeignKey("TicketTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("FilmScreening");
+
+                    b.Navigation("TicketType");
                 });
 
             modelBuilder.Entity("CinemaProject.Persistence.Cart", b =>

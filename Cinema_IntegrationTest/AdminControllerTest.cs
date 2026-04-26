@@ -5,14 +5,9 @@ using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Formats.Asn1;
 using System.Net;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-
 
 namespace Cinema_IntegrationTest
 {
@@ -30,27 +25,74 @@ namespace Cinema_IntegrationTest
                     AllowAutoRedirect = false
                 });
         }
+        /*
+        [Fact]
+         private async Task AuthenticateAsAdminAsync()
+         {
+             var loginDto = new LoginDto
+             {
+                 email = "admin2@cinema.hu",
+                 password = "admin1234"
+             };
+             var content = new StringContent(JsonSerializer.Serialize(loginDto), Encoding.UTF8, "application/json");
+
+             var response = await _client.PostAsync("/api/User/login", content);
+
+             response.EnsureSuccessStatusCode();
+             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+             var body = await response.Content.ReadAsStringAsync();
+
+             var result = JsonSerializer.Deserialize<UserDto>(
+                 body,
+                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+             Assert.Equal("Admin", result.Role);
+         }*/
+        private string? _authCookie;
 
         private async Task AuthenticateAsAdminAsync()
         {
             var loginDto = new LoginDto
             {
-                email = "admin@cinema.hu",
-                password = "admin123"
+                email = "admin2@cinema.hu",
+                password = "admin1234"
             };
-            var content = new StringContent(JsonSerializer.Serialize(loginDto), Encoding.UTF8, "application/json");
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(loginDto),
+                Encoding.UTF8,
+                "application/json");
 
             var response = await _client.PostAsync("/api/User/login", content);
+            var body = await response.Content.ReadAsStringAsync();
 
-            response.EnsureSuccessStatusCode();
+            Assert.True(response.IsSuccessStatusCode, $"Login failed: {body}");
+
+            Assert.True(
+                response.Headers.TryGetValues("Set-Cookie", out var cookies),
+                $"Login succeeded, but no auth cookie was issued. Body: {body}");
+
+            _authCookie = cookies
+                .Select(c => c.Split(';')[0])
+                .FirstOrDefault();
+
+            Assert.False(string.IsNullOrWhiteSpace(_authCookie), "Auth cookie was empty.");
         }
+        private void AddAuthCookie()
+        {
+            _client.DefaultRequestHeaders.Remove("Cookie");
 
+            if (!string.IsNullOrWhiteSpace(_authCookie))
+            {
+                _client.DefaultRequestHeaders.Add("Cookie", _authCookie);
+            }
+        }
 
         [Fact]
         public async Task GetAllUser()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             var response = await _client.GetAsync("api/admin/getalluser");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -59,7 +101,7 @@ namespace Cinema_IntegrationTest
         public async Task GetAllReservation()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             var response = await _client.GetAsync("api/admin/getallreservation");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -68,8 +110,8 @@ namespace Cinema_IntegrationTest
         public async Task SearchUser()
         {
             await AuthenticateAsAdminAsync();
-
-            var response = await _client.GetAsync("api/admin/searchuser?item=Test");
+            AddAuthCookie();
+            var response = await _client.GetAsync("api/admin/searchuser?item=user");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -87,7 +129,7 @@ namespace Cinema_IntegrationTest
                 Status = MovieStatus.NowRunning
             };
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
             var response = await _client.PostAsync("api/admin/newmovie", content);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -97,16 +139,20 @@ namespace Cinema_IntegrationTest
         [Fact]
         public async Task NewScreening()
         {
+            using var scope = _factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+            var movie = db.movies.AsNoTracking().First();
+            var room = db.rooms.AsNoTracking().First();
+
             var dto = new NewScreeningDto
             {
-                MovieId = 1,
-                MovieTitle = "Inception",
-                RoomId = 1,
-                RoomName = "Room 1",
-                Date = DateTime.UtcNow.AddDays(1)
+                MovieTitle = movie.MovieTitle,
+                RoomId = room.RoomId,
+                RoomName = room.RoomName,
+                Date = DateTimeOffset.UtcNow.AddDays(10)
             };
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
             var response = await _client.PostAsync("api/admin/newscreening", content);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -116,56 +162,42 @@ namespace Cinema_IntegrationTest
         public async Task ModifyMovie_ShouldReturnOk()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var testMovie = new Movie
-            {
-                MovieTitle = "OriginalTitle",
-                Duration = 120,
-                Genre = "Test",
-                Director = "Test Director",
-                Description = "Test Movie",
-                ImageId = db.images.First().ImageId,
-                Status = MovieStatus.NowRunning
-            };
-            db.movies.Add(testMovie);
-            db.SaveChanges();
-        }
 
-            /*var dto = new MovieDto
+            int id = db.movies.First().MovieId;
+            var dto = new ModifyMovieDto
             {
-                MovieId = testMovie.MovieId,
+                MovieId = id,
                 MovieTitle = "ModifiedTitle",
                 Duration = 150,
-                Genre = testMovie.Genre,
-                Director = testMovie.Director,
-                Description = testMovie.Description,
-                ImageId = testMovie.ImageId
+                Genre = "asd",
+                Director = "asd",
+                Description = "asd",
+                ImageId = 1,
+                Status = MovieStatus.NowRunning
             };
 
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
-            var response = await _client.PutAsync($"/modifymovie?movieId={testMovie.MovieId}", content);
+            var response = await _client.PutAsync("api/admin/modifymovie", content);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var updatedMovie = db.movies.First(m => m.MovieId == testMovie.MovieId);
-            Assert.Equal(dto.MovieTitle, updatedMovie.MovieTitle);
-            Assert.Equal(dto.Duration, updatedMovie.Duration);*/
-
+ 
+        }
         [Fact]
         public async Task ModifyFilmScreening_ShouldReturnOk()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
             var testScreening = new FilmScreening
             {
                 MovieId = db.movies.First().MovieId,
-                MovieTitle = db.movies.First().MovieTitle,
                 RoomId = db.rooms.First().RoomId,
                 RoomName = db.rooms.First().RoomName,
                 Date = DateTime.UtcNow.AddDays(1)
@@ -176,111 +208,19 @@ namespace Cinema_IntegrationTest
 
 
 
-        /*var dto = new FilmScreeningDto
-        {
-            FilmScreeningId = testScreening.FilmScreeningId,
-            MovieId = testScreening.MovieId,
-            MovieTitle = testScreening.MovieTitle,
-            RoomId = testScreening.RoomId,
-            RoomName = testScreening.RoomName,
-            Date = DateTime.UtcNow.AddDays(2)
-        };
-
-        var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
-        var response = await _client.PutAsync($"/modifyfilmscreening?screeningId={testScreening.FilmScreeningId}", content);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var updatedScreening = db.filmScreenings.First(s => s.FilmScreeningId == testScreening.FilmScreeningId);
-        Assert.Equal(dto.Date, updatedScreening.Date);*/
-
-        [Fact]
-        public async Task ModifyReservation_ShouldReturnOk()
-        {
-            await AuthenticateAsAdminAsync();
-
-            using var scope = _factory.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
-
-            var testUser = db.users.First(u => u.Role == "User");
-            var testScreening = db.filmScreenings.First();
-            var testTicket = db.tickets.First();
-
-            var testCart = new Cart
-            {
-                UserId = testUser.UserId,
-                FilmScreeningId = testScreening.FilmScreeningId,
-                TicketId = testTicket.TicketId,
-                Amount = 2,
-                TotalPrice = 2 * testTicket.TicketPrice
-            };
-            db.carts.Add(testCart);
-            db.SaveChanges();
-        }
-
-            /*var testReservation = new PaymentReservation
-            {
-                CartId = testCart.CartId,
-                FilmScreeningId = testScreening.FilmScreeningId,
-                UserId = testUser.UserId,
-                Amount = testCart.Amount,
-                Date = DateTime.UtcNow,
-                IsPaid = false
-            };
-            db.paymentReservations.Add(testReservation);
-            db.SaveChanges();
-
-            var dto = new PaymentReservationDto
-            {
-                PaymentReservationId = testReservation.PaymentReservationId,
-                UserId = testUser.UserId,
-                FilmScreeningId = testScreening.FilmScreeningId,
-                Amount = 5,
-                IsPaid = true,
-                Price = testTicket.TicketPrice,
-                Seats = new List<SeatDto>()
-            };
-
-            var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
-            var response = await _client.PutAsync($"/modifyreservation?reservationId={testReservation.PaymentReservationId}", content);
-
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-            var updatedReservation = db.paymentReservations
-                .Include(r => r.Cart)
-                .First(r => r.PaymentReservationId == testReservation.PaymentReservationId);
-
-            Assert.Equal(dto.Amount, updatedReservation.Amount);
-            Assert.Equal(dto.IsPaid, updatedReservation.IsPaid);
-            Assert.Equal(dto.Price * dto.Amount, updatedReservation.Cart.TotalPrice);*/
 
 
-        [Fact]
-        public async Task ModifyTicket()
-        {
-
-            var dto = new TicketDto
-            {
-                TicketType = "Adult",
-                TicketPrice = 3500
-            };
-            await AuthenticateAsAdminAsync();
-
-            var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
-            var response = await _client.PutAsync("api/admin/modifyticket?ticketId=1", content);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        }
 
 
         [Fact]
         public async Task DeleteUser_ShouldReturnOk()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var user = db.users.First(x => x.Email == "deleteuser@cinema.hu");
+            var user = db.users.First(x => x.Email == "user@cinema.hu");
 
             var response = await _client.DeleteAsync($"api/admin/deleteuser?userId={user.UserId}");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -293,11 +233,11 @@ namespace Cinema_IntegrationTest
         public async Task DeleteMovie_ShouldReturnOk()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var movie = db.movies.First(x=> x.MovieTitle == "DeleteMovie");
+            var movie = db.movies.First(x => x.MovieTitle == "Gladiator");
 
             var response = await _client.DeleteAsync(
                 $"api/admin/deletemovie?movieId={movie.MovieId}"
@@ -308,7 +248,7 @@ namespace Cinema_IntegrationTest
         public async Task DeleteMovie_ShouldReturnNotFound()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             var response = await _client.DeleteAsync(
                 $"api/admin/deletemovie?movieId={66}"
             );
@@ -320,12 +260,13 @@ namespace Cinema_IntegrationTest
         public async Task DeleteScreening_ShouldReturnOk()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
+            var movies = db.movies.First(x => x.MovieTitle == "Gladiator");
             var screening = db.filmScreenings
-                .First(x => x.MovieTitle == "DeleteMovie");
+                .First(x => x.MovieId == movies.MovieId);
 
             var response = await _client.DeleteAsync(
                 $"api/admin/deletescreening?screeningId={screening.FilmScreeningId}"
@@ -341,11 +282,38 @@ namespace Cinema_IntegrationTest
         public async Task DeleteReservation_ShouldReturnOk()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var reservation = db.paymentReservations.First();
+            var user = db.users.First();
+            var ticket = db.tickets
+                .Include(x => x.TicketType)
+                .First(x => x.FilmScreeningId != null);
+            var screeningId = ticket.FilmScreeningId!.Value;
+
+            var cart = new Cart
+            {
+                UserId = user.UserId,
+                FilmScreeningId = screeningId,
+                TicketId = ticket.TicketId,
+                Amount = 1,
+                TotalPrice = ticket.TicketType.TicketPrice
+            };
+            db.carts.Add(cart);
+            db.SaveChanges();
+
+            var reservation = new PaymentReservation
+            {
+                CartId = cart.CartId,
+                FilmScreeningId = screeningId,
+                UserId = user.UserId,
+                Amount = cart.Amount,
+                Date = DateTimeOffset.UtcNow,
+                IsPaid = false
+            };
+            db.paymentReservations.Add(reservation);
+            db.SaveChanges();
 
             var response = await _client.DeleteAsync(
                 $"api/admin/deletereservation?reservationId={reservation.PaymentReservationId}"
@@ -361,7 +329,7 @@ namespace Cinema_IntegrationTest
         public async Task DeleteImage_ShouldReturnOk()
         {
             await AuthenticateAsAdminAsync();
-
+            AddAuthCookie();
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 

@@ -18,11 +18,16 @@ namespace Cinema_IntegrationTest
     {
         private readonly HttpClient _client;
         private readonly CustomApplicationFactory _factory;
+        private string? _authCookie;
 
         public UserControllerTests(CustomApplicationFactory factory)
         {
             _factory = factory;
-            _client = factory.CreateClient();
+            _client = factory.CreateClient(
+                new WebApplicationFactoryClientOptions
+                {
+                    AllowAutoRedirect = false
+                });
         }
 
         private async Task AuthenticateAsUserAsync()
@@ -40,10 +45,81 @@ namespace Cinema_IntegrationTest
             );
 
             var response = await _client.PostAsync("/api/User/login", content);
+            var body = await response.Content.ReadAsStringAsync();
 
-            response.EnsureSuccessStatusCode();
+            Assert.True(response.IsSuccessStatusCode, $"Login failed: {body}");
+
+            Assert.True(
+                response.Headers.TryGetValues("Set-Cookie", out var cookies),
+                $"Login succeeded, but no auth cookie was issued. Body: {body}");
+
+            _authCookie = cookies
+                .Select(c => c.Split(';')[0])
+                .FirstOrDefault();
+
+            Assert.False(string.IsNullOrWhiteSpace(_authCookie), "Auth cookie was empty.");
         }
 
+        private void AddAuthCookie()
+        {
+            _client.DefaultRequestHeaders.Remove("Cookie");
+
+            if (!string.IsNullOrWhiteSpace(_authCookie))
+            {
+                _client.DefaultRequestHeaders.Add("Cookie", _authCookie);
+            }
+        }
+
+        private async Task<int> CreateAndAuthenticateUserAsync()
+        {
+            var email = $"testuser_{Guid.NewGuid():N}@cinema.hu";
+            var password = "user123";
+
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+                db.users.Add(new User
+                {
+                    Email = email,
+                    Password = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(password))),
+                    FullName = "Integration Test User",
+                    BillingAddress = "Test Address",
+                    Role = "User"
+                });
+                db.SaveChanges();
+            }
+
+            var loginDto = new LoginDto
+            {
+                email = email,
+                password = password
+            };
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(loginDto),
+                Encoding.UTF8,
+                "application/json"
+            );
+
+            var response = await _client.PostAsync("/api/User/login", content);
+            var body = await response.Content.ReadAsStringAsync();
+
+            Assert.True(response.IsSuccessStatusCode, $"Login failed: {body}");
+
+            Assert.True(
+                response.Headers.TryGetValues("Set-Cookie", out var cookies),
+                $"Login succeeded, but no auth cookie was issued. Body: {body}");
+
+            _authCookie = cookies
+                .Select(c => c.Split(';')[0])
+                .FirstOrDefault();
+
+            Assert.False(string.IsNullOrWhiteSpace(_authCookie), "Auth cookie was empty.");
+
+            using var verifyScope = _factory.Services.CreateScope();
+            var verifyDb = verifyScope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+            return verifyDb.users.First(x => x.Email == email).UserId;
+        }
 
         [Fact]
         public async Task RegisterUser()
@@ -113,9 +189,8 @@ namespace Cinema_IntegrationTest
         [Fact]
         public async Task ViewProfile()
         {
-            await AuthenticateAsUserAsync();
-
-            int userId = 2;
+            var userId = await CreateAndAuthenticateUserAsync();
+            AddAuthCookie();
 
             var response = await _client.GetAsync($"/api/User/viewprofile?userId={userId}");
 
@@ -126,13 +201,14 @@ namespace Cinema_IntegrationTest
             var user = JsonSerializer.Deserialize<UserDto>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             Assert.NotNull(user);
-            Assert.Equal("user@cinema.hu", user.Email);
+            Assert.Equal(userId, user.UserId);
         }
 
         [Fact]
         public async Task DeleteProfile()
         {
-            await AuthenticateAsUserAsync();
+            var loggedInUserId = await CreateAndAuthenticateUserAsync();
+            AddAuthCookie();
 
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
@@ -159,15 +235,19 @@ namespace Cinema_IntegrationTest
         [Fact]
         public async Task UpdateProfile()
         {
-            await AuthenticateAsUserAsync();
+            var userId = await CreateAndAuthenticateUserAsync();
+            AddAuthCookie();
+
+            using var scope = _factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+            var currentUser = db.users.First(x => x.UserId == userId);
 
             var updateDto = new UpdateUserDto
             {
-                UserId = 2,
-                Email = "user@cinema.hu",
+                UserId = userId,
+                Email = currentUser.Email,
                 FullName = "Updated User",
                 BillingAddress = "Debrecen 9"
-
             };
 
             var content = new StringContent(JsonSerializer.Serialize(updateDto), Encoding.UTF8, "application/json");
@@ -182,10 +262,8 @@ namespace Cinema_IntegrationTest
         [Fact]
         public async Task ChangePassword()
         {
-
-            await AuthenticateAsUserAsync();
-
-            int userId = 2;
+            var userId = await CreateAndAuthenticateUserAsync();
+            AddAuthCookie();
 
             string oldPass = "user123";
             string newPass = "newpassword123";

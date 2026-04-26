@@ -121,7 +121,7 @@ namespace Cinema_Test
                 UserId = reservation.Cart.UserId
             };
 
-            await _adminModel.ModifyReservation(dto, reservation.PaymentReservationId);
+            await _adminModel.ModifyReservation(dto);
             var updated = _context.paymentReservations.Include(x => x.Cart)
                 .First(x => x.PaymentReservationId == reservation.PaymentReservationId);
 
@@ -219,7 +219,7 @@ namespace Cinema_Test
             var movie = _context.movies.First();
             var dto = new NewScreeningDto
             {
-                MovieId = movie.MovieId,
+              
                 MovieTitle = movie.MovieTitle,
                 RoomName = "Room 1",
                 RoomId = 1,
@@ -235,44 +235,35 @@ namespace Cinema_Test
         public async Task ModifyScreening()
         {
             var screening = _context.filmScreenings.First();
+            var otherRoom = _context.rooms.First(r => r.RoomId != screening.RoomId);
+
             var dto = new ModifyFilmScreeningDto
             {
-                MovieId = screening.MovieId,
-                MovieTitle = screening.MovieTitle + " Updated",
-                RoomName = screening.RoomName,
-                RoomId = screening.RoomId,
+                FilmScreeningId = screening.FilmScreeningId,
+                MovieTitle = "Inception",
+                RoomName = otherRoom.RoomName,
+                RoomId = otherRoom.RoomId,
                 Date = screening.Date.AddDays(1)
             };
 
-            await _adminModel.ModifyFilmScreening(dto, screening.FilmScreeningId);
-            var updated = _context.filmScreenings.First(s => s.FilmScreeningId == screening.FilmScreeningId);
-            Assert.Equal(dto.MovieTitle, updated.MovieTitle);
+            await _adminModel.ModifyFilmScreening(dto);
+
+            var updated = _context.filmScreenings
+                .AsNoTracking()
+                .First(s => s.FilmScreeningId == screening.FilmScreeningId);
+
+            Assert.Equal(otherRoom.RoomId, updated.RoomId);
+            Assert.Equal(otherRoom.RoomName, updated.RoomName);
         }
 
-        [Fact]
+            [Fact]
         public async Task DeleteScreening()
         {
             var screening = _context.filmScreenings.First();
             await _adminModel.DeleteScreening(screening.FilmScreeningId);
             Assert.False(_context.filmScreenings.Any(s => s.FilmScreeningId == screening.FilmScreeningId));
         }
-
-        // TICKET
-        [Fact]
-        public async Task ModifyTicket()
-        {
-            var ticket = _context.tickets.First();
-            var dto = new ModifyTicketDto
-            {
-                TicketType = ticket.TicketType + " Updated",
-                TicketPrice = ticket.TicketPrice + 10
-            };
-
-            await _adminModel.ModifyTicket(dto, ticket.TicketId);
-            var updated = _context.tickets.First(t => t.TicketId == ticket.TicketId);
-            Assert.Equal(dto.TicketType, updated.TicketType);
-            Assert.Equal(dto.TicketPrice, updated.TicketPrice);
-        }
+       
 
         // IMAGE
         [Fact]

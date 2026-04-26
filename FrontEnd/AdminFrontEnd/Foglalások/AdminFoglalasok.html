@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="../AdminCinema.css" />
+    <title>Admin - Foglalások</title>
+</head>
+
+<body class="infos-page">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="../Főoldalak/AdminCinema.html">
+                <img src="../Logo.png" alt="Logo" height="50">
+            </a>
+
+            <button class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarCinema"
+                    aria-controls="navbarCinema"
+                    aria-expanded="false"
+                    aria-label="Navigáció váltása">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarCinema">
+                <ul class="navbar-nav ms-auto" id="navProfileArea">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Főoldalak/AdminCinema.html">Főoldal</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Filmek/AdminFilmek.html">Filmek</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Jegyek/AdminJegyek.html">Árak</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Termek/AdminTermek.html">Termek</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active" href="../Foglalások/AdminFoglalasok.html">Foglalások</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Kategoriák/AdminKategoriak.html">Kategóriák</a>
+                    </li>  
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Felhasználók/adminFelhasznalok.html">Felhasználók</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Főoldalak/AdminRolunk.html">Rólunk</a>
+                    </li>
+
+                    <li class="nav-item" id="navLoginItem">
+                        <a class="nav-link" href="../Főoldalak/AdminBejelentkezes.html">Bejelentkezés</a>
+                    </li>
+
+                    <li class="nav-item d-none" id="navLogoutItem">
+                        <a class="nav-link" href="#" onclick="Admin_handleLogout()">Kijelentkezés</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="admin-page page-section">
+        <section class="admin-hero">
+            <h1 class="admin-title">Foglalások kezelése</h1>
+            <p class="admin-lead">
+                Foglalások módosítása és törlése.
+            </p>
+        </section>
+
+        <section class="container py-4">
+            <div class="row g-4">
+
+                <!-- BAL OLDAL: LISTA -->
+                <div class="col-lg-8">
+                    <div class="card admin-card shadow-sm h-100">
+                        <div class="card-header">
+                            <h4 class="mb-0">Foglalások listája</h4>
+                        </div>
+
+                        <div class="card-body">
+                            <div id="adminReservationMessage"></div>
+
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle mb-0">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>User ID</th>
+                                            <th>Vetítés ID</th>
+                                            <th>Db</th>
+                                            <th>Ár</th>
+                                            <th>Fizetve</th>
+                                            <th>Dátum</th>
+                                            <th>Művelet</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="adminReservationsTbody">
+                                        <tr>
+                                            <td colspan="8" class="text-center">
+                                                <div class="spinner-border spinner-border-sm" role="status">
+                                                    <span class="visually-hidden">Betöltés...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JOBB OLDAL -->
+                <div class="col-lg-4">
+                    <div class="card admin-card shadow-sm h-100">
+                        <div class="card-header">
+                            <h4 class="mb-0">Foglalás módosítása</h4>
+                        </div>
+
+                        <div class="card-body">
+                            <div id="adminReservationEditMessage"></div>
+
+                            <form onsubmit="Admin_handleReservationUpdate(event)">
+                                <input type="hidden" id="editReservationId">
+
+                                <div class="mb-3">
+                                    <label for="editReservationCartId" class="form-label">Kosár ID</label>
+                                    <input type="number" id="editReservationCartId" class="form-control" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="editReservationDate" class="form-label">Dátum</label>
+                                    <input type="datetime-local" id="editReservationDate" class="form-control" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="editReservationIsPaid" class="form-label">Fizetve</label>
+                                    <select id="editReservationIsPaid" class="form-select" required>
+                                        <option value="true">Igen</option>
+                                        <option value="false">Nem</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="editReservationScreeningId" class="form-label">Vetítés ID</label>
+                                    <input type="number" id="editReservationScreeningId" class="form-control" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="editReservationAmount" class="form-label">Darabszám</label>
+                                    <input type="number" id="editReservationAmount" class="form-control" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="editReservationPrice" class="form-label">Ár</label>
+                                    <input type="number" id="editReservationPrice" class="form-control" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="editReservationUserId" class="form-label">User ID</label>
+                                    <input type="number" id="editReservationUserId" class="form-control" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="editReservationSeatsJson" class="form-label">Seats JSON</label>
+                                    <textarea id="editReservationSeatsJson" class="form-control" rows="6"></textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-warning w-100">
+                                    Módosítás mentése
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script src="../Script/Core/adminApi.js"></script>
+    <script src="../Script/Core/adminCommon.js"></script>
+    <script src="../Script/Foglalások/adminFoglalasok.js"></script>
+</body>
+</html>

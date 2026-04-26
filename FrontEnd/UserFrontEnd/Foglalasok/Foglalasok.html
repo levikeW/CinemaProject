@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="../Cinema.css"/>
+    <style>
+        body.profile-page.reservations-page { overflow-y: auto !important; }
+        #reservationsContainer { max-height: calc(100vh - 160px); overflow-y: auto; }
+    </style>
+    <title>Aktív foglalásaim</title>
+</head>
+<body class="profile-page reservations-page">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="../Fooldalak/Cinema.html">
+                <img src="../Logo.png" alt="Logo" height="50">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCinema">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCinema">
+                <form class="d-flex ms-3">
+                    <input class="form-control me-2 site-search-input" type="search" placeholder="Keresés">
+                </form>
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0" id="navProfileArea">
+                    <li class="nav-item"><a class="nav-link" href="../Fooldalak/Cinema.html">Főoldal</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Arak/Arak.html">Árak</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Kategoriak/Kategoriak.html">Kategóriák</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../Fooldalak/Rolunk.html">Rólunk</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="../Fooldalak/Bejelentkezes.html">Bejelentkezés/Regisztráció</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="page-section">
+        <div class="container py-5" id="reservationsContainer">
+            <h1>Aktív foglalásaim</h1>
+            <div id="reservationsMessage" class="alert alert-info"></div>
+            <div id="reservationsList" class="list-group"></div>
+        </div>
+    </main>
+
+    <script type="module" src="../Script/Foglalasok/foglalasok.js"></script>
+</body>
+</html>

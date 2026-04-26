@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="../AdminCinema.css" />
+    <title>Admin - Termek</title>
+</head>
+
+<body class="infos-page">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="../Főoldalak/AdminCinema.html">
+                <img src="../Logo.png" alt="Logo" height="50">
+            </a>
+
+            <button class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarCinema"
+                    aria-controls="navbarCinema"
+                    aria-expanded="false"
+                    aria-label="Navigáció váltása">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarCinema">
+                <ul class="navbar-nav ms-auto" id="navProfileArea">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Főoldalak/AdminCinema.html">Főoldal</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Filmek/AdminFilmek.html">Filmek</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Jegyek/AdminJegyek.html">Árak</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active" href="../Termek/AdminTermek.html">Termek</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Foglalások/AdminFoglalasok.html">Foglalások</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Kategoriák/AdminKategoriak.html">Kategóriák</a>
+                    </li>  
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Felhasználók/adminFelhasznalok.html">Felhasználók</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Főoldalak/AdminRolunk.html">Rólunk</a>
+                    </li>
+
+                    <li class="nav-item" id="navLoginItem">
+                        <a class="nav-link" href="../Főoldalak/AdminBejelentkezes.html">Bejelentkezés</a>
+                    </li>
+
+                    <li class="nav-item d-none" id="navLogoutItem">
+                        <a class="nav-link" href="#" onclick="Admin_handleLogout()">Kijelentkezés</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="admin-page page-section">
+        <section class="admin-hero">
+            <h1 class="admin-title">Termek kezelése</h1>
+            <p class="admin-lead">
+                Termek létrehozása, módosítása és törlése.
+            </p>
+        </section>
+
+        <section class="container py-4">
+            <div class="row g-4">
+
+                <!-- BAL OLDAL: LISTA -->
+                <div class="col-lg-7">
+                    <div class="card admin-card shadow-sm h-100">
+                        <div class="card-header">
+                            <h4 class="mb-0">Termek listája</h4>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle mb-0">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Terem neve</th>
+                                            <th>Művelet</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="adminRoomsTbody">
+                                        <tr>
+                                            <td colspan="3" class="text-center">
+                                                <div class="spinner-border spinner-border-sm" role="status">
+                                                    <span class="visually-hidden">Betöltés...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JOBB OLDAL -->
+                <div class="col-lg-5">
+                    <div class="card admin-card shadow-sm h-100">
+                        <div class="card-header">
+                            <h4 class="mb-0">Terem kezelése</h4>
+                        </div>
+
+                        <div class="card-body">
+
+                            <!-- ÚJ -->
+                            <div class="mb-4">
+                                <h5>Új terem létrehozása</h5>
+                                <div id="adminRoomMessage"></div>
+
+                                <form id="roomForm" onsubmit="Admin_handleRoomCreate(event)">
+                                    <div class="mb-3">
+                                        <label for="roomName" class="form-label">Terem neve</label>
+                                        <input
+                                            type="text"
+                                            id="roomName"
+                                            class="form-control"
+                                            required>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-success w-100">
+                                        Terem létrehozása
+                                    </button>
+                                </form>
+                            </div>
+
+                            <hr>
+
+                            <!-- MÓDOSÍTÁS -->
+                            <div class="mt-4">
+                                <h5>Terem módosítása</h5>
+                                <div id="adminRoomEditMessage"></div>
+
+                                <form onsubmit="Admin_handleRoomUpdate(event)">
+                                    <input type="hidden" id="editRoomId">
+
+                                    <div class="mb-3">
+                                        <label for="editRoomName" class="form-label">Terem neve</label>
+                                        <input
+                                            type="text"
+                                            id="editRoomName"
+                                            class="form-control"
+                                            required>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        Módosítás mentése
+                                    </button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script src="../Script/Core/adminApi.js"></script>
+    <script src="../Script/Core/adminCommon.js"></script>
+    <script src="../Script/Filmek/adminFilmek.js"></script>
+    <script src="../Script/Termek/adminTermek.js"></script>
+    <script src="../Script/Főoldalak/adminCinema.js"></script>
+</body>
+</html>

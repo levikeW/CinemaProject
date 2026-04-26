@@ -66,7 +66,7 @@ namespace Cinema_Test
             db.rooms.AddRange(rooms);
             db.SaveChanges();
 
-            // EATS
+            // SEATS
             var seats = new List<Seat>();
             foreach (var room in rooms)
             {
@@ -92,21 +92,18 @@ namespace Cinema_Test
             {
                 new FilmScreening {
                     MovieId = movies[0].MovieId,
-                    MovieTitle = movies[0].MovieTitle,
                     RoomId = rooms[0].RoomId,
                     RoomName = rooms[0].RoomName,
                     Date = DateTime.UtcNow.AddDays(1)
                 },
                 new FilmScreening {
                     MovieId = movies[1].MovieId,
-                    MovieTitle = movies[1].MovieTitle,
                     RoomId = rooms[1].RoomId,
                     RoomName = rooms[1].RoomName,
                     Date = DateTime.UtcNow.AddDays(2)
                 },
                 new FilmScreening {
                     MovieId = movies[2].MovieId,
-                    MovieTitle = movies[2].MovieTitle,
                     RoomId = rooms[0].RoomId,
                     RoomName = rooms[0].RoomName,
                     Date = DateTime.UtcNow.AddDays(3)
@@ -115,22 +112,28 @@ namespace Cinema_Test
             db.filmScreenings.AddRange(screenings);
             db.SaveChanges();
 
+            // TICKET TYPES
+            var ticketTypes = new List<TicketTypes>
+            {
+                new TicketTypes { TicketType = "Adult", TicketPrice = 3000 },
+                new TicketTypes { TicketType = "Student", TicketPrice = 2500 }
+            };
+            db.ticketTypes.AddRange(ticketTypes);
+            db.SaveChanges();
+
             // TICKETS
             var tickets = new List<Ticket>
             {
                 new Ticket {
-                    TicketType = "Adult",
-                    TicketPrice = 3000,
+                    TicketTypeId = ticketTypes[0].TicketTypeId,
                     FilmScreeningId = screenings[0].FilmScreeningId
                 },
                 new Ticket {
-                    TicketType = "Student",
-                    TicketPrice = 2500,
+                    TicketTypeId = ticketTypes[1].TicketTypeId,
                     FilmScreeningId = screenings[0].FilmScreeningId
                 },
                 new Ticket {
-                    TicketType = "Adult",
-                    TicketPrice = 3200,
+                    TicketTypeId = ticketTypes[0].TicketTypeId,
                     FilmScreeningId = screenings[1].FilmScreeningId
                 }
             };
@@ -172,7 +175,7 @@ namespace Cinema_Test
                 FilmScreeningId = screenings[0].FilmScreeningId,
                 TicketId = tickets[0].TicketId,
                 Amount = 2,
-                TotalPrice = 2 * tickets[0].TicketPrice
+                TotalPrice = 2 * ticketTypes[0].TicketPrice
             };
             db.carts.Add(futureCart);
             db.SaveChanges();
@@ -209,7 +212,7 @@ namespace Cinema_Test
                 FilmScreeningId = screenings[1].FilmScreeningId,
                 TicketId = tickets[2].TicketId,
                 Amount = 1,
-                TotalPrice = tickets[2].TicketPrice
+                TotalPrice = ticketTypes[0].TicketPrice
             };
             db.carts.Add(pastCart);
             db.SaveChanges();
@@ -240,6 +243,7 @@ namespace Cinema_Test
             db.SaveChanges();
         }
 
+        // PASSWORD HASHING
         private static string HashPass(string password)
         {
             using var sha = SHA256.Create();

@@ -3,7 +3,6 @@
     public class ModifyFilmScreeningDto
     {
         public int FilmScreeningId { get; set; }
-        public int MovieId { get; set; }
         public string MovieTitle { get; set; }
         public int RoomId { get; set; }
         public string RoomName { get; set; }

@@ -2,8 +2,8 @@
 {
     public class CategoriesDto
     {
-        public int Id { get; set; }
-        public string CategName { get; set; }
+        public int CategId { get; set; }
+        public string Name { get; set; }
         public string Description { get; set; }
     }
 }

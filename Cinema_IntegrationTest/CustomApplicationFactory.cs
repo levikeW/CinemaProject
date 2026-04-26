@@ -1,4 +1,5 @@
-﻿using CinemaProject.Persistence;
+﻿using Cinema_Test;
+using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;

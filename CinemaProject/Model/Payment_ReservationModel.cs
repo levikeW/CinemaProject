@@ -2,6 +2,7 @@
 using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace CinemaProject.Model
 {
@@ -16,12 +17,17 @@ namespace CinemaProject.Model
 
         public async Task<ConfirmationDto> CreateReservation(int cartId)
         {
+            if (await _context.paymentReservations.AnyAsync(x => x.CartId == cartId))
+                throw new InvalidOperationException("Reservation already exists for this cart");
+
             var cart = await _context.carts.FirstOrDefaultAsync(c => c.CartId == cartId);
 
             if (cart == null)
                 throw new InvalidOperationException("Cart not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
+
+            await AlignPaymentReservationSequenceAsync();
 
             var reservation = new PaymentReservation
             {
@@ -48,14 +54,31 @@ namespace CinemaProject.Model
                     Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
                     TicketId = x.Cart.TicketId,
                     Amount = x.Cart.Amount,
-                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     UserEmail = x.Cart.User.Email
                 }).FirstAsync();
         }
 
+        private async Task AlignPaymentReservationSequenceAsync()
+        {
+            if (!string.Equals(_context.Database.ProviderName, "Npgsql.EntityFrameworkCore.PostgreSQL", StringComparison.Ordinal))
+                return;
+
+            await _context.Database.ExecuteSqlRawAsync(@"
+                SELECT setval(
+                    pg_get_serial_sequence('""paymentReservations""', 'PaymentReservationId'),
+                    COALESCE((SELECT MAX(""PaymentReservationId"") FROM ""paymentReservations""), 0) + 1,
+                    false
+                );
+            ");
+        }
+
         public async Task CancelReservation(int reservationId)
         {
-            var reservation = await _context.paymentReservations.FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
+            var reservation = await _context.paymentReservations
+                .Include(x => x.Cart)
+                    .ThenInclude(x => x.Seats)
+                .FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
 
             if (reservation == null)
                 throw new InvalidOperationException("Reservation not found");
@@ -64,6 +87,17 @@ namespace CinemaProject.Model
                 throw new InvalidOperationException("Cannot cancel a paid reservation");
 
             using var trx = await _context.Database.BeginTransactionAsync();
+
+            if (reservation.Cart != null)
+            {
+                foreach (var seat in reservation.Cart.Seats)
+                {
+                    seat.CartId = null;
+                    seat.IsReserved = false;
+                }
+
+                _context.carts.Remove(reservation.Cart);
+            }
 
             _context.paymentReservations.Remove(reservation);
             await _context.SaveChangesAsync();
@@ -97,7 +131,7 @@ namespace CinemaProject.Model
                     Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
                     TicketId = x.Cart.TicketId,
                     Amount = x.Cart.Amount,
-                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     PaymentDate = x.Date,
                     UserEmail = x.Cart.User.Email
                 }).FirstAsync();
@@ -116,7 +150,7 @@ namespace CinemaProject.Model
                     Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
                     TicketId = x.Cart.TicketId,
                     Amount = x.Cart.Amount,
-                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     PaymentDate = x.Date,
                     UserEmail = x.Cart.User.Email
                 }).FirstOrDefaultAsync();
@@ -134,7 +168,7 @@ namespace CinemaProject.Model
                     Seats = x.Cart.Seats.Select(y => $"Row {y.RowNumber}, Seat {y.SeatNumber}").ToList(),
                     TicketId = x.Cart.TicketId,
                     Amount = x.Cart.Amount,
-                    TotalPrice = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    TotalPrice = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     UserEmail = x.Cart.User.Email
                 }).FirstOrDefaultAsync();
         }
@@ -149,7 +183,8 @@ namespace CinemaProject.Model
                 .Include(p => p.Cart)
                     .ThenInclude(c => c.Seats)
                 .Include(p => p.Cart)
-                    .ThenInclude(c => c.FilmScreening).Where(x => x.Cart.UserId == userId && x.Cart.FilmScreening.Date >= now)
+                    .ThenInclude(c => c.FilmScreening)
+                .Where(x => x.UserId == userId && x.FilmScreening.Date >= now)
                 .Select(x => new PaymentReservationDto
                 {
                     PaymentReservationId = x.PaymentReservationId,
@@ -157,7 +192,7 @@ namespace CinemaProject.Model
                     Date = x.Date,
                     IsPaid = x.IsPaid,
                     Amount = x.Cart.Amount,
-                    Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    Price = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     Seats = x.Cart.Seats.Select(s => new SeatDto
                     {
                         SeatId = s.SeatId,
@@ -179,7 +214,8 @@ namespace CinemaProject.Model
                 .Include(p => p.Cart)
                     .ThenInclude(c => c.Seats)
                 .Include(p => p.Cart)
-                    .ThenInclude(c => c.FilmScreening).Where(x => x.Cart.UserId == userId && x.Cart.FilmScreening.Date < now)
+                    .ThenInclude(c => c.FilmScreening)
+                .Where(x => x.UserId == userId && x.FilmScreening.Date < now)
                 .Select(x => new PaymentReservationDto
                 {
                     PaymentReservationId = x.PaymentReservationId,
@@ -187,7 +223,7 @@ namespace CinemaProject.Model
                     Date = x.Date,
                     IsPaid = x.IsPaid,
                     Amount = x.Cart.Amount,
-                    Price = x.Cart.Ticket.TicketPrice * x.Cart.Amount,
+                    Price = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
                     Seats = x.Cart.Seats.Select(s => new SeatDto
                     {
                         SeatId = s.SeatId,

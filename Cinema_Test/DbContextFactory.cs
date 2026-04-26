@@ -1,6 +1,7 @@
 ﻿using CinemaProject.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +20,8 @@ namespace Cinema_Test
 
             // DbContextOptions, ugyan az mint postgres adatbázisnál
             var options = new DbContextOptionsBuilder<CinemaDbContext>()
-                .UseSqlite(connection)
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
                 .EnableSensitiveDataLogging()
                 .Options;
 
@@ -41,7 +43,7 @@ namespace Cinema_Test
             connection.Open();
 
             var options = new DbContextOptionsBuilder<CinemaDbContext>()
-                .UseSqlite(connection)
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
             var context = new CinemaDbContext(options);

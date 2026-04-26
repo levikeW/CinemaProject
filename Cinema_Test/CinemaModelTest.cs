@@ -127,7 +127,7 @@ namespace Cinema_Test
 
             var updated = _context.carts.First(c => c.CartId == cart.CartId);
             Assert.Equal(newAmount, updated.Amount);
-            Assert.Equal(cart.Ticket.TicketPrice * newAmount, updated.TotalPrice);
+            Assert.Equal(cart.Ticket.TicketType.TicketPrice * newAmount, updated.TotalPrice);
         }
 
         [Fact]

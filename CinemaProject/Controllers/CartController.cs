@@ -20,11 +20,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpGet("getcart")]
-        public async Task<ActionResult<IEnumerable<CartDto>>> GetCart([FromBody] CartDto dto, [FromQuery] int userId)
+        public async Task<ActionResult<IEnumerable<CartDto>>> GetCart([FromQuery] int userId)
         {
             try
             {
-                return Ok(await _cartModel.GetCart(dto, userId));
+                return Ok(await _cartModel.GetCart(userId));
             }
             catch (InvalidOperationException e)
             {
@@ -37,12 +37,11 @@ namespace CinemaProject.Controllers
         }
 
         [HttpPut("addtocart")]
-        public async Task<ActionResult> AddToCart([FromBody] CartDto dto)
+        public async Task<ActionResult<CartDto>> AddToCart([FromBody] CartDto dto)
         {
             try
             {
-                await _cartModel.AddToCart(dto);
-                return Ok();
+                return Ok(await _cartModel.AddToCart(dto));
             }
             catch (InvalidOperationException e)
             {

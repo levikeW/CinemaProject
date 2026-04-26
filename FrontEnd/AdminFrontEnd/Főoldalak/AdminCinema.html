@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="../AdminCinema.css" />
+    <title>Admin - Vetítések</title>
+</head>
+
+<body class="cinema-page">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="../Főoldalak/AdminCinema.html">
+                <img src="../Logo.png" alt="Logo" height="50">
+            </a>
+
+            <button class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarCinema"
+                    aria-controls="navbarCinema"
+                    aria-expanded="false"
+                    aria-label="Navigáció váltása">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarCinema">
+                <ul class="navbar-nav ms-auto" id="navProfileArea">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="../Főoldalak/AdminCinema.html">Főoldal</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Filmek/AdminFilmek.html">Filmek</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Jegyek/AdminJegyek.html">Árak</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Termek/AdminTermek.html">Termek</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Foglalások/AdminFoglalasok.html">Foglalások</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Kategoriák/AdminKategoriak.html">Kategóriák</a>
+                    </li>  
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Felhasználók/adminFelhasznalok.html">Felhasználók</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="../Főoldalak/AdminRolunk.html">Rólunk</a>
+                    </li>
+
+                    <li class="nav-item" id="navLoginItem">
+                        <a class="nav-link" href="../Főoldalak/AdminBejelentkezes.html">Bejelentkezés</a>
+                    </li>
+
+                    <li class="nav-item d-none" id="navLogoutItem">
+                        <a class="nav-link" href="#" onclick="Admin_handleLogout()">Kijelentkezés</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="admin-page page-section">
+        <section class="admin-hero">
+            <h1 class="admin-title">Vetítések kezelése</h1>
+            <p class="admin-lead">
+                Vetítések létrehozása, módosítása és törlése.
+            </p>
+        </section>
+
+        <section class="container py-4">
+            <div class="row g-4">
+
+                <!-- BAL OLDAL: LISTA -->
+                <div class="col-lg-7">
+                    <div class="card admin-card shadow-sm h-100">
+                        <div class="card-header">
+                            <h4 class="mb-0">Vetítések listája</h4>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle mb-0">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Film</th>
+                                            <th>Terem</th>
+                                            <th>Dátum</th>
+                                            <th>Művelet</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="adminScreeningsTbody">
+                                        <tr>
+                                            <td colspan="5" class="text-center">
+                                                <div class="spinner-border spinner-border-sm" role="status">
+                                                    <span class="visually-hidden">Betöltés...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JOBB OLDAL -->
+                <div class="col-lg-5 admin-side-panel">
+                    <div class="card admin-card shadow-sm h-100">
+                        <div class="card-header">
+                            <h4 class="mb-0">Vetítés kezelése</h4>
+                        </div>
+
+                        <div class="card-body">
+
+                            <!-- ÚJ -->
+                            <div class="mb-4">
+                                <h5>Új vetítés létrehozása</h5>
+                                <div id="adminScreeningMessage"></div>
+
+                                <form id="screeningForm" onsubmit="Admin_handleScreeningCreate(event)">
+                                    <div class="mb-3">
+                                        <label for="screeningMovieId" class="form-label">Film</label>
+                                        <select id="screeningMovieId" class="form-select" required></select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="screeningRoomId" class="form-label">Terem</label>
+                                        <select id="screeningRoomId" class="form-select" required></select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="screeningDate" class="form-label">Dátum</label>
+                                        <input type="datetime-local" id="screeningDate" class="form-control" required>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-success w-100">
+                                        Vetítés létrehozása
+                                    </button>
+                                </form>
+                            </div>
+
+                            <hr>
+
+                            <!-- MÓDOSÍTÁS -->
+                            <div class="mt-4">
+                                <h5>Vetítés módosítása</h5>
+                                <div id="adminScreeningEditMessage"></div>
+
+                                <form id="editScreeningForm" onsubmit="Admin_handleScreeningUpdate(event)">
+                                    <input type="hidden" id="editScreeningId">
+
+                                    <div class="mb-3">
+                                        <label for="editScreeningMovieId" class="form-label">Film</label>
+                                        <select id="editScreeningMovieId" class="form-select" required></select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="editScreeningRoomId" class="form-label">Terem</label>
+                                        <select id="editScreeningRoomId" class="form-select" required></select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="editScreeningDate" class="form-label">Dátum</label>
+                                        <input type="datetime-local" id="editScreeningDate" class="form-control" required>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        Módosítás mentése
+                                    </button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+    <script src="../Script/Core/adminApi.js"></script>
+    <script src="../Script/Core/adminCommon.js"></script>
+    <script src="../Script/Filmek/adminFilmek.js"></script>
+    <script src="../Script/Termek/adminTermek.js"></script>
+    <script src="../Script/Foglalások/adminFoglalasok.js"></script>
+    <script src="../Script/Főoldalak/adminCinema.js"></script>
+</body>
+</html>

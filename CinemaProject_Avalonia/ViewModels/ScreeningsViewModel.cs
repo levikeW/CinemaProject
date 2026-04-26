@@ -144,7 +144,6 @@ namespace CinemaProject_Avalonia.ViewModels
                 var dto = new ModifyFilmScreeningDto
                 {
                     FilmScreeningId = FilmScreeningId,
-                    MovieId = selectedMovie.MovieId,
                     MovieTitle = selectedMovie.MovieTitle,
                     RoomId = selectedRoom.RoomId,
                     RoomName = selectedRoom.Name,
