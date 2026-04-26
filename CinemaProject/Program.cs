@@ -60,75 +60,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 var app = builder.Build();
 
+
+// Ticketek létrehozása vetítésekhez (VIP / nem VIP)
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
-
-    if (string.Equals(context.Database.ProviderName, "Npgsql.EntityFrameworkCore.PostgreSQL", StringComparison.Ordinal))
-    {
-        context.Database.ExecuteSqlRaw(@"
-            SELECT setval(
-                pg_get_serial_sequence('""tickets""', 'TicketId'),
-                COALESCE((SELECT MAX(""TicketId"") FROM ""tickets""), 0) + 1,
-                false
-            );
-        ");
-    }
-
-    var screenings = context.filmScreenings
-        .Include(x => x.Room)
-        .ToList();
-
-    var ticketTypes = context.ticketTypes.ToList();
-    var tickets = context.tickets.ToList();
-    var createdMissingTickets = false;
-
-    foreach (var screening in screenings)
-    {
-        var roomName = (screening.Room?.RoomName ?? screening.RoomName ?? string.Empty).Trim();
-        var roomIsVip = roomName.ToLower().Contains("vip");
-
-        foreach (var ticketType in ticketTypes)
-        {
-            var ticketName = (ticketType.TicketType ?? string.Empty).Trim();
-            var ticketIsVip = ticketName.ToLower().Contains("vip");
-            var shouldExist = roomIsVip ? ticketIsVip : !ticketIsVip;
-
-            if (!shouldExist)
-            {
-                continue;
-            }
-
-            var exists = false;
-
-            foreach (var ticket in tickets)
-            {
-                if (ticket.FilmScreeningId == screening.FilmScreeningId && ticket.TicketTypeId == ticketType.TicketTypeId)
-                {
-                    exists = true;
-                    break;
-                }
-            }
-
-            if (!exists)
-            {
-                var newTicket = new Ticket
-                {
-                    FilmScreeningId = screening.FilmScreeningId,
-                    TicketTypeId = ticketType.TicketTypeId,
-                };
-
-                context.tickets.Add(newTicket);
-                tickets.Add(newTicket);
-                createdMissingTickets = true;
-            }
-        }
-    }
-
-    if (createdMissingTickets)
-    {
-        context.SaveChanges();
-    }
+    var cinemaModel = scope.ServiceProvider.GetRequiredService<CinemaModel>();
+    cinemaModel.EnsureTicketsExist();
 }
 
 
