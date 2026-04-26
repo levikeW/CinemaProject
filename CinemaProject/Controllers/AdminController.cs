@@ -185,7 +185,7 @@ namespace CinemaProject.Controllers
         {
             try
             {
-                var result = await _adminModel.NewCategDto(dto);
+                var result = await _adminModel.NewCateg(dto);
                 return Ok(result);
             }
             catch (InvalidOperationException e)

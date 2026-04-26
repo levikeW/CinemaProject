@@ -169,7 +169,7 @@ namespace CinemaProject.Model
         }
 
         // Új HTML kategória létrehozása
-        public async Task<NewCategDto> NewCategDto(NewCategDto dto)
+        public async Task<NewCategDto> NewCateg(NewCategDto dto)
         {
             if (dto.CategId != 0 && await _context.categoriesForHTML.AnyAsync(x => x.CategoryId == dto.CategId))
                 throw new InvalidOperationException("Already exists");
