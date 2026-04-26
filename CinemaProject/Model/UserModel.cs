@@ -19,6 +19,7 @@ namespace CinemaProject.Model
 
         private const int MinPasswordLength = 6;
 
+        // Jelszó titkosítása SHA256-tal
         private string HashPass(string password)
         {
             using var sha = SHA256.Create();
@@ -27,6 +28,7 @@ namespace CinemaProject.Model
             return Convert.ToBase64String(hash);
         }
 
+        // Email formátum ellenőrzése
         private bool IsValidEmail(string email)
         {
             try
@@ -40,16 +42,18 @@ namespace CinemaProject.Model
             }
         }
 
+        // Jelszó hosszának ellenőrzése
         private void ValidatePassword(string password)
         {
             if (string.IsNullOrWhiteSpace(password) || password.Length < MinPasswordLength)
                 throw new InvalidOperationException($"Password must be at least {MinPasswordLength} characters long.");
         }
 
+        // Regisztráció 
         public async Task Regist(RegistDto dto, string role = "User")
         {
             if (!IsValidEmail(dto.Email))
-                throw new InvalidOperationException("Invalid email format");
+                throw new InvalidDataException("Invalid email format");
 
             ValidatePassword(dto.Password);
 
@@ -71,11 +75,13 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Bejelentkezési adatok ellenőrzése
         public async Task<User?> ValidateUser(LoginDto dto)
         {
             return await _context.users.FirstOrDefaultAsync(x => x.Email == dto.email && x.Password == HashPass(dto.password));
         }
 
+        // Profil lekérése
         public async Task<UserDto?> ViewProfile(int userId)
         {
             return await _context.users.Where(x => x.UserId == userId)
@@ -88,11 +94,12 @@ namespace CinemaProject.Model
                 }).FirstOrDefaultAsync();
         }
 
+        // Profil törlése
         public async Task DeleteProfile(int userId)
         {
             var user = await _context.users.FirstOrDefaultAsync(x => x.UserId == userId);
             if (user == null)
-                throw new InvalidOperationException("User not found");
+                throw new KeyNotFoundException("User not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -102,18 +109,17 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        //Profil módosítása
         public async Task UpdateProfile(UpdateUserDto dto)
         {
             var user = await _context.users.FirstOrDefaultAsync(x => x.UserId == dto.UserId);
             if (user == null)
-                throw new InvalidOperationException("User not found");
+                throw new KeyNotFoundException("User not found");
 
             if (!string.IsNullOrWhiteSpace(dto.Email))
             {
                 if (!IsValidEmail(dto.Email))
-                    throw new InvalidOperationException("Invalid email format");
-
-                user.Email = dto.Email;
+                    throw new InvalidDataException("Invalid email format");
             }
 
             using var trx = await _context.Database.BeginTransactionAsync();
@@ -131,15 +137,16 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Jelszó módosítása
         public async Task ChangePassword(int userId, string oldPass, string newPass)
         {
             var user = await _context.users.FirstOrDefaultAsync(x => x.UserId == userId);
             if (user == null)
-                throw new InvalidOperationException("User not found");
+                throw new KeyNotFoundException("User not found");
 
             var oldHash = HashPass(oldPass);
             if (user.Password != oldHash)
-                throw new InvalidOperationException("Old password is incorrect");
+                throw new InvalidDataException("Old password is incorrect");
 
             ValidatePassword(newPass);
 

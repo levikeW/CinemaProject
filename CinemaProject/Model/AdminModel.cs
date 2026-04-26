@@ -14,6 +14,7 @@ namespace CinemaProject.Model
             _context = context;
         }
 
+        // Összes felhasználó lekérése
         public async Task<IEnumerable<UserDto>> GetAllUsers()
         {
             return await _context.users
@@ -26,6 +27,7 @@ namespace CinemaProject.Model
                 }).ToListAsync();
         }
 
+        // Összes foglalás lekérése
         public async Task<IEnumerable<PaymentReservationDto>> GetAllReservations()
         {
             return await _context.paymentReservations
@@ -39,17 +41,18 @@ namespace CinemaProject.Model
                     UserId = x.UserId,
                     Amount = x.Cart.Amount,
                     Price = x.Cart.Ticket.TicketType.TicketPrice * x.Cart.Amount,
-                    Seats = x.Cart.Seats.Select(s => new SeatDto
+                    Seats = x.Cart.Seats.Select(x => new SeatDto
                     {
-                        SeatId = s.SeatId,
-                        RowNumber = s.RowNumber,
-                        SeatNumber = s.SeatNumber,
-                        RoomId = s.RoomId,
-                        IsReserved = s.IsReserved
+                        SeatId = x.SeatId,
+                        RowNumber = x.RowNumber,
+                        SeatNumber = x.SeatNumber,
+                        RoomId = x.RoomId,
+                        IsReserved = x.IsReserved
                     }).ToList()
                 }).ToListAsync();
         }
 
+        // Felhasználó keresése email vagy név alapján
         public async Task<IEnumerable<UserDto>> SearchUser(string item)
         {
             item = item.ToLower();
@@ -63,6 +66,7 @@ namespace CinemaProject.Model
             }).ToListAsync();
         }
 
+        // Új film létrehozása
         public async Task<NewMovieDto> NewMovie(NewMovieDto dto)
         {
             if (await _context.movies.AnyAsync(x => x.MovieTitle == dto.MovieTitle))
@@ -71,7 +75,7 @@ namespace CinemaProject.Model
             var imageId = await _context.images.Where(x => x.ImageId == dto.ImageId).Select(x => x.ImageId).FirstOrDefaultAsync();
 
             if (imageId == 0)
-                throw new InvalidOperationException("Image not found");
+                throw new KeyNotFoundException("Image not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -92,6 +96,7 @@ namespace CinemaProject.Model
             return dto;
         }
 
+        // Új vetítés létrehozása
         public async Task<NewScreeningDto> NewScreening(NewScreeningDto dto)
         {
             if (dto.FilmScreeningId != 0 &&
@@ -104,7 +109,7 @@ namespace CinemaProject.Model
 
             if (movie == null)
             {
-                throw new InvalidOperationException("Not Found");
+                throw new KeyNotFoundException("Not Found");
             }
 
             using var trx = await _context.Database.BeginTransactionAsync();
@@ -123,6 +128,7 @@ namespace CinemaProject.Model
             return dto;
         }
 
+        // Új terem létrehozása
         public async Task<NewRoomDto> NewRoom(NewRoomDto dto)
         {
             if (dto.RoomId != 0 && await _context.rooms.AnyAsync(x => x.RoomId == dto.RoomId))
@@ -142,6 +148,7 @@ namespace CinemaProject.Model
             return dto;
         }
 
+        // Új jegytípus létrehozása
         public async Task<NewTicketTypeDto> NewTicketType(NewTicketTypeDto dto)
         {
             if (dto.TicketTypeId != 0 && await _context.ticketTypes.AnyAsync(x => x.TicketTypeId == dto.TicketTypeId))
@@ -161,6 +168,7 @@ namespace CinemaProject.Model
             return dto;
         }
 
+        // Új HTML kategória létrehozása
         public async Task<NewCategDto> NewCategDto(NewCategDto dto)
         {
             if (dto.CategId != 0 && await _context.categoriesForHTML.AnyAsync(x => x.CategoryId == dto.CategId))
@@ -180,16 +188,17 @@ namespace CinemaProject.Model
             return dto;
         }
 
+        // Film adatainak módosítása
         public async Task ModifyMovie(ModifyMovieDto dto)
         {
             var movie = await _context.movies.FirstOrDefaultAsync(x => x.MovieId == dto.MovieId);
             if (movie == null)
-                throw new InvalidOperationException("Movie not found");
+                throw new KeyNotFoundException("Movie not found");
 
             var imageId = await _context.images.Where(x => x.ImageId == dto.ImageId).Select(x => x.ImageId).FirstOrDefaultAsync();
 
             if (imageId == 0)
-                throw new InvalidOperationException("Image not found");
+                throw new KeyNotFoundException("Image not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -206,11 +215,12 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Vetítés adatainak módosítása
         public async Task ModifyFilmScreening(ModifyFilmScreeningDto dto)
         {
             var screening = await _context.filmScreenings.FirstOrDefaultAsync(x => x.FilmScreeningId == dto.FilmScreeningId);
             if (screening == null)
-                throw new InvalidOperationException("Screening not found");
+                throw new KeyNotFoundException("Screening not found");
 
             var MovieId = await _context.movies.FirstAsync(x => x.MovieTitle == dto.MovieTitle);
 
@@ -225,42 +235,45 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Foglalás adatainak és székeinek módosítása
         public async Task ModifyReservation(ModifyReservationDto dto)
         {
             var reservation = await _context.paymentReservations
-                .Include(p => p.Cart)
-                    .ThenInclude(c => c.Seats).FirstOrDefaultAsync(p => p.PaymentReservationId == dto.PaymentReservationId);
+                .Include(x => x.Cart)
+                    .ThenInclude(x => x.Seats).FirstOrDefaultAsync(x => x.PaymentReservationId == dto.PaymentReservationId);
 
             if (reservation == null)
-                throw new InvalidOperationException("Reservation not found");
+                throw new KeyNotFoundException("Reservation not found");
 
-            var ticket = await _context.tickets.Include(x=> x.TicketType).FirstOrDefaultAsync(t => t.TicketId == reservation.Cart.TicketId);
+            var ticket = await _context.tickets.Include(x=> x.TicketType).FirstOrDefaultAsync(x => x.TicketId == reservation.Cart.TicketId);
             if (ticket == null)
-                throw new InvalidOperationException("Ticket not found");
+                throw new KeyNotFoundException("Ticket not found");
 
             if (dto.Amount <= 0)
-                throw new InvalidOperationException("Amount must be greater than 0");
+                throw new InvalidDataException("Amount must be greater than 0");
 
             if (dto.Seats == null || !dto.Seats.Any())
                 throw new InvalidOperationException("At least one seat must be selected");
 
             if (dto.Amount != dto.Seats.Count)
-                throw new InvalidOperationException("The number of selected seats must match the ticket amount");
+                throw new InvalidDataException("The number of selected seats must match the ticket amount");
 
-            var newSeatIds = dto.Seats.Select(s => s.SeatId).Distinct().ToList();
+            // Új székek azonosítóinak kigyűjtése
+            var newSeatIds = dto.Seats.Select(x => x.SeatId).Distinct().ToList();
 
             if (newSeatIds.Count != dto.Seats.Count)
-                throw new InvalidOperationException("Duplicate seat selection is not allowed");
+                throw new InvalidDataException("Duplicate seat selection is not allowed");
 
-            var conflictingSeatIds = await _context.carts.Where(c => c.FilmScreeningId == reservation.FilmScreeningId && c.CartId != reservation.CartId).SelectMany(c => c.Seats.Select(s => s.SeatId)).Where(seatId => newSeatIds.Contains(seatId)).Distinct().ToListAsync();
+            // Megnézi, hogy az új székek közül foglalt-e valamelyik másik kosárban
+            var conflictingSeatIds = await _context.carts.Where(x => x.FilmScreeningId == reservation.FilmScreeningId && x.CartId != reservation.CartId).SelectMany(x => x.Seats.Select(x => x.SeatId)).Where(seatId => newSeatIds.Contains(seatId)).Distinct().ToListAsync();
 
             if (conflictingSeatIds.Any())
                 throw new InvalidOperationException("One or more selected seats are already reserved by another reservation");
 
-            var seats = await _context.seats.Where(s => newSeatIds.Contains(s.SeatId)).ToListAsync();
+            var seats = await _context.seats.Where(x => newSeatIds.Contains(x.SeatId)).ToListAsync();
 
             if (seats.Count != newSeatIds.Count)
-                throw new InvalidOperationException("One or more selected seats were not found");
+                throw new KeyNotFoundException("One or more selected seats were not found");
 
 
             reservation.IsPaid = dto.IsPaid;
@@ -286,11 +299,12 @@ namespace CinemaProject.Model
             await _context.SaveChangesAsync();
         }
 
+        // Terem adatainak módosítása
         public async Task ModifyRoom(ModifyRoomDto dto, int roomId)
         {
             var room = await _context.rooms.FirstOrDefaultAsync(x => x.RoomId == roomId);
             if (room == null)
-                throw new InvalidOperationException("Room not found");
+                throw new KeyNotFoundException("Room not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -300,11 +314,12 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Jegytípus adatainak módosítása
         public async Task ModifyTicketType(ModifyTicketTypeDto dto, int ticketTId)
         {
             var ticketT = await _context.ticketTypes.FirstOrDefaultAsync(x => x.TicketTypeId == ticketTId);
             if (ticketT == null)
-                throw new InvalidOperationException("TicketType not found");
+                throw new KeyNotFoundException("TicketType not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -315,11 +330,12 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Kategória adatainak módosítása
         public async Task ModifyCateg(ModifyCategDto dto, int categId)
         {
             var categ = await _context.categoriesForHTML.FirstOrDefaultAsync(x => x.CategoryId == categId);
             if (categ == null)
-                throw new InvalidOperationException("Category not found");
+                throw new KeyNotFoundException("Category not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -330,24 +346,25 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Felhasználó törlése a hozzá tartozó kosarakkal és foglalásokkal együtt
         public async Task DeleteUser(int userId)
         {
             var user = await _context.users.FirstOrDefaultAsync(x => x.UserId == userId);
             if (user == null)
-                throw new InvalidOperationException("User not found");
+                throw new KeyNotFoundException("User not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
             // user cartjai
-            var userCarts = await _context.carts.Include(c => c.Seats).Where(c => c.UserId == userId).ToListAsync();
+            var userCarts = await _context.carts.Include(x => x.Seats).Where(x => x.UserId == userId).ToListAsync();
 
-            var userCartIds = userCarts.Select(c => c.CartId).ToList();
+            var userCartIds = userCarts.Select(x => x.CartId).ToList();
 
             // user foglalásai
-            var reservations = await _context.paymentReservations.Where(r => r.UserId == userId).ToListAsync();
+            var reservations = await _context.paymentReservations.Where(x => x.UserId == userId).ToListAsync();
 
             // seat-ek leválasztása a cartokról
-            var seats = await _context.seats.Where(s => s.CartId != null && userCartIds.Contains(s.CartId.Value)).ToListAsync();
+            var seats = await _context.seats.Where(x => x.CartId != null && userCartIds.Contains(x.CartId.Value)).ToListAsync();
 
             foreach (var seat in seats)
             {
@@ -370,11 +387,12 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Film törlése
         public async Task DeleteMovie(int movieId)
         {
             var movie = await _context.movies.FirstOrDefaultAsync(x => x.MovieId == movieId);
             if (movie == null)
-                throw new InvalidOperationException("Movie not found");
+                throw new KeyNotFoundException("Movie not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -384,11 +402,12 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Vetítés törlése
         public async Task DeleteScreening(int screeningId)
         {
             var screening = await _context.filmScreenings.FirstOrDefaultAsync(x => x.FilmScreeningId == screeningId);
             if (screening == null)
-                throw new InvalidOperationException("Screening not found");
+                throw new KeyNotFoundException("Screening not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -398,11 +417,12 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Terem törlése
         public async Task DeleteRoom(int roomId)
         {
             var room = await _context.rooms.FirstOrDefaultAsync(x => x.RoomId == roomId);
             if (room == null)
-                throw new InvalidOperationException("Room not found");
+                throw new KeyNotFoundException("Room not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -412,6 +432,7 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Foglalás törlése és székek felszabadítása
         public async Task DeleteReservation(int reservationId)
         {
             var reservation = await _context.paymentReservations
@@ -419,7 +440,7 @@ namespace CinemaProject.Model
                     .ThenInclude(x => x.Seats)
                 .FirstOrDefaultAsync(x => x.PaymentReservationId == reservationId);
             if (reservation == null)
-                throw new InvalidOperationException("Reservation not found");
+                throw new KeyNotFoundException("Reservation not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -440,11 +461,12 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Jegytípus törlése
         public async Task DeleteTicketT(int ticketTId)
         {
             var ticketType = await _context.ticketTypes.FirstOrDefaultAsync(x => x.TicketTypeId == ticketTId);
             if (ticketType == null)
-                throw new InvalidOperationException("Ticket type not found");
+                throw new KeyNotFoundException("Ticket type not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -454,11 +476,12 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Kategória törlése
         public async Task DeleteCateg(int categId)
         {
             var categ = await _context.categoriesForHTML.FirstOrDefaultAsync(x => x.CategoryId == categId);
             if (categ == null)
-                throw new InvalidOperationException("Category not found");
+                throw new KeyNotFoundException("Category not found");
 
             using var trx = await _context.Database.BeginTransactionAsync();
 
@@ -468,6 +491,7 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Kép feltöltése
         public async Task<ImageDto> UploadImage(ImageDto dto)
         {
             using var trx = await _context.Database.BeginTransactionAsync();
@@ -489,11 +513,12 @@ namespace CinemaProject.Model
             };
         }
 
+        // Kép törlése, ha nincs filmhez rendelve
         public async Task DeleteImage(int imageId)
         {
             var image = await _context.images.FirstOrDefaultAsync(x => x.ImageId == imageId);
             if (image == null)
-                throw new InvalidOperationException("Image not found");
+                throw new KeyNotFoundException("Image not found");
 
             if (await _context.movies.AnyAsync(m => m.ImageId == imageId))
                 throw new InvalidOperationException("Image is already exist");
@@ -506,14 +531,15 @@ namespace CinemaProject.Model
             await trx.CommitAsync();
         }
 
+        // Felhasználó szerepkörének módosítása
         public async Task ChangeRole(int userId, string newRole, int actAdminId)
         {
             if (userId == actAdminId)
-                throw new InvalidOperationException("You cannot change your own role.");
+                throw new InvalidCastException("You cannot change your own role.");
 
             var user = await _context.users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
-                throw new InvalidOperationException("User not found");
+                throw new KeyNotFoundException("User not found");
 
             if (user.Role == "Admin" && newRole != "Admin")
                 throw new InvalidOperationException("You cannot demote another Admin.");

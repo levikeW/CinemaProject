@@ -14,6 +14,7 @@ namespace CinemaProject.Model
             _context = context;
         }
 
+        // Összes film lekérése vetítésekkel együtt
         public async Task<IEnumerable<MovieDto>> GetAllMovies()
         {
             return await _context.movies
@@ -40,6 +41,7 @@ namespace CinemaProject.Model
                 }).ToListAsync();
         }
 
+        // Összes vetítés lekérése
         public async Task<IEnumerable<FilmScreeningDto>> GetAllScreenings()
         {
             return await _context.filmScreenings.Include(x=> x.Movie).Select(x => new FilmScreeningDto
@@ -52,6 +54,7 @@ namespace CinemaProject.Model
             }).ToListAsync();
         }
 
+        // Összes terem lekérése
         public async Task<IEnumerable<RoomDto>> GetAllRooms()
         {
             return await _context.rooms.Select(x => new RoomDto
@@ -60,6 +63,8 @@ namespace CinemaProject.Model
                 RoomName = x.RoomName
             }).ToListAsync();
         }
+
+        // Összes jegytípus lekérése
 
         public async Task<IEnumerable<TicketTypeDto>> GetAllTicketType()
         {
@@ -71,6 +76,7 @@ namespace CinemaProject.Model
             }).ToListAsync();
         }
 
+        // Összes kategória lekérése
         public async Task<IEnumerable<CategoriesDto>> GetAllCategories()
         {
             return await _context.categoriesForHTML.Select(x => new CategoriesDto
@@ -81,6 +87,7 @@ namespace CinemaProject.Model
             }).ToListAsync();
         }
 
+        // Film keresése cím alapján
         public async Task<IEnumerable<MovieDto>> SearchMovieByTitle(string item)
         {
             item = item.ToLower();
@@ -109,6 +116,7 @@ namespace CinemaProject.Model
                 }).ToListAsync();
         }
 
+        // Film keresése műfaj alapján
         public async Task<IEnumerable<MovieDto>> SearchMovieByGenre(string item)
         {
             item = item.ToLower();
@@ -137,6 +145,7 @@ namespace CinemaProject.Model
                 }).ToListAsync();
         }
 
+        // Film keresése rendező alapján
         public async Task<IEnumerable<MovieDto>> SearchMovieByDirector(string item)
         {
             item = item.ToLower();
@@ -165,6 +174,7 @@ namespace CinemaProject.Model
                 }).ToListAsync();
         }
 
+        // Vetítések lekérése adott időpont alapján
         public async Task<IEnumerable<FilmScreeningDto>> GetScreeningDetails(DateTimeOffset time)
         {
             return await _context.filmScreenings.Include(x=> x.Movie).Where(x => x.Date == time)
@@ -178,6 +188,7 @@ namespace CinemaProject.Model
                 }).ToListAsync();
         }
 
+        // Közelgő, aktuálisan futó filmek vetítéseinek lekérése
         public async Task<List<FilmScreeningDto>> GetUpcomingScreenings()
         {
             var nowUtc = DateTimeOffset.UtcNow;
@@ -193,6 +204,7 @@ namespace CinemaProject.Model
                 }).ToListAsync();
         }
 
+        // Megnézi, hogy a film jelenleg fut-e
         public async Task<bool> IsMovieNowRunning(string movieTitle)
         {
             movieTitle = movieTitle.ToLower();
@@ -202,18 +214,21 @@ namespace CinemaProject.Model
             return movie != null && movie.Status == MovieStatus.NowRunning;
         }
 
+        // Terem kapacitásának lekérése
         public async Task<int> GetRoomCapacity(int roomId)
         {
             var room = await _context.rooms.Include(x => x.Seats).FirstOrDefaultAsync(x => x.RoomId == roomId);
 
             if (room == null)
-                throw new InvalidOperationException("Room not found");
+                throw new KeyNotFoundException("Room not found");
 
             return room.Seats.Count;
         }
 
+        // Székek lekérése foglaltsági állapottal együtt
         public async Task<List<SeatDto>> GetSeats(int roomId, int screeningId)
         {
+            // Már lefoglalt székek kigyűjtése az adott vetítéshez
             var reservedSeatIds = await _context.seats.Where(s => s.CartId != null && s.Cart != null && s.Cart.FilmScreeningId == screeningId).Select(s => s.SeatId).ToListAsync();
 
             return await _context.seats.Where(x => x.RoomId == roomId).Select(x => new SeatDto
@@ -226,6 +241,7 @@ namespace CinemaProject.Model
             }).ToListAsync();
         }
 
+        // Megnézi, hogy az adott szék szabad-e az adott vetítésen
         public async Task<bool> IsSeatAvailable(int seatId, int screeningId)
         {
             var reserved = await _context.carts.AnyAsync(x => x.FilmScreeningId == screeningId && x.Seats.Any(s => s.SeatId == seatId));
@@ -233,6 +249,7 @@ namespace CinemaProject.Model
             return !reserved;
         }
 
+        // Megnézi, hogy van-e elég szabad hely az adott vetítésen
         public async Task<bool> HasFreeSeats(int screeningId, int requiredSeats)
         {
             var screening = await _context.filmScreenings
@@ -240,7 +257,7 @@ namespace CinemaProject.Model
                     .ThenInclude(x => x.Seats).FirstOrDefaultAsync(x => x.FilmScreeningId == screeningId);
 
             if (screening == null)
-                throw new InvalidOperationException("Screening not found");
+                throw new KeyNotFoundException("Screening not found");
 
             var reservedSeatIds = await _context.carts.Where(x => x.FilmScreeningId == screeningId).SelectMany(x => x.Seats.Select(s => s.SeatId)).ToListAsync();
 
@@ -249,21 +266,62 @@ namespace CinemaProject.Model
             return freeSeatsCount >= requiredSeats;
         }
 
-        public async Task<TicketTypeDto?> SelectTicketType()
+        // TicketId számláló helyreállítása, hogy ne legyen ID ütközés
+        public void EnsureTicketsExist()
         {
-            return await _context.ticketTypes
-                .Select(x => new TicketTypeDto
+            if (string.Equals(_context.Database.ProviderName, "Npgsql.EntityFrameworkCore.PostgreSQL", StringComparison.Ordinal))
+            {
+                _context.Database.ExecuteSqlRaw(@"
+            SELECT setval(
+                pg_get_serial_sequence('""tickets""', 'TicketId'),
+                COALESCE((SELECT MAX(""TicketId"") FROM ""tickets""), 0) + 1,
+                false
+            );
+        ");
+            }
+            var screenings = _context.filmScreenings.Include(x => x.Room).ToList();
+
+            var ticketTypes = _context.ticketTypes.ToList();
+
+            foreach (var screening in screenings)
+            {
+                bool roomIsVip = IsVip(screening.Room?.RoomName ?? screening.RoomName);
+
+                foreach (var ticketType in ticketTypes)
                 {
-                    TicketTypeId = x.TicketTypeId,
-                    TicketType = x.TicketType,
-                    TicketPrice = x.TicketPrice
-                }).FirstOrDefaultAsync();
+                    bool ticketIsVip = IsVip(ticketType.TicketType);
+
+                    if (roomIsVip != ticketIsVip)
+                        continue;
+
+                    bool exists = _context.tickets.Any(x =>
+                        x.FilmScreeningId == screening.FilmScreeningId &&
+                        x.TicketTypeId == ticketType.TicketTypeId);
+
+                    if (!exists)
+                    {
+                        _context.tickets.Add(new Ticket
+                        {
+                            FilmScreeningId = screening.FilmScreeningId,
+                            TicketTypeId = ticketType.TicketTypeId
+                        });
+                    }
+                }
+            }
+
+            _context.SaveChanges();
         }
 
+        // Megnézi, hogy a szöveg VIP típust jelöl-e
+        private bool IsVip(string? text)
+        {
+            return !string.IsNullOrWhiteSpace(text) && text.ToLower().Contains("vip");
+        }
+
+        // Ticketek lekérése vetítés alapján
         public async Task<List<TicketDto>> GetTicketsByScreening(int screeningId)
         {
-            return await _context.tickets
-                .Where(x => x.FilmScreeningId == screeningId)
+            return await _context.tickets.Where(x => x.FilmScreeningId == screeningId)
                 .Select(x => new TicketDto
                 {
                     TicketId = x.TicketId,
@@ -272,15 +330,16 @@ namespace CinemaProject.Model
                 }).ToListAsync();
         }
 
+        // Kosárban lévő jegyek darabszámának módosítása
         public async Task SetQuantity(int cartId, int amount)
         {
             var cart = await _context.carts.Include(x => x.Ticket).FirstOrDefaultAsync(x => x.CartId == cartId);
 
             if (cart == null)
-                throw new InvalidOperationException("Cart not found");
+                throw new KeyNotFoundException("Cart not found");
 
             if (amount <= 0)
-                throw new ArgumentException("Quantity must be greater than zero");
+                throw new InvalidDataException("Quantity must be greater than zero");
 
             cart.Amount = amount;
             cart.TotalPrice = cart.Ticket.TicketType.TicketPrice * amount;
@@ -288,6 +347,7 @@ namespace CinemaProject.Model
             await _context.SaveChangesAsync();
         }
 
+        // Film képének lekérése
         public async Task<ImageDto?> GetImage(int movieId)
         {
             return await _context.movies.Include(x => x.Image).Where(x => x.MovieId == movieId)
