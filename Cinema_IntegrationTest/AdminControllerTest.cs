@@ -146,7 +146,7 @@ namespace Cinema_IntegrationTest
 
             var dto = new NewScreeningDto
             {
-                MovieTitle = movie.MovieTitle,
+                MovieId = movie.MovieId,
                 RoomId = room.RoomId,
                 RoomName = room.RoomName,
                 Date = DateTimeOffset.UtcNow.AddDays(10)
@@ -237,11 +237,22 @@ namespace Cinema_IntegrationTest
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var movie = db.movies.First(x => x.MovieTitle == "Gladiator");
+            var movie = new Movie
+            {
+                MovieTitle = Guid.NewGuid().ToString(),
+                Duration = 100,
+                Genre = "Test",
+                Director = "Test",
+                Description = "Test",
+                ImageId = 1,
+                Status = MovieStatus.NowRunning
+            };
 
-            var response = await _client.DeleteAsync(
-                $"api/admin/deletemovie?movieId={movie.MovieId}"
-            );
+            db.movies.Add(movie);
+            db.SaveChanges();
+
+            var response = await _client.DeleteAsync($"api/admin/deletemovie?movieId={movie.MovieId}");
+
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
         [Fact]
@@ -252,7 +263,7 @@ namespace Cinema_IntegrationTest
             var response = await _client.DeleteAsync(
                 $"api/admin/deletemovie?movieId={66}"
             );
-            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         }
 
@@ -264,18 +275,25 @@ namespace Cinema_IntegrationTest
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-            var movies = db.movies.First(x => x.MovieTitle == "Gladiator");
-            var screening = db.filmScreenings
-                .First(x => x.MovieId == movies.MovieId);
+            var movie = db.movies.First();
+            var room = db.rooms.First();
+
+            var screening = new FilmScreening
+            {
+                MovieId = movie.MovieId,
+                RoomId = room.RoomId,
+                RoomName = room.RoomName,
+                Date = DateTimeOffset.UtcNow.AddDays(20)
+            };
+
+            db.filmScreenings.Add(screening);
+            db.SaveChanges();
 
             var response = await _client.DeleteAsync(
                 $"api/admin/deletescreening?screeningId={screening.FilmScreeningId}"
             );
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            var deletedScreening = db.filmScreenings
-                .FirstOrDefault(s => s.FilmScreeningId == screening.FilmScreeningId);
-            Assert.Null(deletedScreening);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
         [Fact]

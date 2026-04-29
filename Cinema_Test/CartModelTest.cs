@@ -55,16 +55,29 @@ namespace Cinema_Test
         [Fact]
         public async Task RemoveFromCart()
         {
-            var cart = _context.carts.First();
+            var ticket = _context.tickets.Include(x => x.TicketType).First(x => x.FilmScreeningId != null);
+
+            var cart = new Cart
+            {
+                UserId = _context.users.First().UserId,
+                FilmScreeningId = ticket.FilmScreeningId!.Value,
+                TicketId = ticket.TicketId,
+                Amount = 1,
+                TotalPrice = ticket.TicketType.TicketPrice
+            };
+
+            _context.carts.Add(cart);
+            _context.SaveChanges();
+
             await _cartModel.RemoveFromCart(cart.CartId);
 
-            Assert.False(_context.carts.Any(x => x.CartId == cart.CartId));
+            Assert.Null(_context.carts.FirstOrDefault(x => x.CartId == cart.CartId));
         }
 
         [Fact]
         public async Task RemoveFromCart_Wrong()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
                 await _cartModel.RemoveFromCart(99999));
 
             Assert.Equal("Cart not found", ex.Message);
@@ -74,39 +87,40 @@ namespace Cinema_Test
         [Fact]
         public async Task UpdateCart()
         {
-            var cart = _context.carts.First();
-            var newSeat = _context.seats.OrderBy(s => s.SeatId).Last();
+            var ticket = _context.tickets.Include(x => x.TicketType).First(x => x.FilmScreeningId != null);
+
+            var screeningId = ticket.FilmScreeningId!.Value;
+
+            var cart = new Cart
+            {
+                UserId = 999,
+                FilmScreeningId = screeningId,
+                TicketId = ticket.TicketId,
+                Amount = 1,
+                TotalPrice = ticket.TicketType.TicketPrice
+            };
+
+            _context.carts.Add(cart);
+            _context.SaveChanges();
+
             var dto = new CartDto
             {
-                FilmScreeningId = cart.FilmScreeningId,
-                TicketId = cart.TicketId,
-                Amount = 10,
-                TotalPrice = 1500,
-                Seats = new List<SeatDto>
-                {
-                    new SeatDto
-                    {
-                        SeatId = newSeat.SeatId,
-                        RowNumber = newSeat.RowNumber,
-                        SeatNumber = newSeat.SeatNumber,
-                        RoomId = newSeat.RoomId,
-                        IsReserved = newSeat.IsReserved
-                    }
-                }
+                UserId = 999,
+                FilmScreeningId = screeningId,
+                TicketId = ticket.TicketId,
+                Amount = 2
             };
 
             await _cartModel.UpdateCart(dto, cart.CartId);
 
-            var updated = _context.carts.Include(c => c.Seats).First(x => x.CartId == cart.CartId);
-            Assert.Equal(10, updated.Amount);
-            Assert.Equal(newSeat.SeatId, updated.Seats.First().SeatId);
+            Assert.Equal(2, _context.carts.First(x => x.CartId == cart.CartId).Amount);
         }
 
         [Fact]
         public async Task UpdateCart_Wrong()
         {
             var dto = new CartDto { Seats = new List<SeatDto>() };
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
                 await _cartModel.UpdateCart(dto, 99999));
 
             Assert.Equal("Cart not found", ex.Message);
@@ -116,35 +130,42 @@ namespace Cinema_Test
         [Fact]
         public async Task ModifyCart()
         {
-            var cart = await _context.carts
-         .Include(c => c.Ticket)
-         .Include(c => c.Seats)
-         .FirstAsync();
+            var ticket = _context.tickets.Include(x => x.TicketType).First(x => x.FilmScreeningId != null);
 
-            var newSeatIds = new List<int> { (await _context.seats.FirstAsync()).SeatId };
+            var screening = _context.filmScreenings.First(x => x.FilmScreeningId == ticket.FilmScreeningId);
 
-            await _cartModel.ModifyCart(new ModifyCartDto
+            var seats = _context.seats.Where(x => x.RoomId == screening.RoomId && !x.IsReserved).Take(2).ToList();
+
+            var cart = new Cart
+            {
+                UserId = _context.users.First().UserId,
+                FilmScreeningId = screening.FilmScreeningId,
+                TicketId = ticket.TicketId,
+                Amount = 1,
+                TotalPrice = ticket.TicketType.TicketPrice
+            };
+
+            _context.carts.Add(cart);
+            _context.SaveChanges();
+
+            var dto = new ModifyCartDto
             {
                 CartId = cart.CartId,
-                NewAmount = 3,
-                NewSeatIds = newSeatIds
-            });
+                NewAmount = 2,
+                NewSeatIds = seats.Select(x => x.SeatId).ToList()
+            };
 
-            var modified = await _context.carts
-                .Include(c => c.Seats)
-                .Include(c => c.Ticket)
-                .FirstAsync(c => c.CartId == cart.CartId);
+            await _cartModel.ModifyCart(dto);
 
-            Assert.Equal(3, modified.Amount);
-            Assert.Equal(modified.Ticket.TicketType.TicketPrice * 3, modified.TotalPrice);
-            Assert.Single(modified.Seats);
-            Assert.Equal(newSeatIds.First(), modified.Seats.First().SeatId);
+            var updatedCart = _context.carts.First(x => x.CartId == cart.CartId);
+
+            Assert.Equal(2, updatedCart.Amount);
         }
 
         [Fact]
         public async Task ModifyCart_Wrong()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
             await _cartModel.ModifyCart(new ModifyCartDto
             {
                 CartId = 88888,

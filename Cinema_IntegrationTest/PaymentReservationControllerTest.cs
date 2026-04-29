@@ -1,10 +1,12 @@
 ﻿using CinemaProject.Dto;
 using CinemaProject.Persistence;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Text.Json;
 using Xunit;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Cinema_IntegrationTest;
 
@@ -24,7 +26,33 @@ public class PaymentReservationControllerTest : IClassFixture<CustomApplicationF
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
-        var cart = db.carts.First();
+
+        var user = db.users.First();
+        var ticket = db.tickets.Include(t => t.TicketType).First();
+        var screening = db.filmScreenings.First();
+
+        var cart = new Cart
+        {
+            UserId = user.UserId,
+            FilmScreeningId = screening.FilmScreeningId,
+            TicketId = ticket.TicketId,
+            Amount = 1,
+            TotalPrice = ticket.TicketType.TicketPrice
+        };
+
+        db.carts.Add(cart);
+        db.SaveChanges();
+
+
+        var reservation = new PaymentReservation
+        {
+            CartId = cart.CartId,
+            FilmScreeningId = screening.FilmScreeningId,
+            UserId = user.UserId,
+            Amount = 1,
+            Date = DateTimeOffset.UtcNow.AddDays(-2),
+            IsPaid = true
+        };
 
         var response = await _client.PostAsync($"/api/payment_reservation/createreservation?cartId={cart.CartId}", null);
 
@@ -59,8 +87,34 @@ public class PaymentReservationControllerTest : IClassFixture<CustomApplicationF
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
 
-        var reservation = db.paymentReservations
-            .First(r => r.IsPaid == false);
+        var user = db.users.First();
+        var ticket = db.tickets.Include(t => t.TicketType).First();
+        var screening = db.filmScreenings.First();
+
+        var cart = new Cart
+        {
+            UserId = user.UserId,
+            FilmScreeningId = screening.FilmScreeningId,
+            TicketId = ticket.TicketId,
+            Amount = 1,
+            TotalPrice = ticket.TicketType.TicketPrice
+        };
+
+        db.carts.Add(cart);
+        db.SaveChanges();
+
+        var reservation = new PaymentReservation
+        {
+            CartId = cart.CartId,
+            FilmScreeningId = screening.FilmScreeningId,
+            UserId = user.UserId,
+            Amount = 1,
+            Date = DateTimeOffset.UtcNow,
+            IsPaid = false
+        };
+
+        db.paymentReservations.Add(reservation);
+        db.SaveChanges();
 
         var response = await _client.PutAsync(
             $"/api/payment_reservation/payreservation?reservationId={reservation.PaymentReservationId}",
@@ -116,11 +170,37 @@ public class PaymentReservationControllerTest : IClassFixture<CustomApplicationF
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+
         var user = db.users.First();
+        var ticket = db.tickets.Include(t => t.TicketType).First();
+        var screening = db.filmScreenings.First();
+
+        var cart = new Cart
+        {
+            UserId = user.UserId,
+            FilmScreeningId = screening.FilmScreeningId,
+            TicketId = ticket.TicketId,
+            Amount = 1,
+            TotalPrice = ticket.TicketType.TicketPrice
+        };
+
+        db.carts.Add(cart);
+        db.SaveChanges();
+
+
+        var reservation = new PaymentReservation
+        {
+            CartId = cart.CartId,
+            FilmScreeningId = screening.FilmScreeningId,
+            UserId = user.UserId,
+            Amount = 1,
+            Date = DateTimeOffset.UtcNow.AddDays(-2),
+            IsPaid = true
+        };
 
         var response = await _client.GetAsync($"/api/payment_reservation/viewupcomingreservation?userId={user.UserId}");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.False(string.IsNullOrWhiteSpace(body));
@@ -131,11 +211,37 @@ public class PaymentReservationControllerTest : IClassFixture<CustomApplicationF
     {
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
+
         var user = db.users.First();
+        var ticket = db.tickets.Include(t => t.TicketType).First();
+        var screening = db.filmScreenings.First();
+
+        var cart = new Cart
+        {
+            UserId = user.UserId,
+            FilmScreeningId = screening.FilmScreeningId,
+            TicketId = ticket.TicketId,
+            Amount = 1,
+            TotalPrice = ticket.TicketType.TicketPrice
+        };
+
+        db.carts.Add(cart);
+        db.SaveChanges();
+
+
+        var reservation = new PaymentReservation
+        {
+            CartId = cart.CartId,
+            FilmScreeningId = screening.FilmScreeningId,
+            UserId = user.UserId,
+            Amount = 1,
+            Date = DateTimeOffset.UtcNow.AddDays(-2),
+            IsPaid = true
+        };
 
         var response = await _client.GetAsync($"/api/payment_reservation/viewpastreservation?userId={user.UserId}");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.False(string.IsNullOrWhiteSpace(body));

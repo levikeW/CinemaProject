@@ -82,7 +82,7 @@ namespace Cinema_Test
         [Fact]
         public async Task GetRoomCapacity_Wrong()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
                 await _cinemaModel.GetRoomCapacity(99999));
             Assert.Equal("Room not found", ex.Message);
         }
@@ -111,7 +111,7 @@ namespace Cinema_Test
         [Fact]
         public async Task HasFreeSeats_Wrong_NotFound()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 _cinemaModel.HasFreeSeats(99999, 1));
             Assert.Equal("Screening not found", ex.Message);
         }
@@ -134,7 +134,7 @@ namespace Cinema_Test
         public async Task SetQuantity_Wrong_Invalid()
         {
             var cart = _context.carts.First();
-            var ex = await Assert.ThrowsAsync<ArgumentException>(async () =>
+            var ex = await Assert.ThrowsAsync<InvalidDataException>(async () =>
                 await _cinemaModel.SetQuantity(cart.CartId, 0));
 
             Assert.Equal("Quantity must be greater than zero", ex.Message);
@@ -143,7 +143,7 @@ namespace Cinema_Test
         [Fact]
         public async Task SetQuantity_Wrong_NotFound()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
                 await _cinemaModel.SetQuantity(99999, 5));
 
             Assert.Equal("Cart not found", ex.Message);

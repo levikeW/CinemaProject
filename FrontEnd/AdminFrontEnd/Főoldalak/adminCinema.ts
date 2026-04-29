@@ -14,7 +14,7 @@ interface FilmScreeningDto {
 
 interface NewScreeningDto {
     filmScreeningId: number;
-    movieTitle: string;
+    movieId: number;
     roomId: number;
     roomName: string;
     date: string;
@@ -175,7 +175,7 @@ async function Admin_handleScreeningCreate(event: Event): Promise<void> {
 
         const dto: NewScreeningDto = {
             filmScreeningId: 0,
-            movieTitle: movieSelect.options[movieSelect.selectedIndex].text.trim(),
+            movieId: Number(movieSelect.value),
             roomId: Number(roomSelect.value),
             roomName: roomSelect.options[roomSelect.selectedIndex].text.trim(),
             date: Admin_toIsoDateTime(dateInput.value)

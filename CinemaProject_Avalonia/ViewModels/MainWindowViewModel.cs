@@ -797,7 +797,7 @@ namespace CinemaProject_Avalonia.ViewModels
                 var newScreening = new NewScreeningDto
                 {
                     FilmScreeningId = 0,
-                    MovieTitle = SelectedMovie.MovieTitle,
+                    MovieId = SelectedMovie.MovieId,
                     RoomId = room.RoomId,
                     RoomName = SelectedRoom,
                     Date = SelectedDate.ToUniversalTime()

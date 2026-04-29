@@ -105,7 +105,7 @@ namespace CinemaProject.Model
                 throw new InvalidOperationException("Already exists");
             }
 
-            var movie = await _context.movies.FirstOrDefaultAsync(x => x.MovieTitle == dto.MovieTitle);
+            var movie = await _context.movies.FirstOrDefaultAsync(x => x.MovieId == dto.MovieId);
 
             if (movie == null)
             {

@@ -131,7 +131,7 @@ async function Admin_handleScreeningCreate(event) {
         const dateInput = document.getElementById("screeningDate");
         const dto = {
             filmScreeningId: 0,
-            movieTitle: movieSelect.options[movieSelect.selectedIndex].text.trim(),
+            movieId: Number(movieSelect.value),
             roomId: Number(roomSelect.value),
             roomName: roomSelect.options[roomSelect.selectedIndex].text.trim(),
             date: Admin_toIsoDateTime(dateInput.value)

@@ -289,7 +289,7 @@
 
 					<StackPanel Orientation="Horizontal" Spacing="10">
 						<Button Content="Keresés" Command="{Binding SearchUserCommand}" Background="#C8E6C9" Width="120"/>
-						<Button Content="Törlés" Command="{Binding ClearUserSearchCommand}" Background="LightGray" Width="120"/>
+						<Button Content="Keresés Törlése" Command="{Binding ClearUserSearchCommand}" Background="LightGray" Width="130"/>
 					</StackPanel>
 				</StackPanel>
 

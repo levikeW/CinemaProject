@@ -34,7 +34,7 @@ namespace Cinema_Test
         [Fact]
         public async Task ChangeRoleAsync_Fail()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<InvalidCastException>(async () =>
             {
                 await _adminModel.ChangeRole(1, "User", actAdminId: 1);
             });
@@ -44,7 +44,7 @@ namespace Cinema_Test
         [Fact]
         public async Task ChangeRole_Wrong()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
             {
                 await _adminModel.ChangeRole(99999, "Admin", actAdminId: 1);
             });
@@ -87,7 +87,7 @@ namespace Cinema_Test
         [Fact]
         public async Task DeleteUserThrows()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _adminModel.DeleteUser(99999));
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(async () => await _adminModel.DeleteUser(99999));
             Assert.Equal("User not found", ex.Message);
         }
 
@@ -220,7 +220,7 @@ namespace Cinema_Test
             var dto = new NewScreeningDto
             {
               
-                MovieTitle = movie.MovieTitle,
+                MovieId = movie.MovieId,
                 RoomName = "Room 1",
                 RoomId = 1,
                 Date = System.DateTime.Now.AddDays(1)

@@ -27,15 +27,26 @@ namespace Cinema_Test
         [Fact]
         public async Task CreateReservation()
         {
-            var cart = _context.carts.First();
-            var result = await _reservationModel.CreateReservation(cart.CartId);
+            var ticket = _context.tickets.Include(x => x.TicketType).First(x => x.FilmScreeningId != null);
 
-            Assert.NotNull(result);
-            Assert.IsType<ConfirmationDto>(result);
-            Assert.True(_context.paymentReservations.Any(r => r.PaymentReservationId == result.ReservationId));
+            var cart = new Cart
+            {
+                UserId = _context.users.First().UserId,
+                FilmScreeningId = ticket.FilmScreeningId!.Value,
+                TicketId = ticket.TicketId,
+                Amount = 1,
+                TotalPrice = ticket.TicketType.TicketPrice
+            };
+
+            _context.carts.Add(cart);
+            _context.SaveChanges();
+
+            await _reservationModel.CreateReservation(cart.CartId);
+
+            Assert.True(_context.paymentReservations.Any(x => x.CartId == cart.CartId));
         }
 
-        // CANCEL RESERVATIONN
+        // CANCEL RESERVATION
         [Fact]
         public async Task CancelReservation()
         {
@@ -49,7 +60,7 @@ namespace Cinema_Test
         [Fact]
         public async Task CancelReservation_Wrong_NotFound()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
                 await _reservationModel.CancelReservation(99999));
 
             Assert.Equal("Reservation not found", ex.Message);
@@ -85,7 +96,7 @@ namespace Cinema_Test
         [Fact]
         public async Task PayReservation_Wrong()
         {
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var ex = await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
                 await _reservationModel.PayReservation(99999));
 
             Assert.Equal("Reservation not found", ex.Message);

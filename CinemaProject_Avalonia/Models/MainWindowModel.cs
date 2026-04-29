@@ -64,12 +64,14 @@ namespace CinemaProject_Avalonia.Models
             return await _session.Client.GetFromJsonAsync<List<FilmScreeningDto>>($"api/cinema/getscreeningdetails?time={time}");
         }
 
-        public async Task<NewScreeningDto> NewScreening(NewScreeningDto dto)
+        public async Task NewScreening(NewScreeningDto dto)
         {
             var response = await _session.Client.PostAsJsonAsync("api/admin/newscreening", dto);
-            response.EnsureSuccessStatusCode();
-            var result = await response.Content.ReadFromJsonAsync<NewScreeningDto>();
-            return result!;
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Vetítés létrehozási hiba: {response.StatusCode} - {error}");
+            }
         }
 
         public async Task ModifyFilmScreening(ModifyFilmScreeningDto dto, int screeningId)

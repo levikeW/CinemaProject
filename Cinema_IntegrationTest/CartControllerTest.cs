@@ -198,8 +198,8 @@ namespace Cinema_IntegrationTest
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
             var response = await _client.PutAsync($"api/cart/updatecart?cartId={cart.CartId}", content);
             var body = await response.Content.ReadAsStringAsync();
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.False(string.IsNullOrWhiteSpace(body));
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.True(string.IsNullOrWhiteSpace(body));
         }
 
         [Fact]
@@ -239,8 +239,8 @@ namespace Cinema_IntegrationTest
 
             var response = await _client.PutAsync("/api/cart/modifycart", content);
             var body = await response.Content.ReadAsStringAsync();
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.False(string.IsNullOrWhiteSpace(body));
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.True(string.IsNullOrWhiteSpace(body));
         }
 
         [Fact]

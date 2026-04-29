@@ -144,7 +144,7 @@ namespace Cinema_Test
             });
 
             Assert.NotNull(ex);
-            Assert.IsType<InvalidOperationException>(ex);
+            Assert.IsType<KeyNotFoundException>(ex);
         }
 
         // UpdateProfile
@@ -166,7 +166,7 @@ namespace Cinema_Test
                 await _userModel.UpdateProfile(new UpdateUserDto { UserId = 99999, Email = "wrong@cinema.hu", FullName = "Wrong User" });
             });
             Assert.NotNull(ex);
-            Assert.IsType<InvalidOperationException>(ex);
+            Assert.IsType<KeyNotFoundException>(ex);
         }
 
         // ChangePassword
@@ -186,7 +186,7 @@ namespace Cinema_Test
                 await _userModel.ChangePassword(99999, "anyPass", "newpass");
             });
             Assert.NotNull(ex);
-            Assert.IsType<InvalidOperationException>(ex);
+            Assert.IsType<KeyNotFoundException>(ex);
         }
         [Fact]
         public async Task ChangePass_WrongOld()
@@ -197,7 +197,7 @@ namespace Cinema_Test
                 await _userModel.ChangePassword(user.UserId, "wrongOldPass", "newpass");
             });
             Assert.NotNull(ex);
-            Assert.IsType<InvalidOperationException>(ex);
+            Assert.IsType<InvalidDataException>(ex);
         }
 
     }

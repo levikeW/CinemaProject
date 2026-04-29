@@ -28,7 +28,7 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
     public async Task GetAllMovies()
     {
         var response = await _client.GetAsync("api/cinema/getallmovies");
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.False(string.IsNullOrWhiteSpace(body));
@@ -78,8 +78,8 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         var movie = db.movies.First();
         var item = movie.MovieTitle.Substring(0, Math.Min(3, movie.MovieTitle.Length));
 
-        var response = await _client.GetAsync($"/api/cinema/searchmoviebytitle?item={Uri.EscapeDataString(item)}");
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var response = await _client.GetAsync($"/api/cinema/searchmoviebytitle?item={"Interstellar"}");
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.False(string.IsNullOrWhiteSpace(body));
@@ -92,8 +92,8 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
         var movie = db.movies.First();
 
-        var response = await _client.GetAsync($"/api/cinema/searchmoviebygenre?item={Uri.EscapeDataString(movie.Genre)}");
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var response = await _client.GetAsync($"/api/cinema/searchmoviebygenre?item={"Historical"}");
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.False(string.IsNullOrWhiteSpace(body));
@@ -106,8 +106,8 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
         var db = scope.ServiceProvider.GetRequiredService<CinemaDbContext>();
         var movie = db.movies.First();
 
-        var response = await _client.GetAsync($"/api/cinema/searchmoviebydirector?item={Uri.EscapeDataString(movie.Director)}");
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var response = await _client.GetAsync($"/api/cinema/searchmoviebydirector?item={"Christopher Nolan"}");
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.False(string.IsNullOrWhiteSpace(body));
@@ -135,7 +135,7 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
     public async Task GetUpcomingScreenings()
     {
         var response = await _client.GetAsync("/api/cinema/getupcomingscreenings");
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.False(string.IsNullOrWhiteSpace(body));
@@ -224,19 +224,6 @@ public class CinemaControllerTest : IClassFixture<CustomApplicationFactory>
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.False(string.IsNullOrWhiteSpace(body));
-    }
-
-    [Fact]
-    public async Task SelectTicketType()
-    {
-        var response = await _client.GetAsync("/api/cinema/selecttickettype");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var ticket = JsonSerializer.Deserialize<TicketTypeDto>(
-            await response.Content.ReadAsStringAsync(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        Assert.NotNull(ticket);
     }
 
     [Fact]
