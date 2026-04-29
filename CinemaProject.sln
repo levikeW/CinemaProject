@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cinema_Test", "Cinema_Test\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cinema_IntegrationTest", "Cinema_IntegrationTest\Cinema_IntegrationTest.csproj", "{801EB34C-EC93-41FF-93D9-8354E6B5D7C7}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "AvaloniaSetup", "AvaloniaSetup\AvaloniaSetup.vdproj", "{D3215D41-1C47-1F76-F4B5-0CB4BE841AF6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,8 @@ Global
 		{801EB34C-EC93-41FF-93D9-8354E6B5D7C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{801EB34C-EC93-41FF-93D9-8354E6B5D7C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{801EB34C-EC93-41FF-93D9-8354E6B5D7C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3215D41-1C47-1F76-F4B5-0CB4BE841AF6}.Debug|Any CPU.ActiveCfg = Debug
+		{D3215D41-1C47-1F76-F4B5-0CB4BE841AF6}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
